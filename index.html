@@ -3546,6 +3546,17 @@
                 position: relative;
                 left: 0;
                 width: var(--sidebar-width);
+                margin-left: 0;
+                flex-shrink: 0;
+                transition: margin-left var(--transition-normal);
+            }
+            
+            /* BUG FIX 1: Desktop sidebar starts collapsed and can be toggled
+               with the hamburger button. Previously it was forced visible
+               (left: 0) so it could never be closed on desktop. */
+            .sidebar:not(.open) {
+                margin-left: calc(-1 * var(--sidebar-width));
+                box-shadow: none;
             }
             
             .sidebar-overlay {
@@ -7119,7 +7130,7 @@ function saveState() {
             theme: state.theme,
             pinnedMessages: state.pinnedMessages
         }));
-        localStorage.setItem('sahu_chat_history', JSON.stringify(state.chatHistory));
+        persistChatHistory();
         localStorage.setItem('sahu_theme', state.theme);
         localStorage.setItem('sahu_language', state.language);
     } catch (e) {
@@ -8654,7 +8665,9 @@ function newChat() {
     if (input) input.value = '';
     
     removeFile();
-    toggleSidebar();
+    // BUG FIX 1+2: only auto-close sidebar on mobile. On desktop the
+    // hamburger toggles it, and it starts collapsed to show the main page.
+    if (window.innerWidth < 768) toggleSidebar();
     window.location.hash = '';
     
     if (state.mode === 'search') {
@@ -8820,7 +8833,10 @@ function loadChat(id) {
     if (!chat) return;
     
     state.currentChatId = id;
-    state.messages = chat.messages || [];
+    // BUG FIX 3: copy the array so later pushes don't double-append.
+    // (state.messages previously referenced chat.messages directly,
+    // which caused duplicated messages after loading a chat)
+    state.messages = [...(chat.messages || [])];
     
     const container = document.getElementById('messagesContainer');
     const welcome = document.getElementById('welcomeScreen');
@@ -8921,6 +8937,8 @@ function loadChatHistory() {
  * Update chat history in localStorage
  */
 function updateChatHistory() {
+    // BUG FIX 4: incognito mode must never modify stored history
+    if (state.incognitoMode) return;
     const chatIndex = state.chatHistory.findIndex(c => c.id === state.currentChatId);
     
     if (chatIndex >= 0) {
@@ -8938,8 +8956,28 @@ function updateChatHistory() {
     // Keep only last 100 chats
     state.chatHistory = state.chatHistory.slice(0, 100);
     
-    localStorage.setItem('sahu_chat_history', JSON.stringify(state.chatHistory));
+    persistChatHistory();
     renderChatHistory();
+}
+
+/**
+ * BUG FIX 3+4: Central safe persistence for chat history.
+ * - Never persists while Incognito Mode is active (nothing is stored)
+ * - Handles localStorage quota errors by dropping the oldest chats
+ */
+function persistChatHistory() {
+    if (typeof state !== 'undefined' && state.incognitoMode) return;
+    try {
+        localStorage.setItem('sahu_chat_history', JSON.stringify(state.chatHistory));
+    } catch (e) {
+        // Storage full - drop oldest half of history and retry
+        try {
+            state.chatHistory = state.chatHistory.slice(0, Math.max(1, Math.floor(state.chatHistory.length / 2)));
+            localStorage.setItem('sahu_chat_history', JSON.stringify(state.chatHistory));
+        } catch (e2) {
+            console.warn('Failed to persist chat history:', e2);
+        }
+    }
 }
 
 /**
@@ -10541,7 +10579,7 @@ Output format:
         if (currentChat) {
             currentChat.messages.push(assistMsgObj);
         }
-        localStorage.setItem('sahu_chat_history', JSON.stringify(state.chatHistory));
+        persistChatHistory();
         
         // Update UI
         const stage3El = document.getElementById(stage3Id);
@@ -10971,7 +11009,7 @@ async function runDeepResearch(originalContent, container, chatId) {
                 if (currentChat) {
                     currentChat.messages.push(assistMsgObj);
                 }
-                localStorage.setItem('sahu_chat_history', JSON.stringify(state.chatHistory));
+                persistChatHistory();
                 
                 container.innerHTML += `
                     <div class="mt-6 p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--accent)] shadow-lg">
@@ -11122,12 +11160,15 @@ async function sendMessage() {
         // Create new chat if needed
         if (!state.currentChatId) {
             state.currentChatId = generateId();
-            state.chatHistory.unshift({
-                id: state.currentChatId,
-                title: content.substring(0, 50),
-                messages: [],
-                timestamp: Date.now()
-            });
+            // BUG FIX 4: in incognito mode never create a history entry
+            if (!state.incognitoMode) {
+                state.chatHistory.unshift({
+                    id: state.currentChatId,
+                    title: content.substring(0, 50),
+                    messages: [],
+                    timestamp: Date.now()
+                });
+            }
         }
         const thisChatId = state.currentChatId;
         
@@ -11156,7 +11197,7 @@ async function sendMessage() {
         if (currentChat) {
             currentChat.messages.push(userMsgObj);
         }
-        localStorage.setItem('sahu_chat_history', JSON.stringify(state.chatHistory));
+        persistChatHistory();
         renderChatHistory();
         
         // Display user message
@@ -11550,8 +11591,11 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
                 if (stage === stagesToRun[stagesToRun.length - 1]) {
                     const assistMsgObj = { role: 'assistant', content: res.content, timestamp: Date.now() };
                     state.messages.push(assistMsgObj);
+                    // BUG FIX 3: currentChat was never defined in this function,
+                    // so assistant responses were NEVER saved in standard mode.
+                    const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
                     if (currentChat) currentChat.messages.push(assistMsgObj);
-                    localStorage.setItem('sahu_chat_history', JSON.stringify(state.chatHistory));
+                    persistChatHistory();
                 }
                 
                 // Update stage UI
@@ -11670,7 +11714,7 @@ async function runSingleModelMode(fullPrompt, container, chatId) {
         if (currentChat) {
             currentChat.messages.push(assistMsgObj);
         }
-        localStorage.setItem('sahu_chat_history', JSON.stringify(state.chatHistory));
+        persistChatHistory();
         
         // Update UI
         const card = document.getElementById(divId);
@@ -11773,7 +11817,7 @@ async function runSearchMode(fullPrompt, container, chatId) {
         if (currentChat) {
             currentChat.messages.push(assistMsgObj);
         }
-        localStorage.setItem('sahu_chat_history', JSON.stringify(state.chatHistory));
+        persistChatHistory();
         
         // Update UI
         const card = document.getElementById(divId);
@@ -12096,9 +12140,32 @@ function toggleIncognito() {
     if (state.incognitoMode) {
         document.title = '🕶️ SahuAI Agent - Incognito';
         showToast('Incognito Mode ON - Chats won\'t be saved', 'info');
+        // BUG FIX 4: start a fresh private session so nothing from the
+        // current chat gets stored while incognito is enabled
+        state.currentChatId = null;
+        state.messages = [];
+        const _incContainer = document.getElementById('messagesContainer');
+        const _incWelcome = document.getElementById('welcomeScreen');
+        if (_incContainer) {
+            _incContainer.innerHTML = '';
+            _incContainer.classList.add('hidden');
+        }
+        if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
         document.title = 'SahuAI Agent v5.1 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
+        // BUG FIX 4: start a fresh normal session. This discards the private
+        // chat id so the next message is saved as a brand-new chat instead of
+        // being orphaned (invisible and unsaved).
+        state.currentChatId = null;
+        state.messages = [];
+        const _normContainer = document.getElementById('messagesContainer');
+        const _normWelcome = document.getElementById('welcomeScreen');
+        if (_normContainer) {
+            _normContainer.innerHTML = '';
+            _normContainer.classList.add('hidden');
+        }
+        if (_normWelcome) _normWelcome.classList.remove('hidden');
     }
     saveState();
 }
@@ -12245,15 +12312,10 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Override saveChatHistory to respect incognito mode
-const _originalSaveChatHistory = typeof saveChatHistory === 'function' ? saveChatHistory : null;
-if (_originalSaveChatHistory) {
-    const _patchedSaveChatHistory = function() {
-        if (state && state.incognitoMode) return; // Don't save in incognito
-        _originalSaveChatHistory.apply(this, arguments);
-    };
-    window.saveChatHistory = _patchedSaveChatHistory;
-}
+// NOTE: Incognito mode is now handled natively by persistChatHistory(),
+// updateChatHistory() and sendMessage(). The old override below targeted
+// a function (saveChatHistory) that never existed, so it never worked.
+// const _originalSaveChatHistory = ... (removed dead code)
 
 window.setModeToggle = setModeToggle;
 window.toggleIncognito = toggleIncognito;

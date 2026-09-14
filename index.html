@@ -4298,10 +4298,11 @@
                                 <!-- DeepThink Budget Pills -->
                                 <div id="deepthinkBudgetRow" class="deepthink-budget">
                                     <button class="budget-pill" data-budget="off" onclick="setThinkingBudget('off')">Off</button>
-                                    <button class="budget-pill" data-budget="original" onclick="setThinkingBudget('original')">Original</button>
-                                    <button class="budget-pill" data-budget="fast" onclick="setThinkingBudget('fast')">Fast</button>
-                                    <button class="budget-pill active" data-budget="balanced" onclick="setThinkingBudget('balanced')">Balanced</button>
-                                    <button class="budget-pill" data-budget="ultra" onclick="setThinkingBudget('ultra')">Ultra</button>
+                                    <button class="budget-pill" data-budget="low" onclick="setThinkingBudget('low')">Low</button>
+                                    <button class="budget-pill active" data-budget="medium" onclick="setThinkingBudget('medium')">Medium</button>
+                                    <button class="budget-pill" data-budget="high" onclick="setThinkingBudget('high')">High</button>
+                                    <button class="budget-pill" data-budget="xhigh" onclick="setThinkingBudget('xhigh')">X-High</button>
+                                    <button class="budget-pill" data-budget="max" onclick="setThinkingBudget('max')">Max</button>
                                 </div>
                             </div>
                             <label class="tools-popover-item">
@@ -4577,7 +4578,7 @@
     </div>
     
     <!-- Settings Modal -->
-    <div id="settingsModal" class="modal-overlay show">
+    <div id="settingsModal" class="modal-overlay">
         <div class="modal-container">
             <!-- Modal Header -->
             <div class="modal-header">
@@ -4597,24 +4598,7 @@
             <div class="modal-body">
                 <!-- Main Settings Menu -->
                 <div id="settings-main" class="settings-view active">
-                    <div class="settings-section">
-                        <!-- Advanced Features -->
-                        <button onclick="navigateSettings('advanced')" class="settings-card">
-                            <div class="settings-card-content">
-                                <div class="settings-card-left">
-                                    <div class="settings-card-icon orange">
-                                        <i class="fas fa-star"></i>
-                                    </div>
-                                    <div>
-                                        <div class="settings-card-title">Advanced Features</div>
-                                        <div class="settings-card-desc">Enable/Disable Advanced Capabilities</div>
-                                    </div>
-                                </div>
-                                <i class="fas fa-chevron-right settings-card-chevron"></i>
-                            </div>
-                        </button>
-                        
-                        <!-- Voice & Speech -->
+                    <div class="settings-section"><!-- Voice & Speech -->
                         <button onclick="navigateSettings('voice')" class="settings-card">
                             <div class="settings-card-content">
                                 <div class="settings-card-left">
@@ -4644,25 +4628,7 @@
                                 </div>
                                 <i class="fas fa-chevron-right settings-card-chevron"></i>
                             </div>
-                        </button>
-                        
-                        <!-- Safety -->
-                        <button onclick="navigateSettings('safety')" class="settings-card">
-                            <div class="settings-card-content">
-                                <div class="settings-card-left">
-                                    <div class="settings-card-icon green">
-                                        <i class="fas fa-shield-alt"></i>
-                                    </div>
-                                    <div>
-                                        <div class="settings-card-title">Safety</div>
-                                        <div class="settings-card-desc">Content Moderation Models</div>
-                                    </div>
-                                </div>
-                                <i class="fas fa-chevron-right settings-card-chevron"></i>
-                            </div>
-                        </button>
-                        
-                        <!-- Search Engines -->
+                        </button><!-- Search Engines -->
                         <button onclick="navigateSettings('search')" class="settings-card">
                             <div class="settings-card-content">
                                 <div class="settings-card-left">
@@ -4676,25 +4642,7 @@
                                 </div>
                                 <i class="fas fa-chevron-right settings-card-chevron"></i>
                             </div>
-                        </button>
-                        
-                        <!-- Pipeline Strategy -->
-                        <button onclick="navigateSettings('pipeline')" class="settings-card">
-                            <div class="settings-card-content">
-                                <div class="settings-card-left">
-                                    <div class="settings-card-icon purple">
-                                        <i class="fas fa-sliders-h"></i>
-                                    </div>
-                                    <div>
-                                        <div class="settings-card-title">Pipeline Strategy</div>
-                                        <div class="settings-card-desc">Consensus, Fallback, Prompt Refiner</div>
-                                    </div>
-                                </div>
-                                <i class="fas fa-chevron-right settings-card-chevron"></i>
-                            </div>
-                        </button>
-                        
-                        <!-- Configuration (Research) -->
+                        </button><!-- Configuration (Research) -->
                         <button onclick="navigateSettings('configuration')" class="settings-card">
                             <div class="settings-card-content">
                                 <div class="settings-card-left">
@@ -4822,156 +4770,7 @@
                             </div>
                         </button>
                     </div>
-                </div>
-                
-                <!-- Advanced Features View -->
-                <div id="settings-advanced" class="settings-view">
-                    <div class="features-list">
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-brain text-orange-500"></i>
-                                <span>Neural Consensus</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="neuralConsensusCheck" class="toggle-checkbox" checked="">
-                                <label for="neuralConsensusCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-balance-scale text-purple-500"></i>
-                                <span>Debate Mode</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="debateModeCheck" class="toggle-checkbox" checked="">
-                                <label for="debateModeCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-history text-blue-500"></i>
-                                <span>Temporal Reasoning</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="temporalReasoningCheck" class="toggle-checkbox" checked="">
-                                <label for="temporalReasoningCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-lightbulb text-yellow-500"></i>
-                                <span>Adaptive Reasoning</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="adaptiveReasoningCheck" class="toggle-checkbox" checked="">
-                                <label for="adaptiveReasoningCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-shield-alt text-green-500"></i>
-                                <span>Uncertainty Badge</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="uncertaintyBadgeCheck" class="toggle-checkbox" checked="">
-                                <label for="uncertaintyBadgeCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-chart-line text-blue-500"></i>
-                                <span>Token Estimator</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="tokenEstimatorCheck" class="toggle-checkbox" checked="">
-                                <label for="tokenEstimatorCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-thumbs-up text-pink-500"></i>
-                                <span>Response Rating</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="responseRatingCheck" class="toggle-checkbox" checked="">
-                                <label for="responseRatingCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-memory text-indigo-500"></i>
-                                <span>Three-Tier Memory</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="threeTierMemoryCheck" class="toggle-checkbox" checked="">
-                                <label for="threeTierMemoryCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-bug text-red-500"></i>
-                                <span>Self-Correcting Code</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="selfCorrectingCodeCheck" class="toggle-checkbox" checked="">
-                                <label for="selfCorrectingCodeCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-chart-pie text-teal-500"></i>
-                                <span>Usage Analytics</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="usageAnalyticsCheck" class="toggle-checkbox" checked="">
-                                <label for="usageAnalyticsCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-users text-cyan-500"></i>
-                                <span>Agent Swarm</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="agentSwarmCheck" class="toggle-checkbox" checked="">
-                                <label for="agentSwarmCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-bolt text-yellow-500"></i>
-                                <span>Rapid Learning</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="rapidLearningCheck" class="toggle-checkbox" checked="">
-                                <label for="rapidLearningCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-robot text-gray-500"></i>
-                                <span>Physical Integration</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="physicalIntegrationCheck" class="toggle-checkbox" checked="">
-                                <label for="physicalIntegrationCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-balance-scale text-teal-500"></i>
-                                <span>Constitutional Safety</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="constitutionalSafetyCheck" class="toggle-checkbox" checked="">
-                                <label for="constitutionalSafetyCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                    </div>
-                    <p class="feature-hint">Enable specific features to enhance the AI's capabilities. Debate Mode will force models to argue different viewpoints in Standard and Research modes.</p>
-                </div>
-                
-                <!-- Voice Settings View -->
+                </div><!-- Voice Settings View -->
                 <div id="settings-voice" class="settings-view">
                     <div class="voice-setting-card">
                         <label class="voice-setting-label">ASR Model (Speech-to-Text)</label>
@@ -4994,27 +4793,7 @@
                 
                 <!-- Customize View (Merged Appearance + Instructions) -->
                 <div id="settings-customize" class="settings-view">
-                    <div class="customize-section">
-                        <!-- Single Model Mode -->
-                        <div class="single-model-toggle">
-                            <span class="single-model-label">
-                                <i class="fas fa-crosshairs text-purple-500"></i>
-                                <span>Single Model Mode</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="singleModelCheck" class="toggle-checkbox" onchange="toggleSingleModelMode(this.checked)">
-                                <label for="singleModelCheck" class="toggle-label"></label>
-                            </div>
-                        </div>
-                        <div id="singleModelSelectContainer" class="hidden">
-                            <select id="singleModelSelect" class="single-model-select">
-                                <option value="minimaxai/minimax-m2.5" selected="">MiniMax M2.5 (Default)</option>
-                                <!-- Populated dynamically with all models -->
-                            </select>
-                            <p class="single-model-hint">When enabled, only the selected model will respond to queries.</p>
-                        </div>
-                        
-                        <!-- Language Selector -->
+                    <div class="customize-section"><!-- Language Selector -->
                         <div class="customize-card">
                             <label class="customize-label">Interface &amp; Response Language</label>
                             <select id="languageSelector" class="customize-input" onchange="updateLanguage(this.value)"><option value="en" selected="">English</option><option value="es">Spanish</option><option value="fr">French</option><option value="de">German</option><option value="it">Italian</option><option value="pt">Portuguese</option><option value="zh">Chinese</option><option value="ja">Japanese</option><option value="ko">Korean</option><option value="ru">Russian</option><option value="hi">Hindi</option><option value="ar">Arabic</option><option value="bn">Bengali</option><option value="pa">Punjabi</option><option value="jv">Javanese</option><option value="vi">Vietnamese</option><option value="te">Telugu</option><option value="mr">Marathi</option><option value="ta">Tamil</option><option value="ur">Urdu</option><option value="tr">Turkish</option><option value="fa">Persian</option><option value="gu">Gujarati</option><option value="pl">Polish</option><option value="uk">Ukrainian</option><option value="ro">Romanian</option><option value="nl">Dutch</option><option value="el">Greek</option><option value="hu">Hungarian</option><option value="sv">Swedish</option><option value="cs">Czech</option><option value="th">Thai</option><option value="id">Indonesian</option><option value="ms">Malay</option><option value="da">Danish</option><option value="fi">Finnish</option><option value="no">Norwegian</option><option value="he">Hebrew</option><option value="bg">Bulgarian</option><option value="hr">Croatian</option><option value="sr">Serbian</option><option value="sk">Slovak</option><option value="sl">Slovenian</option><option value="et">Estonian</option><option value="lv">Latvian</option><option value="lt">Lithuanian</option><option value="af">Afrikaans</option><option value="sw">Swahili</option><option value="ca">Catalan</option><option value="eu">Basque</option><option value="gl">Galician</option><option value="is">Icelandic</option><option value="ga">Irish</option><option value="sq">Albanian</option><option value="mk">Macedonian</option><option value="bs">Bosnian</option><option value="cy">Welsh</option><option value="hy">Armenian</option><option value="ka">Georgian</option><option value="be">Belarusian</option><option value="az">Azerbaijani</option><option value="kk">Kazakh</option><option value="ky">Kyrgyz</option><option value="uz">Uzbek</option><option value="tk">Turkmen</option><option value="tg">Tajik</option><option value="mn">Mongolian</option><option value="ne">Nepali</option><option value="si">Sinhala</option><option value="my">Burmese</option><option value="km">Khmer</option><option value="lo">Lao</option><option value="am">Amharic</option><option value="so">Somali</option><option value="yo">Yoruba</option><option value="ig">Igbo</option><option value="ha">Hausa</option><option value="zu">Zulu</option><option value="xh">Xhosa</option><option value="st">Sotho</option><option value="fil">Filipino</option><option value="mg">Malagasy</option><option value="ny">Chichewa</option><option value="sn">Shona</option><option value="co">Corsican</option><option value="fy">Frisian</option><option value="gd">Scots Gaelic</option><option value="ht">Haitian Creole</option><option value="haw">Hawaiian</option><option value="hmn">Hmong</option><option value="jw">Javanese</option><option value="kn">Kannada</option><option value="ku">Kurdish</option><option value="lb">Luxembourgish</option><option value="mi">Maori</option><option value="ml">Malayalam</option><option value="mt">Maltese</option><option value="ps">Pashto</option><option value="sd">Sindhi</option><option value="sm">Samoan</option><option value="su">Sundanese</option><option value="yi">Yiddish</option></select>
@@ -5061,109 +4840,17 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Safety View -->
-                <div id="settings-safety" class="settings-view">
-                    <div class="customize-card">
-                        <label class="customize-label">Safety Models (Content Moderation)</label>
-                        <div class="safety-models-list">
-                            <label class="safety-model-item">
-                                <input type="checkbox" class="safety-model-checkbox" id="safetyGraniteCheck" checked="">
-                                <div class="safety-model-info">
-                                    <div class="safety-model-name">Granite Guardian</div>
-                                    <div class="safety-model-desc">IBM's content safety model</div>
-                                </div>
-                            </label>
-                            <label class="safety-model-item">
-                                <input type="checkbox" class="safety-model-checkbox" id="safetyShieldGemmaCheck" checked="">
-                                <div class="safety-model-info">
-                                    <div class="safety-model-name">ShieldGemma</div>
-                                    <div class="safety-model-desc">Google's safety model</div>
-                                </div>
-                            </label>
-                            <label class="safety-model-item">
-                                <input type="checkbox" class="safety-model-checkbox" id="safetyLlamaGuardCheck" checked="">
-                                <div class="safety-model-info">
-                                    <div class="safety-model-name">Llama Guard 4</div>
-                                    <div class="safety-model-desc">Meta's safety model</div>
-                                </div>
-                            </label>
-                        </div>
-                        <p class="safety-model-hint">These models work together to ensure content safety and moderation across all interactions.</p>
-                    </div>
-                </div>
-                
-                <!-- Pipeline Strategy View -->
-                <div id="settings-pipeline" class="settings-view">
-                    <div class="pipeline-section">
-                        <label class="pipeline-label">Consensus Strategy</label>
-                        <select id="stageSelector" class="pipeline-select">
-                            <option value="none">Experts Only (Parallel)</option>
-                            <option value="1" selected="">Direct Synthesis (Fast)</option>
-                            <option value="2">Deep Synthesis (2-Step)</option>
-                            <option value="3">Full Chain (3-Step)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="pipeline-toggles">
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-shield-alt text-green-500"></i>
-                                <span>Auto Fallback</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="autoFallback" class="toggle-checkbox" checked="">
-                                <label for="autoFallback" class="toggle-label"></label>
-                            </div>
-                        </label>
-                        <label class="feature-item">
-                            <span class="feature-label">
-                                <i class="fas fa-wand-magic-sparkles text-purple-500"></i>
-                                <span>Prompt Refiner</span>
-                            </span>
-                            <div class="toggle-container">
-                                <input type="checkbox" id="promptRefinerCheck" class="toggle-checkbox" checked="" onchange="togglePromptRefinerSetting(this.checked)">
-                                <label for="promptRefinerCheck" class="toggle-label"></label>
-                            </div>
-                        </label>
-                    </div>
-                    
-                    <!-- Prompt Refiner Panel Preview -->
-                    <div id="pipelinePromptRefinerPanel" class="prompt-refiner-panel show">
-                        <div class="prompt-refiner-header">
-                            <div class="prompt-refiner-title">
-                                <i class="fas fa-wand-magic-sparkles"></i>
-                                <span>Prompt Refiner Preview</span>
-                            </div>
-                        </div>
-                        <div class="prompt-refiner-content">
-                            <div class="prompt-refiner-original">
-                                <div class="prompt-refiner-original-label">Original</div>
-                                <div>Example user query...</div>
-                            </div>
-                            <div class="prompt-refiner-refined">
-                                <div class="prompt-refiner-refined-label">Refined</div>
-                                <div>Optimized query with context, structure, and mode-specific formatting...</div>
-                            </div>
-                            <div class="prompt-refiner-meta">
-                                <span>Mode: Standard</span>
-                                <span>Models: 3 selected</span>
-                                <span>Stage: Aggregation</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Configuration View (Research Stages) -->
+                </div><!-- Configuration View (Research Stages) -->
                 <div id="settings-configuration" class="settings-view">
                     <div class="config-section">
                         <label class="pipeline-label">Thinking Budget</label>
                         <select id="thinkingBudget" class="pipeline-select">
-                            <option value="original">Original (Model Native)</option>
-                            <option value="fast">Fast (Original + Medium)</option>
-                            <option value="balanced" selected="">Balanced (Original + High)</option>
-                            <option value="ultra">Ultra (Original + X-High)</option>
+                            <option value="off">Off</option>
+                            <option value="low">Low</option>
+                            <option value="medium" selected="">Medium</option>
+                            <option value="high">High</option>
+                            <option value="xhigh">X-High</option>
+                            <option value="max">Max</option>
                         </select>
                     </div>
                     
@@ -6156,7 +5843,7 @@
     </div>
     
     <!-- Source Code Modal -->
-    <div id="sourceCodeModal" class="modal-overlay show">
+    <div id="sourceCodeModal" class="modal-overlay">
         <div class="modal-container xlarge">
             <div class="modal-header">
                 <h2 class="modal-title">
@@ -6425,27 +6112,27 @@ const state = {
     examMode: false,
     activeModeTag: null, // null, 'task', 'artifacts', 'appdev' - for input bar tag
     
-    // Feature Toggles (All enabled by default for v5.0)
+    // Feature Toggles (Advanced Features removed per user request - all off)
     features: {
-        neuralConsensus: true,
-        debateMode: true,
-        temporalReasoning: true,
-        adaptiveReasoning: true,
-        uncertaintyBadge: true,
-        tokenEstimator: true,
-        responseRating: true,
-        threeTierMemory: true,
-        selfCorrectingCode: true,
-        usageAnalytics: true,
-        agentSwarm: true,
-        rapidLearning: true,
-        physicalIntegration: true,
-        constitutionalSafety: true
+        neuralConsensus: false,
+        debateMode: false,
+        temporalReasoning: false,
+        adaptiveReasoning: false,
+        uncertaintyBadge: false,
+        tokenEstimator: false,
+        responseRating: false,
+        threeTierMemory: false,
+        selfCorrectingCode: false,
+        usageAnalytics: false,
+        agentSwarm: false,
+        rapidLearning: false,
+        physicalIntegration: false,
+        constitutionalSafety: false
     },
     
     // DeepThink State
     deepThinkEnabled: true,
-    thinkingBudget: 'balanced', // fast, balanced, ultra, original
+    thinkingBudget: 'medium', // off, low, medium, high, xhigh, max
     
     // Pipeline State
     autoFallback: true,
@@ -6975,9 +6662,9 @@ const PROVIDERS = {
  * Aggregator prompts for multi-stage synthesis
  */
 const AGGREGATOR_PROMPTS = {
-    stage1: `You are Stage 1 Aggregator. Analyze all expert answers, identify consensus, disagreements, and errors. Create an initial synthesis. Think step by step in <think>tags.`,
-    stage2: `You are Stage 2 Aggregator. Verify the Stage 1 synthesis, resolve contradictions, fill gaps. Think deeply in <think>tags.`,
-    stage3: `You are Stage 3 Final Aggregator. Produce a clean, polished final answer. No meta-commentary. Complete and authoritative. Think briefly in <think>tags. Use tools if necessary: SEARCH: <query> or CALC: <expr> or CODE: <python>. Cite sources as [1], [2] if provided.`
+    stage1: `You are Stage 1 Aggregator. Analyze all expert answers, identify consensus, disagreements, and errors. Create an initial synthesis.`,
+    stage2: `You are Stage 2 Aggregator. Verify the Stage 1 synthesis, resolve contradictions, fill gaps.`,
+    stage3: `You are Stage 3 Final Aggregator. Produce a clean, polished final answer. No meta-commentary. Complete and authoritative. Use tools if necessary: SEARCH: <query> or CALC: <expr> or CODE: <python>. Cite sources as [1], [2] if provided.`
 };
 
 /**
@@ -7017,16 +6704,6 @@ const SEARCH_ENGINES_CONFIG = {
     googlenews: { name: 'Google News', type: 'searx', bang: '!news' },
     linkedin: { name: 'LinkedIn', type: 'searx', site: 'linkedin.com' },
     grokipedia: { name: 'Grokipedia', type: 'searx', bang: '!w' }
-};
-
-/**
- * Thinking budget templates for DeepThink mode
- */
-const THINKING_TEMPLATES = {
-    fast: `FAST:\n- Minimal decomposition\n- Single reasoning path\n- Direct answer`,
-    balanced: `BALANCED:\n- Multi-path reasoning\n- One critique pass\n- Structured explanation`,
-    ultra: `ULTRA:\n- Multiple solution paths\n- Deep counter-analysis\n- Full assumption testing\n- Edge-case reasoning\n- Logical robustness check\n- Include Confidence Score (0–100%)`,
-    original: `ORIGINAL:\n- Use model's native reasoning\n- No additional processing`
 };
 
 /**
@@ -7147,6 +6824,13 @@ function loadState() {
         if (saved) {
             const parsed = JSON.parse(saved);
             Object.assign(state, parsed);
+            // Single Model Mode UI was removed (user request) - force it off
+            state.singleModelMode = false;
+            // Advanced Features UI was removed (user request) - force all off
+            Object.keys(state.features || {}).forEach(k => state.features[k] = false);
+            // Migrate old thinking budget values to the new scale
+            const VALID_BUDGETS = ['off', 'low', 'medium', 'high', 'xhigh', 'max'];
+            if (!VALID_BUDGETS.includes(state.thinkingBudget)) state.thinkingBudget = 'medium';
         }
         
         const history = localStorage.getItem('sahu_chat_history');
@@ -7363,17 +7047,17 @@ function updateMode(mode) {
     
     // Set Thinking Budget Defaults based on Mode
     if (mode === 'research') {
-        state.thinkingBudget = 'ultra';
+        state.thinkingBudget = 'max';
         state.deepThinkEnabled = true; // Force ON
     } else if (mode === 'task' || mode === 'artifacts' || mode === 'appdev') {
         if (state.taskType === 'file_creation') {
-            state.thinkingBudget = 'balanced';
+            state.thinkingBudget = 'medium';
         } else {
-            state.thinkingBudget = 'ultra'; // vibe or agentic
+            state.thinkingBudget = 'max'; // vibe or agentic
         }
         state.deepThinkEnabled = true;
     } else {
-        state.thinkingBudget = 'balanced'; // Standard default
+        state.thinkingBudget = 'medium'; // Standard default
     }
     
     const budgetSelect = document.getElementById('thinkingBudget');
@@ -7591,42 +7275,20 @@ function openSettings() {
         if (settingMaxTokens) settingMaxTokens.value = state.maxTokens;
         
         const thinkingBudget = document.getElementById('thinkingBudget');
-        if (thinkingBudget) thinkingBudget.value = state.thinkingBudget || 'balanced';
+        if (thinkingBudget) thinkingBudget.value = state.thinkingBudget || 'medium';
         
         const aggregationStyle = document.getElementById('aggregationStyle');
         if (aggregationStyle) aggregationStyle.value = state.aggregationStyle || 'synthesis';
         
-        // Set v5.0 feature toggles
-        document.getElementById('neuralConsensusCheck').checked = state.features.neuralConsensus;
-        document.getElementById('debateModeCheck').checked = state.features.debateMode;
-        document.getElementById('temporalReasoningCheck').checked = state.features.temporalReasoning;
-        document.getElementById('adaptiveReasoningCheck').checked = state.features.adaptiveReasoning;
-        document.getElementById('uncertaintyBadgeCheck').checked = state.features.uncertaintyBadge;
-        document.getElementById('tokenEstimatorCheck').checked = state.features.tokenEstimator;
-        document.getElementById('responseRatingCheck').checked = state.features.responseRating;
-        document.getElementById('threeTierMemoryCheck').checked = state.features.threeTierMemory;
-        document.getElementById('selfCorrectingCodeCheck').checked = state.features.selfCorrectingCode;
-        document.getElementById('usageAnalyticsCheck').checked = state.features.usageAnalytics;
-        document.getElementById('agentSwarmCheck').checked = state.features.agentSwarm;
-        document.getElementById('rapidLearningCheck').checked = state.features.rapidLearning;
-        document.getElementById('physicalIntegrationCheck').checked = state.features.physicalIntegration;
-        document.getElementById('constitutionalSafetyCheck').checked = state.features.constitutionalSafety;
-        
-        // Set safety models
-        document.getElementById('safetyGraniteCheck').checked = state.safetyModels.graniteGuard;
-        document.getElementById('safetyShieldGemmaCheck').checked = state.safetyModels.shieldGemma;
-        document.getElementById('safetyLlamaGuardCheck').checked = state.safetyModels.llamaGuard;
+        // NOTE: Advanced Features, Safety Models and Single Model Mode
+        // settings were removed (user request) - nothing to sync.
         
         // Set voice config
         document.getElementById('asrModelSelect').value = state.voiceConfig.asr;
         document.getElementById('ttsModelSelect').value = state.voiceConfig.tts;
-        
-        // Set single model mode
-        document.getElementById('singleModelCheck').checked = state.singleModelMode;
-        document.getElementById('singleModelSelect').value = state.singleModelId;
-        document.getElementById('singleModelSelectContainer').classList.toggle('hidden', !state.singleModelMode);
     }
-    toggleSidebar();
+    // BUG FIX: only auto-close sidebar on mobile (desktop sidebar toggles manually)
+    if (window.innerWidth < 768) toggleSidebar();
 }
 
 /**
@@ -8119,26 +7781,26 @@ function saveSettings() {
     localStorage.setItem('sahu_search_engines', JSON.stringify(state.activeSearchEngines));
     
     // Save v5.0 feature toggles
-    state.features.neuralConsensus = document.getElementById('neuralConsensusCheck')?.checked ?? true;
-    state.features.debateMode = document.getElementById('debateModeCheck')?.checked ?? true;
-    state.features.temporalReasoning = document.getElementById('temporalReasoningCheck')?.checked ?? true;
-    state.features.adaptiveReasoning = document.getElementById('adaptiveReasoningCheck')?.checked ?? true;
-    state.features.uncertaintyBadge = document.getElementById('uncertaintyBadgeCheck')?.checked ?? true;
-    state.features.tokenEstimator = document.getElementById('tokenEstimatorCheck')?.checked ?? true;
-    state.features.responseRating = document.getElementById('responseRatingCheck')?.checked ?? true;
-    state.features.threeTierMemory = document.getElementById('threeTierMemoryCheck')?.checked ?? true;
-    state.features.selfCorrectingCode = document.getElementById('selfCorrectingCodeCheck')?.checked ?? true;
-    state.features.usageAnalytics = document.getElementById('usageAnalyticsCheck')?.checked ?? true;
-    state.features.agentSwarm = document.getElementById('agentSwarmCheck')?.checked ?? true;
-    state.features.rapidLearning = document.getElementById('rapidLearningCheck')?.checked ?? true;
-    state.features.physicalIntegration = document.getElementById('physicalIntegrationCheck')?.checked ?? true;
-    state.features.constitutionalSafety = document.getElementById('constitutionalSafetyCheck')?.checked ?? true;
+    state.features.neuralConsensus = document.getElementById('neuralConsensusCheck')?.checked ?? false;
+    state.features.debateMode = document.getElementById('debateModeCheck')?.checked ?? false;
+    state.features.temporalReasoning = document.getElementById('temporalReasoningCheck')?.checked ?? false;
+    state.features.adaptiveReasoning = document.getElementById('adaptiveReasoningCheck')?.checked ?? false;
+    state.features.uncertaintyBadge = document.getElementById('uncertaintyBadgeCheck')?.checked ?? false;
+    state.features.tokenEstimator = document.getElementById('tokenEstimatorCheck')?.checked ?? false;
+    state.features.responseRating = document.getElementById('responseRatingCheck')?.checked ?? false;
+    state.features.threeTierMemory = document.getElementById('threeTierMemoryCheck')?.checked ?? false;
+    state.features.selfCorrectingCode = document.getElementById('selfCorrectingCodeCheck')?.checked ?? false;
+    state.features.usageAnalytics = document.getElementById('usageAnalyticsCheck')?.checked ?? false;
+    state.features.agentSwarm = document.getElementById('agentSwarmCheck')?.checked ?? false;
+    state.features.rapidLearning = document.getElementById('rapidLearningCheck')?.checked ?? false;
+    state.features.physicalIntegration = document.getElementById('physicalIntegrationCheck')?.checked ?? false;
+    state.features.constitutionalSafety = document.getElementById('constitutionalSafetyCheck')?.checked ?? false;
     localStorage.setItem('sahu2_features', JSON.stringify(state.features));
     
     // Save safety models
-    state.safetyModels.graniteGuard = document.getElementById('safetyGraniteCheck')?.checked ?? true;
-    state.safetyModels.shieldGemma = document.getElementById('safetyShieldGemmaCheck')?.checked ?? true;
-    state.safetyModels.llamaGuard = document.getElementById('safetyLlamaGuardCheck')?.checked ?? true;
+    state.safetyModels.graniteGuard = document.getElementById('safetyGraniteCheck')?.checked ?? false;
+    state.safetyModels.shieldGemma = document.getElementById('safetyShieldGemmaCheck')?.checked ?? false;
+    state.safetyModels.llamaGuard = document.getElementById('safetyLlamaGuardCheck')?.checked ?? false;
     localStorage.setItem('sahu_safety_models', JSON.stringify(state.safetyModels));
     
     // Save voice config
@@ -9948,77 +9610,7 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     // Language instruction
     const selectedLang = LANGUAGES.find(l => l.code === state.language)?.name || 'English';
     sysPrompt += `\nLANGUAGE INSTRUCTION: You must respond in ${selectedLang} language.`;
-    
-    // DeepThink prompt injection
-    const deepThinkActive = state.deepThinkEnabled;
-    if (deepThinkActive) {
-        const budget = state.thinkingBudget;
-        const deepThinkPrompt = `
-\n\n========================================
-You are operating in DeepThink Mode.
-All reasoning must be shown explicitly.
-Do not hide intermediate steps.
-
-========================================
-USER SETTINGS
-========================================
-THINKING_BUDGET = ${budget.toUpperCase()}
-
-Complexity:
-- fast → medium reasoning
-- balanced → high reasoning
-- ultra → x-high reasoning
-
-========================================
-DEEPTHINK PROCESS
-========================================
-STEP 1 — Clarify the Problem
-- Restate clearly
-- Identify constraints
-
-STEP 2 — Decompose
-- Break into logical components
-- Identify dependencies
-
-STEP 3 — Multi-Path Reasoning
-- Explore multiple solution paths
-- Compare strengths and weaknesses
-
-STEP 4 — Assumption Analysis
-- List assumptions
-- Test whether they hold
-
-STEP 5 — Counter-Argument
-- Attempt to disprove your reasoning
-- Stress-test logic
-
-STEP 6 — Edge Case Examination
-- Identify extreme or boundary cases
-- Test solution stability
-
-STEP 7 — Final Synthesis
-- Rebuild strongest logical answer
-
-========================================
-MODE BEHAVIOR
-========================================
-${THINKING_TEMPLATES[budget]}
-
-========================================
-OUTPUT FORMAT
-========================================
-1. Problem Restatement
-2. Step-by-Step Reasoning
-3. Alternative Path(s)
-4. Critical Evaluation
-5. Final Answer
-${budget === 'ultra' ? 'If ULTRA:\n6. Confidence Score\n7. Remaining DOUBTS' : ''}
-
-CRITICAL INSTRUCTION: Output your internal monologue enclosed in <think>tags based on the process above. Then provide the final response.
-`;
-        sysPrompt += deepThinkPrompt;
-    }
-    
+        
     // Dynamic max tokens
     let dynamicMaxTokens = 9000;
     if (state.mode === 'task' || state.mode === 'artifacts' || state.mode === 'appdev') {
@@ -12181,7 +11773,7 @@ function toggleDeepThinkWithBudget(checked) {
     if (!checked) {
         state.thinkingBudget = 'off';
     } else if (!state.thinkingBudget || state.thinkingBudget === 'off') {
-        state.thinkingBudget = 'balanced';
+        state.thinkingBudget = 'medium';
     }
     updateBudgetPills();
     renderActiveModePills();
@@ -12191,7 +11783,7 @@ function toggleDeepThinkWithBudget(checked) {
 
 /**
  * Set thinking budget level
- * @param {string} budget - 'off', 'original', 'fast', 'balanced', 'ultra'
+ * @param {string} budget - 'off', 'low', 'medium', 'high', 'xhigh', 'max'
  */
 function setThinkingBudget(budget) {
     state.thinkingBudget = budget;
@@ -12207,7 +11799,8 @@ function setThinkingBudget(budget) {
         document.getElementById('deepthinkBudgetRow')?.classList.add('show');
     }
     updateBudgetPills();
-    showToast('Thinking Budget: ' + budget.charAt(0).toUpperCase() + budget.slice(1));
+    const budgetLabels = { off: 'Off', low: 'Low', medium: 'Medium', high: 'High', xhigh: 'X-High', max: 'Max' };
+    showToast('Thinking Budget: ' + (budgetLabels[budget] || budget));
     saveState();
 }
 
@@ -12288,7 +11881,11 @@ function filterConnectors(query) {
 if (typeof state !== 'undefined') {
     if (!state.responseStyle) state.responseStyle = 'normal';
     if (!state.incognitoMode) state.incognitoMode = false;
-    if (!state.thinkingBudget) state.thinkingBudget = 'balanced';
+    // BUG FIX: migrate old budget values and default to 'medium'
+    const VALID_BUDGETS = ['off', 'low', 'medium', 'high', 'xhigh', 'max'];
+    if (!state.thinkingBudget || !VALID_BUDGETS.includes(state.thinkingBudget)) state.thinkingBudget = 'medium';
+    // Single Model Mode UI was removed - never let a stale saved value activate it
+    state.singleModelMode = false;
 }
 
 // Close popovers when clicking outside

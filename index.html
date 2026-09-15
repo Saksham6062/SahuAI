@@ -872,10 +872,11 @@
            THINKING BLOCK
            ============================================ */
         .thinking-block {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
+            /* v5.6d: plain - no gradient box, no border, no grid look */
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0.25rem 0;
             margin-bottom: 0.75rem;
             font-size: 0.8125rem;
         }
@@ -2115,9 +2116,8 @@
             display: none !important;
         }
         
-        body.mode-search-ui .thinking-block {
-            display: none !important;
-        }
+        /* v5.6d: thinking is no longer hidden in search mode - the agent's
+           rethinking is part of the visible loop trace. */
         
         body.mode-search-ui .aggregator-response {
             border: none;
@@ -11320,6 +11320,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 <div class="message-bubble">
                     <div class="text-[10px] font-semibold text-[var(--text-secondary)] mb-1">Agent</div>
                     <div id="trace-${divId}"></div>
+                    <div class="text-[11px] text-[var(--text-secondary)] whitespace-pre-wrap break-words max-h-36 overflow-y-auto" id="thinklive-${divId}"></div>
                     <div class="text-sm" id="busy-${divId}"></div>
                     <div class="text-sm" id="content-${divId}"></div>
                 </div>
@@ -11358,9 +11359,23 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             if (!state.isProcessing) throw stopErr();
             turn++;
             setBusy(turn === 1 ? 'Thinking about the request...' : 'Rethinking...');
-            const res = await callModelWithFallback(model.provider, model.modelId, convo, 0, null);
+            const liveThink = document.getElementById(`thinklive-${divId}`);
+            if (liveThink) liveThink.textContent = '';
+            const res = await callModelWithFallback(model.provider, model.modelId, convo, 0, (t, think) => {
+                // v5.6d: show the agent's thinking LIVE while it rethinks
+                if (state.thinkingBudget !== 'off' && liveThink && think) {
+                    liveThink.textContent = String(think).slice(-1500);
+                    if (container) container.scrollTop = container.scrollHeight;
+                }
+            });
             if (state.currentChatId !== chatId) return;
             const text = (res.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+            // v5.6d: keep a plain, collapsed copy of this round's thinking
+            const _roundThink = (res.thinking || '').trim();
+            if (_roundThink && state.thinkingBudget !== 'off') {
+                addTrace(`<details class="search-round-think"><summary class="cursor-pointer text-[11px] text-[var(--text-secondary)]"><i class="fas fa-brain text-amber-500 mr-1"></i>Thinking - round ${turn}</summary><div class="text-[11px] text-[var(--text-secondary)] whitespace-pre-wrap ml-4 mt-1">${escapeHtml(_roundThink.slice(-2000))}</div></details>`);
+            }
+            if (liveThink) liveThink.textContent = '';
 
             const queries = skillsOn('web_search')
                 ? [...text.matchAll(/SEARCH:\s*(.+)/gi)].map(m => m[1].replace(/[*`]/g, '').trim()).filter(Boolean).slice(0, 3) : [];
@@ -11479,21 +11494,27 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             // v5.6: normal chat with Web Search tool - show the agent's ANSWER
             // as a normal chat reply plus a plain inline list of the links it
             // used. No sources panel, no grid, no duplicated response.
-            const srcLinks = collected.slice(0, 12).map((s) =>
+            const srcLinks = collected.slice(0, 50).map((s) =>
                 `<li class="mb-1"><a href="${s.link}" target="_blank" class="text-blue-600 hover:underline">${escapeHtml(s.title || s.link)}</a></li>`).join('');
             displayHtml = `<div class="prose max-w-none text-sm">${formatMarkdown(finalAnswer || 'No results found. Please try again.')}</div>` +
                 (srcLinks ? `<div class="text-xs text-[var(--text-secondary)] mt-3 mb-1 font-medium">Sources the agent used:</div><ol class="list-decimal pl-5 text-xs">${srcLinks}</ol>` : '');
             savedContent = finalAnswer || 'No results found.';
         } else if (collected.length > 0) {
             // Search mode shows ONLY the resources the agent gathered
-            const items = collected.slice(0, 30).map((s) => `
+            const items = collected.map((s) => `
                 <li class="mb-3">
                     <a href="${s.link}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(s.title || s.link)}</a>
                     <span class="text-[10px] text-[var(--text-secondary)] ml-1">(${escapeHtml(s.source || 'web')})</span>
                     <div class="text-xs text-[var(--text-secondary)] mt-0.5">${escapeHtml(s.snippet || '')}</div>
                 </li>`).join('');
             displayHtml = `<ol class="list-decimal pl-5">${items}</ol>`;
-            savedContent = collected.slice(0, 30).map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
+            savedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
+        } else if (searchedQueries.size > 0) {
+            // v5.6d: the agent DID search but nothing usable was retrieved -
+            // never silently fall back to a content-only answer.
+            displayHtml = `<div class="text-xs text-[var(--text-secondary)] mb-2">Searched ${searchedQueries.size} quer${searchedQueries.size === 1 ? 'y' : 'ies'} but no sources could be retrieved (engines returned nothing usable). Showing the agent's answer:</div>` +
+                `<div class="prose max-w-none text-sm">${formatMarkdown(finalAnswer || 'No results found. Please try again.')}</div>`;
+            savedContent = finalAnswer || 'No results found.';
         } else {
             // No search needed - show the agent's direct answer
             displayHtml = `<div class="prose max-w-none text-sm">${formatMarkdown(finalAnswer || 'No results found. Please try again.')}</div>`;
@@ -11506,7 +11527,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
         if (container) container.scrollTop = container.scrollHeight;
 
         // Save to history (sources included for the saved-sources feature)
-        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: collected.slice(0, 30), timestamp: Date.now() };
+        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: collected.slice(0, 150), timestamp: Date.now() };
         state.messages.push(assistMsgObj);
         const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
         if (currentChat) currentChat.messages.push(assistMsgObj);

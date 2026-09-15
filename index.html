@@ -11346,14 +11346,17 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
     };
     const stopErr = () => Object.assign(new Error('Generation stopped'), { name: 'AbortError' });
 
+    // v5.6f: declared outside try so the catch can rescue the sources
+    // the agent already gathered if a provider error interrupts the loop.
+    const collected = [];
+    const seenLinks = new Set();
+    const visitedUrls = new Set();
+    const searchedQueries = new Set();
+    let finalAnswer = '';
+    let toolRuns = 0;
+    let turn = 0;
+
     try {
-        const collected = [];
-        const seenLinks = new Set();
-        const visitedUrls = new Set();
-        const searchedQueries = new Set();
-        let finalAnswer = '';
-        let toolRuns = 0;
-        let turn = 0;
         let convo = [{ role: 'user', content: fullPrompt + buildSearchLoopPrompt() }];
         const MAX_TURNS = 14;      // agent turns (rethinks) - the loop may
         const MAX_TOOL_RUNS = 24;  // re-search as many times as it needs
@@ -11365,13 +11368,26 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             setBusy(turn === 1 ? 'Thinking about the request...' : 'Rethinking...');
             const liveThink = document.getElementById(`thinklive-${divId}`);
             if (liveThink) liveThink.textContent = '';
-            const res = await callModelWithFallback(model.provider, model.modelId, convo, 0, (t, think) => {
-                // v5.6d: show the agent's thinking LIVE while it rethinks
-                if (state.thinkingBudget !== 'off' && liveThink && think) {
-                    liveThink.textContent = String(think).slice(-1500);
-                    if (container) container.scrollTop = container.scrollHeight;
+            let res;
+            try {
+                res = await callModelWithFallback(model.provider, model.modelId, convo, 0, (t, think) => {
+                    // v5.6d: show the agent's thinking LIVE while it rethinks
+                    if (state.thinkingBudget !== 'off' && liveThink && think) {
+                        liveThink.textContent = String(think).slice(-1500);
+                        if (container) container.scrollTop = container.scrollHeight;
+                    }
+                });
+            } catch (eLoop) {
+                // v5.6f: a provider error mid-loop must not throw away the
+                // research. Burn this turn, tell the model, retry next turn.
+                if (turn < MAX_TURNS - 1) {
+                    addTrace(`<span class="ml-4 text-red-500">model error (${escapeHtml(eLoop.message || 'unknown')}) - retrying</span>`);
+                    convo.push({ role: 'user', content: '[system] The previous model call failed. Continue: either use a skill again or write your final answer starting with ANSWER:.' });
+                    if (liveThink) liveThink.textContent = '';
+                    continue;
                 }
-            });
+                throw eLoop;
+            }
             if (state.currentChatId !== chatId) return;
             const text = (res.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
             // v5.6d: keep a plain, collapsed copy of this round's thinking
@@ -11550,8 +11566,28 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
         const aborted = e && (e.name === 'AbortError' || /abort|stopped/i.test(e.message || ''));
         setBusy('');
         const contentEl = document.getElementById(`content-${divId}`);
-        if (contentEl) contentEl.innerHTML = `<div class="text-sm ${aborted ? 'text-[var(--text-secondary)]' : 'text-red-500'}">${aborted ? 'Generation stopped.' : 'Agent failed: ' + escapeHtml(e.message)}</div>`;
-        if (!aborted) showToast('Agent failed', 'error');
+        // v5.6f: the agent gathered sources before failing - display and
+        // save them instead of a bare failure message. Research is never
+        // thrown away.
+        if (collected.length > 0) {
+            const rItems = collected.map((s) => `
+                <li class="mb-3">
+                    <a href="${s.link}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(s.title || s.link)}</a>
+                    <span class="text-[10px] text-[var(--text-secondary)] ml-1">(${escapeHtml(s.source || 'web')})</span>
+                    <div class="text-xs text-[var(--text-secondary)] mt-0.5">${escapeHtml(s.snippet || '')}</div>
+                </li>`).join('');
+            if (contentEl) contentEl.innerHTML = `<div class="text-xs text-[var(--text-secondary)] mb-2">${aborted ? 'Stopped' : 'The agent hit a provider error before writing an answer'} - showing the ${collected.length} source${collected.length === 1 ? '' : 's'} it gathered:</div><ol class="list-decimal pl-5">${rItems}</ol>`;
+            const rescuedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
+            window.lastAnswer = rescuedContent;
+            const rescueMsg = { role: 'assistant', content: rescuedContent, thinking: '', sources: collected.slice(0, 150), timestamp: Date.now() };
+            state.messages.push(rescueMsg);
+            const rescueChat = state.chatHistory.find(c => c.id === state.currentChatId);
+            if (rescueChat) rescueChat.messages.push(rescueMsg);
+            persistChatHistory();
+        } else if (contentEl) {
+            contentEl.innerHTML = `<div class="text-sm ${aborted ? 'text-[var(--text-secondary)]' : 'text-red-500'}">${aborted ? 'Generation stopped.' : 'Agent failed: ' + escapeHtml(e.message)}</div>`;
+            if (!aborted) showToast('Agent failed', 'error');
+        }
     }
 }
 

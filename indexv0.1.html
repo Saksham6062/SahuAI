@@ -7483,7 +7483,7 @@ function renderSearchEngines() {
     
     list.innerHTML = Object.entries(allEngines).map(([key, config]) => `
         <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" ${state.activeSearchEngines.includes(key) ? 'checked' : ''} onchange="toggleSearchEngine('${key}', this.checked)">
+            <input type="checkbox" class="search-engine-checkbox" ${(state.activeSearchEngines.length === 0 || state.activeSearchEngines.includes(key)) ? 'checked' : ''} onchange="toggleSearchEngine('${key}', this.checked)">
             <div class="search-engine-info">
                 <div class="search-engine-name">${config.name}</div>
                 <div class="search-engine-type">${config.type === 'api' ? '(API)' : '(Web)'}</div>
@@ -7498,10 +7498,20 @@ function renderSearchEngines() {
  * @param {boolean} checked - Toggle state
  */
 function toggleSearchEngine(key, checked) {
+    // v6.1b: an EMPTY activeSearchEngines means "all enabled" (fresh
+    // profile). Unchecking from that state must materialize the full list
+    // minus the key - filtering an empty array was a silent no-op (the
+    // reported "disabled engines still run" bug). Unchecking the LAST
+    // engine stores the '__none__' sentinel (= none enabled).
+    const _allEngToggleKeys = Object.keys(SEARCH_ENGINES_CONFIG).concat((state.customSearchEngines || []).map(e => e.id));
     if (checked) {
+        state.activeSearchEngines = state.activeSearchEngines.filter(k => k !== '__none__');
         if (!state.activeSearchEngines.includes(key)) state.activeSearchEngines.push(key);
+    } else if (state.activeSearchEngines.length === 0) {
+        state.activeSearchEngines = _allEngToggleKeys.filter(k => k !== key);
     } else {
         state.activeSearchEngines = state.activeSearchEngines.filter(k => k !== key);
+        if (state.activeSearchEngines.length === 0) state.activeSearchEngines = ['__none__'];
     }
     // v6.1: persist IMMEDIATELY via saveState (loadState reads it back on
     // reload - before this the toggle only reached a never-read legacy key
@@ -7516,11 +7526,12 @@ function toggleSearchEngine(key, checked) {
  */
 function toggleAllSearchEngines() {
     const allKeys = Object.keys(SEARCH_ENGINES_CONFIG);
-    if (state.activeSearchEngines.length === allKeys.length) {
-        state.activeSearchEngines = [];
-    } else {
-        state.activeSearchEngines = [...allKeys];
-    }
+    // v6.1b: "all enabled" is an empty list OR the full list -> clicking
+    // switches to NONE (sentinel); anything else switches to ALL ON.
+    const _isAll = state.activeSearchEngines.length === 0 || state.activeSearchEngines.length === allKeys.length;
+    state.activeSearchEngines = _isAll ? ['__none__'] : [...allKeys];
+    try { if (typeof saveState === 'function') saveState(); } catch (e) {}
+    try { localStorage.setItem('sahu_search_engines', JSON.stringify(state.activeSearchEngines)); } catch (e) {}
     renderSearchEngines();
 }
 
@@ -8893,8 +8904,9 @@ async function searchWeb(query, enginesOverride) {
     // engine the user disabled in Settings > Search Engines. An empty
     // activeSearchEngines means "all enabled" (the select-all state).
     const _allEngKeys = Object.keys(SEARCH_ENGINES_CONFIG).concat((state.customSearchEngines || []).map(e => e.id));
-    const _enabledEng = new Set(((state.activeSearchEngines || []).length > 0
-        ? state.activeSearchEngines : _allEngKeys).map(k => String(k).trim().toLowerCase()));
+    const _noneEnabled = (state.activeSearchEngines || []).includes('__none__');
+    const _rawEnabled = (state.activeSearchEngines || []).filter(k => k !== '__none__');
+    const _enabledEng = new Set(_noneEnabled ? [] : (_rawEnabled.length > 0 ? _rawEnabled : _allEngKeys).map(k => String(k).trim().toLowerCase()));
     let activeEngines = null;
     if (Array.isArray(enginesOverride) && enginesOverride.length > 0) {
         const req = [...new Set(enginesOverride.map(_normEng).filter(k => _validEngine(k) && _enabledEng.has(k)))];

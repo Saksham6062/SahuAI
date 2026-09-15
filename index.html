@@ -11299,6 +11299,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
         const collected = [];
         const seenLinks = new Set();
         const visitedUrls = new Set();
+        const searchedQueries = new Set();
         let finalAnswer = '';
         let toolRuns = 0;
         let turn = 0;
@@ -11339,6 +11340,16 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             for (const q of queries) {
                 if (toolRuns >= MAX_TOOL_RUNS) break;
                 if (!state.isProcessing) throw stopErr();
+                // v5.6: NEVER run the same query twice. A repeat costs the
+                // agent nothing to skip and pushes it to either change the
+                // wording or write its final answer instead of looping.
+                const qKey = q.toLowerCase().replace(/\s+/g, ' ').trim();
+                if (searchedQueries.has(qKey)) {
+                    addTrace(`<span class="ml-4 text-amber-500">skipped - already searched</span>`);
+                    parts.push(`[SEARCH] "${q}" -> SKIPPED: you already ran this exact query. DO NOT repeat it. Either search with a genuinely DIFFERENT query (different wording or different aspect of the topic) or, if the information you have is sufficient, output your final answer now starting with ANSWER:.`);
+                    continue;
+                }
+                searchedQueries.add(qKey);
                 toolRuns++;
                 setBusy('Searching: ' + q);
                 addTrace(`<i class="fas fa-search text-blue-500 mr-1"></i><span class="font-medium">Search:</span> ${escapeHtml(q)}`);

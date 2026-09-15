@@ -8560,20 +8560,25 @@ async function searchWeb(query, enginesOverride) {
     const encodedQuery = encodeURIComponent(query);
 
     /**
-     * v5.9 search fetch chain - proxies ONLY where essential (user policy):
+     * v5.9b search fetch chain - proxies ONLY where essential (user policy):
      * direct browser call first, then CORS-proxy legs that make keyless
      * engines and page skills workable (DDG Lite, SearXNG, scraping):
      *   1. direct
-     *   2. r.jina.ai reader - renders pages as markdown; verified to send
-     *      CORS headers for the github.io origin
+     *   2. corsproxy.io - USER-ENDORSED, from the original SahuAI code
+     *      ("works fine without IP tracking"). On networks where corsproxy
+     *      demands an API key it 401s instantly and the chain just falls
+     *      through to the next leg.
      *   3. api.allorigins.win/raw - raw HTML, CORS *
      *   4. api.codetabs.com/v1/proxy - raw, CORS *
+     * r.jina.ai REMOVED: it 401-blocks every request whose Origin is
+     * github.io (re-verified on the live site), so the reader leg never
+     * succeeded in production - a dead, non-essential proxy.
      * The OWN Cloudflare worker is no longer used for search - it stays
      * reserved for the NVIDIA/Z.ai model relays where it is essential.
      */
     const PROXY_BUILDERS = [
         (u) => u,
-        (u) => 'https://r.jina.ai/' + u,
+        (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
         (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
         (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)
     ];
@@ -8792,14 +8797,17 @@ async function searchWeb(query, enginesOverride) {
         return out;
     };
 
-    // v5.9: SearXNG public-instance leg of the DDG triple engine. Instances
-    // disable JSON everywhere, so results come from HTML (allorigins/codetabs)
-    // or reader markdown (r.jina.ai) - both parsed below.
+    // v5.9b: SearXNG public-instance leg of the DDG triple engine. Instances
+    // disable JSON everywhere, so results come from HTML (corsproxy.io /
+    // allorigins / codetabs) or markdown-style links - both parsed below.
+    // Some instances bot-wall datacenter IPs; those simply return no results
+    // and the loop moves on to the next instance.
     const SEARXNG_INSTANCES = [
         'https://searx.be/search?q=',
+        'https://priv.au/search?q=',
+        'https://searx.tiekoetter.com/search?q=',
         'https://baresearch.org/search?q=',
         'https://search.inetol.net/search?q=',
-        'https://opnxng.com/search?q=',
         'https://paulgo.io/search?q='
     ];
     const fetchSearxngRaw = async (q, maxResults) => {
@@ -11555,13 +11563,17 @@ async function scrapePageContent(url, mode) {
             }
         }
     } catch (e) {}
-    // v5.9: direct first, then ESSENTIAL CORS-proxy legs (reader + raw) so
-    // scrape/fetch/browse also work on CORS-locked pages. The own worker is
-    // NOT used here - only the third-party CORS proxies the user allows for
-    // making search skills workable.
+    // v5.9b: direct first, then ESSENTIAL CORS-proxy legs so scrape/fetch/
+    // browse also work on CORS-locked pages. corsproxy.io (user-endorsed,
+    // from the original SahuAI code, no IP tracking) leads the proxy legs;
+    // allorigins + codetabs stay as raw fallbacks. r.jina.ai removed - it
+    // 401-blocks the github.io origin on the live site, so the reader leg
+    // never succeeded in production. The own worker is NOT used here - only
+    // the third-party CORS proxies the user allows for making search skills
+    // workable.
     const _pageLegs = [
         (u) => u,
-        (u) => 'https://r.jina.ai/' + u,
+        (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
         (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
         (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)
     ];

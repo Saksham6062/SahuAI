@@ -4995,86 +4995,6 @@
         </label>
     
         <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('copilot', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">Microsoft Copilot</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('chatgpt', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">ChatGPT</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('chatglm', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">ChatGLM</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('gemini', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">Gemini</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('deepseek', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">DeepSeek</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('qwen', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">Qwen</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('kimi', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">Kimi</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('mistral', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">Mistral</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('grok', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">Grok</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('minimax', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">MiniMax</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
             <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('ernie', this.checked)">
             <div class="search-engine-info">
                 <div class="search-engine-name">ERNIE</div>
@@ -5083,25 +5003,9 @@
         </label>
     
         <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('perplexity', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">Perplexity</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
             <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('discord', this.checked)">
             <div class="search-engine-info">
                 <div class="search-engine-name">Discord</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('claude', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">Claude</div>
                 <div class="search-engine-type">(SearXNG)</div>
             </div>
         </label>
@@ -5906,7 +5810,7 @@ const state = {
     
     // Single Model Mode
     singleModelMode: false,
-    singleModelId: 'minimaxai/minimax-m2.5',
+    singleModelId: 'z-ai/glm-5.3-flash',
     
     // Model Response Count (1x, 2x, 3x per model)
     modelResponseCounts: {},
@@ -5973,31 +5877,29 @@ const UI_TRANSLATIONS = {
  * Model-specific configurations
  */
 const MODEL_CONFIGS = {
-    'sarvamai/sarvam-m': { max_tokens: 20000, noStream: true },
-    'google/gemma-3n-e4b-it': { max_tokens: 20000 },
-    'mistralai/mixtral-8x22b-instruct-v0.1': { max_tokens: 50000, noStream: true },
-    'z-ai/glm4.7': { noStream: true, max_tokens: 30000 },
-    'minimaxai/minimax-m2.5': { max_tokens: 30000, noStream: true },
-    'minimaxai/minimax-m2.7': { max_tokens: 30000 },
-    'moonshotai/kimi-k2.5': { max_tokens: 30000 },
-    'moonshotai/kimi-k2-thinking': { max_tokens: 30000 },
-    'qwen/qwen3.5-397b-a17b': { max_tokens: 40000 },
-    'qwen/qwen3.5-122b-a10b': { max_tokens: 40000 },
-    'google/gemma-4-31b-it': { max_tokens: 30000 },
     'openai/whisper-large-v3': { max_tokens: 1, isSTT: true },
-    'mistralai/mistral-small-4-119b-2603': { max_tokens: 30000 },
-    'nvidia/nemotron-3-super-120b-a12b': { max_tokens: 30000 }
+    'z-ai/glm-5.3-flash': { max_tokens: 30000 },
+    'moonshotai/kimi-k3': { max_tokens: 30000 },
+    'deepseek-ai/deepseek-v4-flash-0731': { max_tokens: 30000 },
+    'meta/muse-glimmer-30b': { max_tokens: 20000 },
+    'google/gemma-4-31b-it': { max_tokens: 30000 },
+    'nvidia/nemotron-3.5-lightning-30b-a3b': { max_tokens: 30000 },
+    'nvidia/nemotron-3-super-120b-a12b': { max_tokens: 30000 },
+    'nvidia/nemotron-3-ultra-550b-a55b': { max_tokens: 30000, noStream: true },
+    'poolside/laguna-xs-2.1': { max_tokens: 20000 },
+    'openai/gpt-oss-20b': { max_tokens: 30000 },
+    'sarvam-m': { max_tokens: 20000, noStream: true }
 };
 
 /**
  * Translation model mapping by language
  */
 const TRANSLATION_MODELS = {
-    // Indian languages - Sarvam
-    'hi': 'sarvamai/sarvam-m', 'bn': 'sarvamai/sarvam-m', 'te': 'sarvamai/sarvam-m', 'ta': 'sarvamai/sarvam-m',
-    'mr': 'sarvamai/sarvam-m', 'gu': 'sarvamai/sarvam-m', 'kn': 'sarvamai/sarvam-m', 'ml': 'sarvamai/sarvam-m',
-    'pa': 'sarvamai/sarvam-m', 'or': 'sarvamai/sarvam-m', 'as': 'sarvamai/sarvam-m',
-    // European languages - Mistral
+    // Indian languages
+    'hi': 'nvidia/nemotron-3-super-120b-a12b', 'bn': 'nvidia/nemotron-3-super-120b-a12b', 'te': 'nvidia/nemotron-3-super-120b-a12b', 'ta': 'nvidia/nemotron-3-super-120b-a12b',
+    'mr': 'nvidia/nemotron-3-super-120b-a12b', 'gu': 'nvidia/nemotron-3-super-120b-a12b', 'kn': 'nvidia/nemotron-3-super-120b-a12b', 'ml': 'nvidia/nemotron-3-super-120b-a12b',
+    'pa': 'nvidia/nemotron-3-super-120b-a12b', 'or': 'nvidia/nemotron-3-super-120b-a12b', 'as': 'nvidia/nemotron-3-super-120b-a12b',
+    // European languages - Mistral (live on NVIDIA API)
     'en': 'mistralai/mistral-large', 'fr': 'mistralai/mistral-large', 'de': 'mistralai/mistral-large',
     'es': 'mistralai/mistral-large', 'it': 'mistralai/mistral-large', 'pt': 'mistralai/mistral-large',
     'nl': 'mistralai/mistral-large', 'sv': 'mistralai/mistral-large', 'da': 'mistralai/mistral-large',
@@ -6006,17 +5908,11 @@ const TRANSLATION_MODELS = {
     'ro': 'mistralai/mistral-large', 'bg': 'mistralai/mistral-large', 'hr': 'mistralai/mistral-large',
     'sl': 'mistralai/mistral-large', 'et': 'mistralai/mistral-large', 'lv': 'mistralai/mistral-large',
     'lt': 'mistralai/mistral-large', 'el': 'mistralai/mistral-large',
-    // Portuguese - Granite
-    'pt-BR': 'ibm/granite-3.3-8b-instruct', 'pt-PT': 'ibm/granite-3.3-8b-instruct',
-    // Japanese - Stockmark
-    'ja': 'stockmark/stockmark-2-100b-instruct',
-    // Chinese & Korean - Qwen
-    'zh': 'qwen/qwen3-235b-a22b', 'zh-CN': 'qwen/qwen3-235b-a22b', 'zh-TW': 'qwen/qwen3-235b-a22b',
-    'ko': 'qwen/qwen3-235b-a22b',
-    // Russian - MiniMax
-    'ru': 'minimaxai/minimax-m2.5',
-    // All other languages - Gemma
-    'default': 'google/gemma-3-27b-it'
+    // Asian languages
+    'ja': 'z-ai/glm-5.3-flash', 'zh': 'z-ai/glm-5.3-flash', 'zh-CN': 'z-ai/glm-5.3-flash', 'zh-TW': 'z-ai/glm-5.3-flash', 'ko': 'z-ai/glm-5.3-flash',
+    'ru': 'z-ai/glm-5.3-flash',
+    // All other languages - Gemma (live)
+    'default': 'google/gemma-4-31b-it'
 };
 
 /**
@@ -6030,42 +5926,40 @@ const PROVIDERS = {
         color: 'nvidia',
         icon: '🦅',
         models: {
-            'Qwen 3.5 397B': 'qwen/qwen3.5-397b-a17b',
-            'Qwen 3.5 122B': 'qwen/qwen3.5-122b-a10b',
-            'Llama 3.2 90B Vision': 'meta/llama-3.2-90b-vision-instruct',
-            'GLM 5.1': 'z-ai/glm-5.1',
-            'MiniMax M2.5': 'minimaxai/minimax-m2.5',
-            'MiniMax M2.7': 'minimaxai/minimax-m2.7',
-            'GLM 4.7': 'z-ai/glm4.7',
-            'Seed OSS 36B': 'bytedance/seed-oss-36b-instruct',
-            'DeepSeek V3.2': 'deepseek-ai/deepseek-v3.2',
-            'DeepSeek V3.1 Terminus': 'deepseek-ai/deepseek-v3.1-terminus',
-            'Gemma 3N E4B': 'google/gemma-3n-e4b-it',
-            'Gemma 3 27B': 'google/gemma-3-27b-it',
+            'Kimi K3': 'moonshotai/kimi-k3',
+            'DeepSeek V4 Flash': 'deepseek-ai/deepseek-v4-flash-0731',
+            'Muse Glimmer 30B': 'meta/muse-glimmer-30b',
             'Gemma 4 31B': 'google/gemma-4-31b-it',
-            'Phi 4 Multimodal': 'microsoft/phi-4-multimodal-instruct',
-            'Llama 3.3 70B': 'meta/llama-3.3-70b-instruct',
-            'Kimi K2.5': 'moonshotai/kimi-k2.5',
-            'Kimi K2 Thinking': 'moonshotai/kimi-k2-thinking',
-            'Kimi K2 Instruct': 'moonshotai/kimi-k2-instruct',
-            'Mistral Small 4 119B': 'mistralai/mistral-small-4-119b-2603',
-            'Devstral 2 123B': 'mistralai/devstral-2-123b-instruct-2512',
-            'Mistral Large 3 675B': 'mistralai/mistral-large-3-675b-instruct-2512',
-            'Ministral 14B': 'mistralai/ministral-14b-instruct-2512',
-            'Magistral Small': 'mistralai/magistral-small-2506',
-            'Mixtral 8x22B': 'mistralai/mixtral-8x22b-instruct-v0.1',
-            'Step 3.5 Flash': 'stepfun-ai/step-3.5-flash',
-            'GPT OSS 120B': 'openai/gpt-oss-120b',
-            'GPT OSS 20B': 'openai/gpt-oss-20b',
-            'Whisper Large V3 (STT)': 'openai/whisper-large-v3',
-            'Sarvam M': 'sarvamai/sarvam-m',
-            'Qwen3 Next 80B': 'qwen/qwen3-next-80b-a3b-instruct',
-            'Qwen3 Next 80B Thinking': 'qwen/qwen3-next-80b-a3b-thinking',
-            'Qwen3 Coder 480B': 'qwen/qwen3-coder-480b-a35b-instruct',
-            'Nemotron 30B': 'nvidia/nemotron-3-nano-30b-a3b',
+            'GLM 5.3 Flash': 'z-ai/glm-5.3-flash',
+            'Nemotron 3.5 Lightning 30B': 'nvidia/nemotron-3.5-lightning-30b-a3b',
             'Nemotron 3 Super 120B': 'nvidia/nemotron-3-super-120b-a12b',
-            'Nemotron 12B VL': 'nvidia/nemotron-nano-12b-v2-vl',
-            'Llama 3.3 Nemotron Super 49B': 'nvidia/llama-3.3-nemotron-super-49b-v1.5'
+            'Nemotron 3 Ultra 550B': 'nvidia/nemotron-3-ultra-550b-a55b',
+            'Laguna XS 2.1': 'poolside/laguna-xs-2.1',
+            'GPT OSS 20B': 'openai/gpt-oss-20b',
+            'Whisper Large V3 (STT)': 'openai/whisper-large-v3'
+        }
+    },
+    sarvam: {
+        name: 'Sarvam AI',
+        endpoint: 'https://api.sarvam.ai/chat/completions',
+        keyName: 'sahu_sarvam_key',
+        color: 'sarvam',
+        icon: '\ud83d\udd4a\ufe0f',
+        authHeader: 'api-subscription-key',
+        models: {
+            'Sarvam M': 'sarvam-m'
+        }
+    },
+    zai: {
+        name: 'Z.ai (GLM)',
+        endpoint: 'https://api.z.ai/api/paas/v4/chat/completions',
+        keyName: 'sahu_zai_key',
+        color: 'zai',
+        icon: '\u26a1',
+        models: {
+            'GLM 5.3 Flash': 'glm-5.3-flash',
+            'GLM 4.6': 'glm-4.6',
+            'GLM 4.5 Flash (Free)': 'glm-4.5-flash'
         }
     },
     sambanova: {
@@ -6418,20 +6312,8 @@ const SEARCH_ENGINES_CONFIG = {
     baidu: { name: 'Baidu (English)', type: 'searx', bang: '!baidu' },
     youtube: { name: 'YouTube', type: 'searx', bang: '!yt', site: 'youtube.com' },
     twitter: { name: 'X (Twitter)', type: 'searx', bang: '!twitter', site: 'x.com' },
-    copilot: { name: 'Microsoft Copilot', type: 'searx', site: 'microsoft.com' },
-    chatgpt: { name: 'ChatGPT', type: 'searx', site: 'openai.com' },
-    chatglm: { name: 'ChatGLM', type: 'searx', site: 'chatglm.cn' },
-    gemini: { name: 'Gemini', type: 'searx', site: 'gemini.google.com' },
-    deepseek: { name: 'DeepSeek', type: 'searx', site: 'deepseek.com' },
-    qwen: { name: 'Qwen', type: 'searx', site: 'aliyun.com' },
-    kimi: { name: 'Kimi', type: 'searx', site: 'moonshot.cn' },
-    mistral: { name: 'Mistral', type: 'searx', site: 'mistral.ai' },
-    grok: { name: 'Grok', type: 'searx', site: 'x.ai' },
-    minimax: { name: 'MiniMax', type: 'searx', site: 'minimaxi.com' },
     ernie: { name: 'ERNIE', type: 'searx', site: 'baidu.com' },
-    perplexity: { name: 'Perplexity', type: 'searx', site: 'perplexity.ai' },
     discord: { name: 'Discord', type: 'searx', site: 'discord.com' },
-    claude: { name: 'Claude', type: 'searx', site: 'anthropic.com' },
     facebook: { name: 'Facebook', type: 'searx', site: 'facebook.com' },
     instagram: { name: 'Instagram', type: 'searx', site: 'instagram.com' },
     github: { name: 'GitHub', type: 'searx', site: 'github.com' },
@@ -6558,6 +6440,26 @@ function loadState() {
         if (saved) {
             const parsed = JSON.parse(saved);
             Object.assign(state, parsed);
+            // v5.4 migration: purge references to removed models/providers/engines
+            try {
+                if (Array.isArray(state.selectedModels)) {
+                    state.selectedModels = state.selectedModels.filter(m => {
+                        const p = PROVIDERS[m.provider];
+                        return !!(p && p.models && Object.values(p.models).indexOf(m.modelId) !== -1);
+                    });
+                }
+                if (Array.isArray(state.activeProviders)) {
+                    state.activeProviders = state.activeProviders.filter(k => !!PROVIDERS[k]);
+                }
+                if (Array.isArray(state.activeSearchEngines)) {
+                    state.activeSearchEngines = state.activeSearchEngines.filter(k =>
+                        !!SEARCH_ENGINES_CONFIG[k] || !!(state.customSearchEngines || []).find(e => e.id === k));
+                }
+                if (state.singleModelId) {
+                    const stillThere = Object.values(PROVIDERS).some(p => p.models && Object.values(p.models).indexOf(state.singleModelId) !== -1);
+                    if (!stillThere) state.singleModelId = 'z-ai/glm-5.3-flash';
+                }
+            } catch (e) { console.warn('v5.4 state migration skipped:', e); }
             // Single Model Mode UI was removed (user request) - force it off
             state.singleModelMode = false;
             // Advanced Features UI was removed (user request) - force all off
@@ -6606,7 +6508,7 @@ function loadState() {
 
         // CLEANUP: If singleModelId references a removed model, reset it
         if (state.singleModelId && REMOVED_MODEL_IDS.includes(state.singleModelId)) {
-            state.singleModelId = 'minimaxai/minimax-m2.5';
+            state.singleModelId = 'z-ai/glm-5.3-flash';
             saveState();
         }
     } catch (e) {
@@ -7081,7 +6983,7 @@ function confirmClearHistory() {
     state.messages = [];
     state.currentChatId = null;
     state.selectedModels = [];
-    state.singleModelId = 'minimaxai/minimax-m2.5';
+    state.singleModelId = 'z-ai/glm-5.3-flash';
     
     // Clear UI
     const container = document.getElementById('messagesContainer');
@@ -7569,7 +7471,7 @@ function saveSettings() {
     
     // Save single model mode
     state.singleModelMode = document.getElementById('singleModelCheck')?.checked ?? false;
-    state.singleModelId = document.getElementById('singleModelSelect')?.value || 'minimaxai/minimax-m2.5';
+    state.singleModelId = document.getElementById('singleModelSelect')?.value || 'z-ai/glm-5.3-flash';
     localStorage.setItem('sahu_single_model_mode', state.singleModelMode);
     localStorage.setItem('sahu_single_model_id', state.singleModelId);
     
@@ -8795,14 +8697,12 @@ async function searchWeb(query) {
      * Every remote fetch goes through fetchTextWithFallback() which tries
      * direct first, then a chain of CORS proxies.
      */
+    // v5.4: all Cloudflare workers and public proxies removed per user request.
+    // Chain is now: direct fetch, then the r.jina.ai reader (needed because
+    // lite.duckduckgo.com sends no CORS headers for HTML pages).
     const PROXY_BUILDERS = [
         (u) => u,
-        (u) => 'https://r.jina.ai/' + u,
-        (u) => 'https://ancient-tree-1c06.sahusaksham453675.workers.dev/?url=' + encodeURIComponent(u),
-        (u) => 'https://proxy.sahusaksham453675.workers.dev/?url=' + encodeURIComponent(u),
-        (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
-        (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
-        (u) => 'https://api.codetabs.com/v1/proxy?quest=' + u
+        (u) => 'https://r.jina.ai/' + u
     ];
 
     // r.jina.ai anonymous tier rate-limits bursts: serialize all jina calls
@@ -9650,8 +9550,9 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     
     // Build headers
     const headers = { 'Content-Type': 'application/json' };
-    if (providerKey === 'gemini') {
-        headers['Authorization'] = `Bearer ${apiKey}`;
+    if (provider.authHeader) {
+        // v5.4: Sarvam authenticates with a dedicated subscription-key header
+        headers[provider.authHeader] = apiKey;
     } else {
         headers['Authorization'] = `Bearer ${apiKey}`;
     }
@@ -9814,13 +9715,14 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     
     // Build URL with CORS proxy if needed
     let url = provider.endpoint;
-    if (providerKey === 'nvidia') {
-        // All nvidia models route through Cloudflare worker (corsproxy.io is unreliable/blocked)
+    // v5.4: all third-party/Cloudflare proxies removed. The ONLY remaining
+    // relay is for NVIDIA + Z.ai because their APIs send no CORS headers, so
+    // a browser cannot call them directly - without the relay every NVIDIA /
+    // Z.ai model would fail instantly with "Failed to fetch".
+    if (providerKey === 'nvidia' || providerKey === 'zai') {
         url = 'https://ancient-tree-1c06.sahusaksham453675.workers.dev/?url=' + encodeURIComponent(provider.endpoint);
     }
-    if (providerKey === 'ollama') {
-        url = 'https://proxy.sahusaksham453675.workers.dev/?url=' + provider.endpoint;
-    }
+    // ollama runs locally and handles CORS itself: direct call, no proxy
     
     // FIX (v5.2): when Thinking is OFF the live UI must never show
     // thinking text - strip <think> blocks and reasoning_content chunks
@@ -10404,7 +10306,7 @@ async function runDeepResearch(originalContent, container, chatId) {
     
     const getDefaultModel = () => {
         if (state.selectedModels.length > 0) return state.selectedModels[0];
-        return { provider: 'nvidia', modelId: 'minimaxai/minimax-m2.5', modelKey: 'MiniMax M2.5' };
+        return { provider: 'nvidia', modelId: 'z-ai/glm-5.3-flash', modelKey: 'GLM 5.3 Flash' };
     };
     
     const activeModels = state.selectedModels.filter(m =>
@@ -10999,7 +10901,9 @@ async function sendMessage() {
         let fullPrompt = content;
         
         // Web search is always ON in Research and Search modes, toggleable in others
-        const shouldSearch = (state.mode === 'research' || state.mode === 'search') ||
+        // v5.4: Search mode runs its own model-driven loop (runSearchMode) -
+        // the model decides what to search, no blind pre-search anymore.
+        const shouldSearch = state.mode === 'research' ||
             (state.mode !== 'search' && document.getElementById('toolWebSearch')?.checked);
         
         if (shouldSearch && container) {
@@ -11129,219 +11033,86 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
         return;
     }
     
-    // Display expert grid
-    const expertGridId = 'expert-grid-' + Date.now();
+    // v5.4: plain chat answers. The old UI showed every model's answer inside
+    // expert cards (the square/grid boxes) and then repeated the best answer in
+    // a separate synthesized "Answer" panel - that duplication and all grid
+    // styling are gone. Each selected model now streams its response ONCE into
+    // a normal chat bubble, exactly like a regular chat reply.
     if (container) {
-        container.innerHTML += `
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4" id="${expertGridId}"></div>
-        `;
-    }
-    const expertGrid = document.getElementById(expertGridId);
-    
-    if (expertGrid) {
-        expertGrid.innerHTML = activeModels.map((m, i) => {
-            const count = m.count || 1;
-            return `
-                <div class="expert-card thinking rounded-xl p-3" id="expert-${i}">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span>${PROVIDERS[m.provider]?.icon || '🤖'}</span>
-                        <div class="flex-1 min-w-0">
-                            <div class="font-medium text-sm truncate">${m.modelKey}</div>
-                            <div class="text-[10px] text-[var(--text-secondary)]">
-                                ${PROVIDERS[m.provider]?.name || 'Custom'} • ${count}x
-                            </div>
-                        </div>
-                        <div class="typing-indicator flex gap-1">
-                            <span class="w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
-                            <span class="w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
-                            <span class="w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
-                        </div>
+        activeModels.forEach((m, idx) => {
+            const icon = (PROVIDERS[m.provider] && PROVIDERS[m.provider].icon) || '\ud83e\udd16';
+            container.innerHTML += `
+                <div class="message-container message-assistant" id="ans-${idx}">
+                    <div class="message-bubble">
+                        <div class="text-[10px] font-semibold text-[var(--text-secondary)] mb-1">${icon} ${escapeHtml(m.modelKey)}</div>
+                        <div id="anscontent-${idx}" class="text-sm whitespace-pre-wrap"><span class="text-xs text-[var(--text-secondary)]">Thinking...</span></div>
                     </div>
-                    <div class="text-xs text-[var(--text-secondary)]" id="expert-text-${i}">Thinking & Generating...</div>
-                    <div class="text-xs mt-2 overflow-hidden max-h-32 text-gray-500 transition-all whitespace-pre-wrap" id="expert-stream-${i}"></div>
-                </div>
-            `;
-        }).join('');
+                </div>`;
+        });
+        container.scrollTop = container.scrollHeight;
     }
-    
-    const expertResults = [];
-    
-    // Run all selected models (with response count support)
+
+    const results = [];
     await Promise.all(activeModels.map(async (model, idx) => {
         const responseCount = model.count || 1;
         const modelResponses = [];
-        
-        // Run model multiple times if count > 1
         for (let run = 0; run < responseCount; run++) {
             try {
                 const onTokenUpdate = (text, thinking, chunk) => {
                     if (state.currentChatId !== chatId) return;
-                    const cardText = document.getElementById(`expert-stream-${idx}`);
-                    const cardStatus = document.getElementById(`expert-text-${idx}`);
-                    if (cardText) {
-                        cardText.textContent += chunk;
-                        cardText.scrollTop = cardText.scrollHeight;
-                    }
-                    if (cardStatus) {
-                        cardStatus.textContent = thinking ? "Thinking..." : "Generating...";
+                    const el = document.getElementById(`anscontent-${idx}`);
+                    if (el) {
+                        if (!el.dataset.streaming) { el.textContent = ''; el.dataset.streaming = '1'; }
+                        el.textContent += chunk;
                     }
                 };
-                
                 let res = await callModelWithFallback(model.provider, model.modelId,
                     [{ role: 'user', content: fullPrompt }], 0, onTokenUpdate);
-                
                 if (state.currentChatId !== chatId) return;
-                
                 modelResponses.push(res);
-                
             } catch (e) {
                 modelResponses.push({ success: false, error: e.message });
             }
         }
-        
-        // Combine multiple responses from same model
-        if (modelResponses.length > 0) {
-            const successful = modelResponses.filter(r => r.content);
-            if (successful.length > 0) {
-                // Combine responses (or use last if preferred)
-                const combinedContent = successful.map(r => r.content).join('\n\n---\n\n');
-                const combinedThinking = successful.map(r => r.thinking).filter(t => t).join('\n\n');
-                
-                expertResults[idx] = {
-                    ...model,
-                    content: combinedContent,
-                    thinking: combinedThinking,
-                    success: true,
-                    responseCount: responseCount
-                };
-                
-                // Update UI
-                const card = document.getElementById(`expert-${idx}`);
-                if (card) {
-                    card.className = 'expert-card complete rounded-xl p-3';
-                    card.innerHTML = `
-                        <div class="flex items-center gap-2 mb-2">
-                            <span>${PROVIDERS[model.provider]?.icon || '🤖'}</span>
-                            <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm truncate">${model.modelKey}</div>
-                                <div class="text-[10px] text-[var(--text-secondary)]">
-                                    ${PROVIDERS[model.provider]?.name || 'Custom'} • ${responseCount}x
-                                </div>
-                            </div>
-                            <i class="fas fa-check-circle text-green-500"></i>
-                        </div>
-                        ${combinedThinking ? `
-                            <div class="thinking-block">
-                                <div class="thinking-header"><i class="fas fa-brain"></i> Thinking Process</div>
-                                <div class="text-[var(--text-secondary)] text-xs whitespace-pre-wrap max-h-32 overflow-y-auto">${escapeHtml(combinedThinking)}</div>
-                            </div>
-                        ` : ''}
-                        <div class="text-sm max-h-64 overflow-y-auto">${formatMarkdown(combinedContent)}</div>
-                    `;
-                }
-            }
+        const successful = modelResponses.filter(r => r.content);
+        if (successful.length > 0) {
+            results.push({
+                idx: idx,
+                modelKey: model.modelKey,
+                content: successful.map(r => r.content).join('\n\n---\n\n'),
+                thinking: successful.map(r => r.thinking).filter(t => t).join('\n\n')
+            });
+        } else {
+            const errEl = document.getElementById(`anscontent-${idx}`);
+            if (errEl) errEl.innerHTML = '<span class="text-xs text-red-500">Failed: ' + escapeHtml((modelResponses[0] && modelResponses[0].error) || 'unknown error') + '</span>';
         }
     }));
-    
+
     if (state.currentChatId !== chatId) return;
     // v5.2 FIX 6: user pressed Stop - do not render any further results
     if (!state.isProcessing) return;
 
-    const successfulExperts = expertResults.filter(r => r && r.success && r.content);
-    
-    // Neural Consensus (if enabled and multiple successful responses)
-    if (successfulExperts.length > 1 && state.features.neuralConsensus) {
-        const councilId = `council-${Date.now()}`;
-        if (container) {
-            container.innerHTML += `<div id="${councilId}" class="consensus-panel mb-4"></div>`;
-        }
-        const councilEl = document.getElementById(councilId);
-        if (councilEl) {
-            let matrixHtml = `
-                <div class="overflow-x-auto">
-                    <table class="agreement-table">
-                        <thead>
-                            <tr><th>Model</th>
-            `;
-            successfulExperts.forEach(m => {
-                matrixHtml += `<th>${m.modelKey.substring(0, 10)}...</th>`;
-            });
-            matrixHtml += '</tr></thead><tbody>';
-            
-            successfulExperts.forEach((rowModel, i) => {
-                matrixHtml += `<tr><td class="font-bold text-xs truncate max-w-[100px]" title="${rowModel.modelKey}">${rowModel.modelKey}</td>`;
-                successfulExperts.forEach((colModel, j) => {
-                    if (i === j) {
-                        matrixHtml += '<td class="bg-gray-100 text-center text-xs">-</td>';
-                    } else {
-                        const sim = stringSimilarity.compareTwoStrings(rowModel.content, colModel.content);
-                        const pct = Math.round(sim * 100);
-                        let colorClass = 'text-red-500';
-                        if (pct >= 80) colorClass = 'text-green-600 font-bold';
-                        else if (pct >= 50) colorClass = 'text-yellow-600 font-medium';
-                        matrixHtml += `<td class="text-center text-xs ${colorClass}">${pct}%</td>`;
-                    }
-                });
-                matrixHtml += '</tr>';
-            });
-            matrixHtml += '</tbody></table></div>';
-            matrixHtml += `
-                <div class="text-[10px] text-[var(--text-secondary)] mt-2 text-right flex justify-end gap-3">
-                    <span><i class="fas fa-circle text-green-500 text-[8px]"></i> >80% High</span>
-                    <span><i class="fas fa-circle text-yellow-500 text-[8px]"></i> 50-80% Med</span>
-                    <span><i class="fas fa-circle text-red-500 text-[8px]"></i> <50% Low</span>
-                </div>
-            `;
-            councilEl.innerHTML = `
-                <div class="font-bold text-sm mb-2 flex items-center gap-2 text-[var(--accent)]">
-                    <i class="fas fa-balance-scale"></i> Model Council Agreement
-                </div>
-                ${matrixHtml}
-            `;
-        }
-    }
-    
-    // v5.2: The model answer IS the final answer. The old pipeline ran an
-    // extra Stage 3 aggregator model that re-synthesized the experts'
-    // answers - that additional model call has been removed. We now show
-    // the best expert answer directly (no extra request, no re-synthesis).
-    const best = successfulExperts[0];
-    if (best) {
-        const ansId = `answer-${Date.now()}`;
-        if (container) {
-            container.innerHTML += `
-                <div class="aggregator-response stage-3 rounded-2xl p-4" id="${ansId}">
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-green-500"><i class="fas fa-check"></i></div>
-                        <div class="flex-1">
-                            <span class="font-semibold text-sm">Answer</span>
-                            <p class="text-xs text-[var(--text-secondary)]">${best.modelKey}</p>
-                        </div>
-                        <button onclick="togglePin('${escapeHtml(best.content.substring(0, 100))}')"
-                            class="text-[var(--text-secondary)] hover:text-yellow-500">
-                            <i class="fas fa-thumbtack"></i>
-                        </button>
+    let lastSavedContent = '';
+    results.forEach(r => {
+        const el = document.getElementById(`anscontent-${r.idx}`);
+        if (el) {
+            el.innerHTML = `
+                ${(r.thinking && state.thinkingBudget !== 'off') ? `
+                    <div class="thinking-block">
+                        <div class="thinking-header"><i class="fas fa-brain"></i> Thinking</div>
+                        <div class="text-[var(--text-secondary)] text-xs whitespace-pre-wrap max-h-40 overflow-y-auto">${escapeHtml(r.thinking)}</div>
                     </div>
-                    ${(best.thinking && state.thinkingBudget !== 'off') ? `
-                        <div class="thinking-block">
-                            <div class="thinking-header"><i class="fas fa-brain"></i> Thinking</div>
-                            <div class="text-[var(--text-secondary)] text-xs whitespace-pre-wrap max-h-40 overflow-y-auto">${escapeHtml(best.thinking)}</div>
-                        </div>
-                    ` : ''}
-                    <div class="prose max-w-none text-sm">${formatMarkdown(best.content)}</div>
-                </div>
-            `;
-            container.scrollTop = container.scrollHeight;
+                ` : ''}
+                <div class="prose max-w-none text-sm">${formatMarkdown(r.content, (state.lastSources && state.lastSources.length) ? state.lastSources : null)}</div>`;
         }
-        window.lastAnswer = best.content;
-
-        // Save final answer to chat history (with thinking + sources)
-        const assistMsgObj = { role: 'assistant', content: best.content, thinking: best.thinking || '', sources: (state.lastSources || []).slice(0, 12), timestamp: Date.now() };
+        const assistMsgObj = { role: 'assistant', content: r.content, thinking: r.thinking || '', sources: (state.lastSources || []).slice(0, 12), model: r.modelKey, timestamp: Date.now() };
         state.messages.push(assistMsgObj);
         const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
         if (currentChat) currentChat.messages.push(assistMsgObj);
-        persistChatHistory();
-    }
+        lastSavedContent = r.content;
+    });
+    persistChatHistory();
+    window.lastAnswer = lastSavedContent;
 
         // Add export buttons
     if (container) {
@@ -11492,100 +11263,137 @@ function toggleSourcesPanel(id) {
     if (chev) chev.style.transform = show ? 'rotate(180deg)' : '';
 }
 
+// v5.4: AGENTIC SEARCH LOOP - the user's query goes to the MODEL FIRST.
+// The model decides what to search (SEARCH: lines), the system searches,
+// results are fed back and the model may refine with more searches, up to
+// 3 rounds. Display: ONLY the web resources found - no source panel, no
+// pipeline cards. If no search is needed, the model's direct answer shows.
+const SEARCH_LOOP_PROMPT = `\n\nWEB SEARCH LOOP:
+You can search the web. To search, output one or two lines in EXACTLY this format:
+SEARCH: <search query>
+After each search round you will receive the results and one more turn: either output more SEARCH: lines to refine, or output DONE if the results are enough.
+If the user's request does not need any web search at all, just reply with the final answer directly (no SEARCH lines).`;
+
 async function runSearchMode(fullPrompt, container, chatId) {
-    // Use single best model for search mode (fast response)
-    const model = state.selectedModels[0] || { provider: 'nvidia', modelId: 'minimaxai/minimax-m2.5', modelKey: 'MiniMax M2.5' };
-    
+    const model = state.selectedModels[0] || { provider: 'nvidia', modelId: 'z-ai/glm-5.3-flash', modelKey: 'GLM 5.3 Flash' };
     const divId = `search-${Date.now()}`;
+
     if (container) {
         container.innerHTML += `
-            <div class="aggregator-response rounded-2xl p-4" id="${divId}">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-blue-500">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <div>
-                        <span class="font-semibold text-sm">SahuAI Search Response</span>
-                        <p class="text-xs text-[var(--text-secondary)]">${model.modelKey}</p>
-                    </div>
+            <div class="message-container message-assistant" id="${divId}">
+                <div class="message-bubble">
+                    <div class="text-[10px] font-semibold text-[var(--text-secondary)] mb-1">Web Search</div>
+                    <div class="text-sm" id="content-${divId}"><span class="text-[var(--text-secondary)]">Thinking...</span></div>
                 </div>
-                <div class="text-sm whitespace-pre-wrap" id="content-${divId}">Searching and synthesizing...</div>
-            </div>
-        `;
+            </div>`;
+        container.scrollTop = container.scrollHeight;
     }
-    
+
+    const setStatus = (t) => {
+        const el = document.getElementById(`content-${divId}`);
+        if (el) el.innerHTML = `<span class="text-[var(--text-secondary)] text-sm">${escapeHtml(t)}</span>`;
+    };
+
     try {
-        const onToken = (text, thinking, chunk) => {
+        const collected = [];
+        const seenLinks = new Set();
+        let directAnswer = '';
+        let convo = [{ role: 'user', content: fullPrompt + SEARCH_LOOP_PROMPT }];
+        const MAX_ROUNDS = 3;
+
+        for (let round = 0; round < MAX_ROUNDS; round++) {
+            if (!state.isProcessing) throw Object.assign(new Error('Generation stopped'), { name: 'AbortError' });
+            setStatus(round === 0 ? 'Thinking...' : 'Checking results...');
+            const res = await callModelWithFallback(model.provider, model.modelId, convo, 0, null);
             if (state.currentChatId !== chatId) return;
-            const el = document.getElementById(`content-${divId}`);
-            if (el) {
-                el.textContent += chunk;
-                el.scrollTop = el.scrollHeight;
+            const text = (res.content || '').replace(/<think>[\s\S]*?<\/think>/g, '');
+            const queries = [...text.matchAll(/SEARCH:\s*(.+)/gi)]
+                .map(m => m[1].replace(/[*`]/g, '').trim()).filter(Boolean).slice(0, 2);
+
+            if (queries.length === 0) {
+                // No (more) searches requested - loop ends here.
+                if (round === 0) directAnswer = text.trim();
+                break;
             }
-        };
-        
-        const res = await callModelWithFallback(model.provider, model.modelId,
-            [{ role: 'user', content: fullPrompt }], 0, onToken);
-        
-        if (state.currentChatId !== chatId) return;
-        
-        // Save response (FIX 2: include thinking + sources)
-        window.lastAnswer = res.content;
-        const assistMsgObj = { role: 'assistant', content: res.content, thinking: res.thinking || '', sources: (state.lastSources || []).slice(0, 12), timestamp: Date.now() };
-        state.messages.push(assistMsgObj);
-        
-        const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
-        if (currentChat) {
-            currentChat.messages.push(assistMsgObj);
+
+            convo.push({ role: 'assistant', content: text });
+            for (const q of queries) {
+                if (!state.isProcessing) throw Object.assign(new Error('Generation stopped'), { name: 'AbortError' });
+                setStatus('Searching: ' + q);
+                let found = [];
+                try { found = JSON.parse(await searchWeb(q)) || []; } catch (e) { found = []; }
+                found.forEach(r => {
+                    if (r && r.link && !seenLinks.has(r.link)) {
+                        seenLinks.add(r.link);
+                        collected.push(r);
+                    }
+                });
+            }
+
+            // Only pay for a refinement round when results are scarce -
+            // with enough resources we show them immediately (saves minutes).
+            if (round < MAX_ROUNDS - 1 && collected.length < 5) {
+                const resultsText = collected.slice(0, 10).map((s, i) => `[${i + 1}] ${s.title} (${s.link})\n${s.snippet || ''}`).join('\n\n');
+                convo.push({ role: 'user', content: `SEARCH RESULTS:\n${resultsText || 'No results found. Try different or simpler queries.'}\n\nReply ONLY with more SEARCH: lines to refine the search, or DONE if the current results are enough.` });
+            } else {
+                break;
+            }
         }
-        persistChatHistory();
-        
-        // Update UI
+
+        if (state.currentChatId !== chatId) return;
+
+        let displayHtml = '';
+        let savedContent = '';
+
+        if (collected.length > 0) {
+            // v5.4: ONLY the resources - a plain list, no source panel
+            const items = collected.slice(0, 12).map((s) => `
+                <li class="mb-3">
+                    <a href="${s.link}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(s.title || s.link)}</a>
+                    <span class="text-[10px] text-[var(--text-secondary)] ml-1">(${escapeHtml(s.source || 'web')})</span>
+                    <div class="text-xs text-[var(--text-secondary)] mt-0.5">${escapeHtml(s.snippet || '')}</div>
+                </li>`).join('');
+            displayHtml = `<ol class="list-decimal pl-5">${items}</ol>`;
+            savedContent = collected.slice(0, 12).map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
+            window.lastAnswer = savedContent;
+        } else {
+            // No search needed - show the model's direct answer
+            displayHtml = `<div class="prose max-w-none text-sm">${formatMarkdown(directAnswer || 'No results found. Please try again.')}</div>`;
+            savedContent = directAnswer || 'No results found.';
+            window.lastAnswer = savedContent;
+        }
+
         const card = document.getElementById(divId);
         if (card) {
             card.innerHTML = `
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-blue-500">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <div class="flex-1">
-                        <span class="font-semibold text-sm">SahuAI Search Response</span>
-                        <p class="text-xs text-[var(--text-secondary)]">${model.modelKey}</p>
-                    </div>
-                    <button onclick="togglePin('${escapeHtml(res.content.substring(0, 100))}')"
-                        class="text-[var(--text-secondary)] hover:text-yellow-500">
-                        <i class="fas fa-thumbtack"></i>
-                    </button>
-                </div>
-                ${res.thinking ? `
-                    <div class="thinking-block">
-                        <div class="thinking-header"><i class="fas fa-brain"></i> Search Reasoning</div>
-                        <div class="text-[var(--text-secondary)] text-xs whitespace-pre-wrap max-h-40 overflow-y-auto">${escapeHtml(res.thinking)}</div>
-                    </div>
-                ` : ''}
-                <div class="prose max-w-none text-sm">${formatMarkdown(res.content)}</div>
-            `;
+                <div class="message-bubble">
+                    <div class="text-[10px] font-semibold text-[var(--text-secondary)] mb-2">${escapeHtml(model.modelKey)} \u00b7 Web Search</div>
+                    ${displayHtml}
+                </div>`;
         }
-        
-        // Add export buttons
+        container.scrollTop = container.scrollHeight;
+
+        // Save to history (sources included for the saved-sources feature)
+        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: collected.slice(0, 12), timestamp: Date.now() };
+        state.messages.push(assistMsgObj);
+        const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
+        if (currentChat) currentChat.messages.push(assistMsgObj);
+        persistChatHistory();
+
         if (container) {
             container.innerHTML += `
                 <div class="export-buttons">
                     <button class="export-btn" onclick="copyToClipboard()"><i class="fas fa-copy"></i><span>Copy</span></button>
                     <button class="export-btn" onclick="downloadTxt()"><i class="fas fa-file-alt"></i><span>TXT</span></button>
                     <button class="export-btn" onclick="downloadPdf()"><i class="fas fa-file-pdf"></i><span>PDF</span></button>
-                </div>
-            `;
+                </div>`;
+            container.scrollTop = container.scrollHeight;
         }
-        
     } catch (e) {
-        // v5.2: user pressed Stop - show a neutral "stopped" note, not an error
-        const aborted = e && (e.name === 'AbortError' || /abort/i.test(e.message || ''));
+        const aborted = e && (e.name === 'AbortError' || /abort|stopped/i.test(e.message || ''));
         const card = document.getElementById(divId);
         if (card) {
-            card.innerHTML = aborted
-                ? '<div class="text-[var(--text-secondary)] text-sm">Generation stopped.</div>'
-                : `<div class="text-red-500 text-sm">Search failed: ${escapeHtml(e.message)}</div>`;
+            card.innerHTML = `<div class="message-bubble"><div class="text-sm ${aborted ? 'text-[var(--text-secondary)]' : 'text-red-500'}">${aborted ? 'Generation stopped.' : 'Search failed: ' + escapeHtml(e.message)}</div></div>`;
         }
         if (!aborted) showToast('Search failed', 'error');
     }

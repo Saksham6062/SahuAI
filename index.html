@@ -4267,17 +4267,21 @@
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
-                        <!-- Media Row -->
+                        <!-- Media Row (v5.2): each button opens its OWN picker -->
                         <div class="tools-media-row">
-                            <button onclick="triggerFileUpload(); toggleToolsMenu();" class="tools-media-btn" title="Camera">
+                            <button onclick="triggerCameraUpload(); toggleToolsMenu();" class="tools-media-btn" title="Camera">
                                 <i class="fas fa-camera text-blue-500"></i>
                                 <span>Camera</span>
                             </button>
-                            <button onclick="triggerFileUpload(); toggleToolsMenu();" class="tools-media-btn" title="Photos">
+                            <button onclick="triggerImageUpload(); toggleToolsMenu();" class="tools-media-btn" title="Photos">
                                 <i class="fas fa-image text-green-500"></i>
                                 <span>Photos</span>
                             </button>
-                            <button onclick="triggerFileUpload(); toggleToolsMenu();" class="tools-media-btn" title="Files">
+                            <button onclick="triggerVideoUpload(); toggleToolsMenu();" class="tools-media-btn" title="Videos">
+                                <i class="fas fa-film text-purple-500"></i>
+                                <span>Videos</span>
+                            </button>
+                            <button onclick="triggerDocUpload(); toggleToolsMenu();" class="tools-media-btn" title="Files">
                                 <i class="fas fa-folder text-amber-500"></i>
                                 <span>Files</span>
                             </button>
@@ -4332,29 +4336,19 @@
                                 <i class="fas fa-microscope text-teal-500"></i>
                                 <span>Deep Research</span>
                             </button>
-                            <button onclick="setTaskMode('task'); toggleToolsMenu();" class="tools-action-item">
-                                <i class="fas fa-code text-emerald-500"></i>
-                                <span>Task</span>
-                            </button>
+                            <!-- v5.2: Task + Artifacts + App Dev combined into "Artifacts" -->
                             <button onclick="setTaskMode('artifacts'); toggleToolsMenu();" class="tools-action-item">
                                 <i class="fas fa-puzzle-piece text-cyan-500"></i>
                                 <span>Artifacts</span>
                             </button>
-                            <button onclick="setTaskMode('appdev'); toggleToolsMenu();" class="tools-action-item">
-                                <i class="fas fa-laptop-code text-orange-500"></i>
-                                <span>App Dev</span>
-                            </button>
+                            <!-- v5.2: Learn + Quizzes combined into "Study" -->
                             <button onclick="quickPrompt('Help me learn about'); toggleToolsMenu();" class="tools-action-item">
-                                <i class="fas fa-book text-amber-500"></i>
-                                <span>Learn</span>
+                                <i class="fas fa-graduation-cap text-amber-500"></i>
+                                <span>Study</span>
                             </button>
                             <button onclick="quickPrompt('Plan a trip to'); toggleToolsMenu();" class="tools-action-item">
                                 <i class="fas fa-plane text-sky-500"></i>
                                 <span>Travel Planner</span>
-                            </button>
-                            <button onclick="quickPrompt('Create a quiz about'); toggleToolsMenu();" class="tools-action-item">
-                                <i class="fas fa-question-circle text-violet-500"></i>
-                                <span>Quizzes</span>
                             </button>
                         </div>
                         <!-- Nav Section -->
@@ -4523,10 +4517,13 @@
                                     <span id="modelSelectLabel" style="font-size:0.625rem;font-weight:500;margin-left:0.125rem;">Model</span>
                                 </button>
                                 
-                                <!-- File Input (Hidden) -->
+                                <!-- File Inputs (Hidden) - v5.2: one input per picker
+                                     type so Photos / Videos / Files each open their OWN
+                                     native picker instead of one mixed chooser -->
                                 <input type="file" id="fileInput" class="hidden" accept=".txt,.pdf,.doc,.docx,.md,.json,.csv,.js,.py,.html,.css,.png,.jpg,.jpeg,.gif,.webp,.svg,.bmp,.wav,.mp3,.webm,.mp4" onchange="handleFileUpload(event)">
-                                
-                                <!-- Video Input (Hidden) -->
+                                <input type="file" id="cameraInput" class="hidden" accept="image/*" capture="environment" onchange="handleFileUpload(event)">
+                                <input type="file" id="imageInput" class="hidden" accept="image/*" onchange="handleFileUpload(event)">
+                                <input type="file" id="docInput" class="hidden" accept=".txt,.pdf,.doc,.docx,.md,.json,.csv,.js,.py,.html,.css,.xml" onchange="handleFileUpload(event)">
                                 <input type="file" id="videoInput" class="hidden" accept="video/*" onchange="handleVideoUpload(event)">
                                 
                                 <!-- Spacer -->
@@ -7202,10 +7199,33 @@ function triggerVideoUpload() {
  */
 function handleVideoUpload(event) {
     const file = event.target.files[0];
-    if (file) {
-        showToast('Video upload coming soon!', 'info');
-        event.target.value = '';
+    if (!file) return;
+    // v5.2: attach the video to the chat as file context
+    state.uploadedFile = file;
+    state.uploadedFileContent = `[VIDEO FILE ATTACHED: ${file.name} (${formatBytes(file.size)})]`;
+    state.uploadedImageBase64 = null;
+    state.uploadedImageMimeType = null;
+
+    const preview = document.getElementById('fileUploadPreview');
+    if (preview) {
+        preview.innerHTML = `
+            <div class="file-preview-card">
+                <div class="file-preview-icon">
+                    <i class="fas fa-film"></i>
+                </div>
+                <div class="file-preview-info">
+                    <div class="file-preview-name">${escapeHtml(file.name)}</div>
+                    <div class="file-preview-size">${formatBytes(file.size)} (Video)</div>
+                </div>
+                <div class="file-preview-remove" onclick="removeFile()">
+                    <i class="fas fa-times text-[var(--text-secondary)]"></i>
+                </div>
+            </div>
+        `;
+        preview.classList.add('show');
     }
+    updateDynamicButton();
+    event.target.value = '';
 }
 
 /**
@@ -8047,9 +8067,13 @@ function newChat() {
     if (input) input.value = '';
     
     removeFile();
-    // BUG FIX 1+2: only auto-close sidebar on mobile. On desktop the
+    // BUG FIX 1 (v5.2): the New Chat button must NEVER open the sidebar.
+    // On mobile, close it only if it is currently open. On desktop the
     // hamburger toggles it, and it starts collapsed to show the main page.
-    if (window.innerWidth < 768) toggleSidebar();
+    if (window.innerWidth < 768) {
+        const _sb = document.getElementById('sidebar');
+        if (_sb && _sb.classList.contains('open')) toggleSidebar();
+    }
     window.location.hash = '';
     
     if (state.mode === 'search') {
@@ -8066,6 +8090,21 @@ function newChat() {
  */
 function triggerFileUpload() {
     const input = document.getElementById('fileInput');
+    if (input) input.click();
+}
+
+// v5.2: dedicated pickers so Camera / Photos / Videos / Files each open the
+// native picker limited to that media type only (no mixed chooser sheet).
+function triggerCameraUpload() {
+    const input = document.getElementById('cameraInput');
+    if (input) input.click();
+}
+function triggerImageUpload() {
+    const input = document.getElementById('imageInput');
+    if (input) input.click();
+}
+function triggerDocUpload() {
+    const input = document.getElementById('docInput');
     if (input) input.click();
 }
 
@@ -8150,8 +8189,10 @@ function removeFile() {
     const preview = document.getElementById('fileUploadPreview');
     if (preview) preview.classList.remove('show');
     
-    const input = document.getElementById('fileInput');
-    if (input) input.value = '';
+    ['fileInput', 'cameraInput', 'imageInput', 'docInput', 'videoInput'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
 }
 
 /**
@@ -9723,6 +9764,18 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
         url = 'https://proxy.sahusaksham453675.workers.dev/?url=' + provider.endpoint;
     }
     
+    // FIX (v5.2): when Thinking is OFF the live UI must never show
+    // thinking text - strip <think> blocks and reasoning_content chunks
+    const _isThinkingOff = () => state.thinkingBudget === 'off';
+    const _visibleContent = (ft) => {
+        if (!ft) return '';
+        const openIdx = ft.lastIndexOf('<think>');
+        if (openIdx === -1) return ft.replace(/<think>[\s\S]*?<\/think>/g, '');
+        const closeIdx = ft.lastIndexOf('<\/think>');
+        return closeIdx > openIdx ? ft.replace(/<think>[\s\S]*?<\/think>/g, '') : ft.substring(0, openIdx);
+    };
+    let _lastVisibleLen = 0;
+
     // Track metrics
     const controller = new AbortController();
     // FIX 6: register controller so the Stop button can abort ALL in-flight requests
@@ -9790,8 +9843,18 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
                                 currentTokenCount++;
                                 updateMetrics();
                             }
-                            
-                            if (onToken) onToken(fullText, thinkingText, contentChunk);
+
+                            if (onToken) {
+                                if (_isThinkingOff()) {
+                                    // Thinking OFF: show final answer only
+                                    const _vis = _visibleContent(fullText);
+                                    const _delta = _vis.length > _lastVisibleLen ? _vis.substring(_lastVisibleLen) : '';
+                                    _lastVisibleLen = _vis.length;
+                                    onToken(_vis, '', _delta);
+                                } else {
+                                    onToken(fullText, thinkingText, contentChunk);
+                                }
+                            }
                         } catch (e) {
                             // Skip malformed JSON lines
                         }
@@ -9813,7 +9876,16 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
                             currentTokenCount++;
                             updateMetrics();
                         }
-                        if (onToken) onToken(fullText, thinkingText, contentChunk);
+                        if (onToken) {
+                            if (_isThinkingOff()) {
+                                const _vis = _visibleContent(fullText);
+                                const _delta = _vis.length > _lastVisibleLen ? _vis.substring(_lastVisibleLen) : '';
+                                _lastVisibleLen = _vis.length;
+                                onToken(_vis, '', _delta);
+                            } else {
+                                onToken(fullText, thinkingText, contentChunk);
+                            }
+                        }
                     } catch (e) {
                         // Skip malformed JSON
                     }
@@ -9848,14 +9920,16 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
             
             // Simulate streaming for UI
             if (onToken && content) {
-                if (thinking) onToken("", thinking, "");
-                
-                const chunks = content.split(/(\s+)/);
+                const _off = _isThinkingOff();
+                const _vis = _off ? _visibleContent(content) : content;
+                if (thinking && !_off) onToken("", thinking, "");
+
+                const chunks = _vis.split(/(\s+)/);
                 let currentAcc = "";
-                
+
                 for (const chunk of chunks) {
                     currentAcc += chunk;
-                    onToken(currentAcc, thinking, chunk);
+                    onToken(currentAcc, _off ? '' : thinking, chunk);
                     currentTokenCount++;
                     updateMetrics();
                     await new Promise(r => setTimeout(r, 2));
@@ -10878,6 +10952,13 @@ async function sendMessage() {
             `;
             
             const searchResJson = await searchWeb(content);
+            // FIX 6 (v5.2): user pressed Stop while searching - do NOT start
+            // the model call, just clean up the searching indicator.
+            if (!state.isProcessing || state.currentChatId !== thisChatId) {
+                const _se = document.getElementById(searchId);
+                if (_se) _se.style.display = 'none';
+                return;
+            }
             const searchRes = JSON.parse(searchResJson);
             const searchEl = document.getElementById(searchId);
             
@@ -10892,19 +10973,22 @@ async function sendMessage() {
                     
                     searchEl.className = "p-4 mb-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] shadow-sm";
                     searchEl.innerHTML = `
-                        <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center justify-between mb-3 ${isSearchMode ? 'cursor-pointer select-none' : ''}"
+                             ${isSearchMode ? `onclick="toggleSourcesPanel('${searchId}')"` : ''}>
                             <div class="flex items-center gap-2">
                                 <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
                                     <i class="fas fa-search"></i>
                                 </div>
                                 <div>
                                     <div class="font-semibold text-sm">Sources</div>
-                                    <div class="text-xs text-[var(--text-secondary)]">Found ${searchRes.length} results</div>
+                                    <div class="text-xs text-[var(--text-secondary)]">Found ${searchRes.length} results${isSearchMode ? ' - tap to view' : ''}</div>
                                 </div>
                             </div>
-                            ${isSearchMode ? '<div class="sahu-search-header text-sm">SahuAI Search</div>' : ''}
+                            ${isSearchMode
+                                ? '<i class="fas fa-chevron-down text-xs text-[var(--text-secondary)] transition-transform" id="chevron-' + searchId + '"></i>'
+                                : ''}
                         </div>
-                        <div class="${gridClass}">
+                        <div class="${gridClass}" id="grid-${searchId}" style="${isSearchMode ? 'display:none' : ''}">
                             ${searchRes.map((s, idx) => `
                                 <div class="p-3 rounded-lg bg-[var(--bg-tertiary)] border border-transparent hover:border-[var(--accent)] transition-all h-full">
                                     <a href="${s.link}" target="_blank" class="flex flex-col gap-2 h-full group text-decoration-none">
@@ -11102,7 +11186,9 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
     }));
     
     if (state.currentChatId !== chatId) return;
-    
+    // v5.2 FIX 6: user pressed Stop - do not render any further results
+    if (!state.isProcessing) return;
+
     const successfulExperts = expertResults.filter(r => r && r.success && r.content);
     
     // Neural Consensus (if enabled and multiple successful responses)
@@ -11157,123 +11243,49 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
         }
     }
     
-    // Aggregation Pipeline
-    const stageVal = state.stageSelector || '1';
-    let stagesToRun = [];
-    if (stageVal === '1') stagesToRun = [3];
-    else if (stageVal === '2') stagesToRun = [1, 3];
-    else if (stageVal === '3') stagesToRun = [1, 2, 3];
-    
-    let currentContext = successfulExperts.map(r => `### ${r.modelKey}\n${r.content}`).join('\n\n');
-    window.lastAnswer = currentContext;
-    
-    if (!currentContext && activeModels.length > 0) {
+    // v5.2: The model answer IS the final answer. The old pipeline ran an
+    // extra Stage 3 aggregator model that re-synthesized the experts'
+    // answers - that additional model call has been removed. We now show
+    // the best expert answer directly (no extra request, no re-synthesis).
+    const best = successfulExperts[0];
+    if (best) {
+        const ansId = `answer-${Date.now()}`;
         if (container) {
             container.innerHTML += `
-                <div class="text-red-500 p-4 border border-red-200 rounded-xl">
-                    All experts failed to respond. Check API keys and connection.
+                <div class="aggregator-response stage-3 rounded-2xl p-4" id="${ansId}">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-green-500"><i class="fas fa-check"></i></div>
+                        <div class="flex-1">
+                            <span class="font-semibold text-sm">Answer</span>
+                            <p class="text-xs text-[var(--text-secondary)]">${best.modelKey}</p>
+                        </div>
+                        <button onclick="togglePin('${escapeHtml(best.content.substring(0, 100))}')"
+                            class="text-[var(--text-secondary)] hover:text-yellow-500">
+                            <i class="fas fa-thumbtack"></i>
+                        </button>
+                    </div>
+                    ${(best.thinking && state.thinkingBudget !== 'off') ? `
+                        <div class="thinking-block">
+                            <div class="thinking-header"><i class="fas fa-brain"></i> Thinking</div>
+                            <div class="text-[var(--text-secondary)] text-xs whitespace-pre-wrap max-h-40 overflow-y-auto">${escapeHtml(best.thinking)}</div>
+                        </div>
+                    ` : ''}
+                    <div class="prose max-w-none text-sm">${formatMarkdown(best.content)}</div>
                 </div>
             `;
+            container.scrollTop = container.scrollHeight;
         }
-    } else {
-        for (const stage of stagesToRun) {
-            if (state.currentChatId !== chatId) return;
-            
-            const aggModel = activeModels.find(m => m.stage === String(stage));
-            const modelToUse = aggModel || activeModels[0];
-            if (!modelToUse) continue;
-            
-            const stageId = `stage-${stage}-${Date.now()}`;
-            const stageContentId = `content-${stageId}`;
-            
-            if (container) {
-                container.innerHTML += `
-                    <div class="aggregator-response stage-${stage} rounded-2xl p-4" id="${stageId}">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-gray-400">${stage}</div>
-                            <div>
-                                <span class="font-semibold text-sm">Stage ${stage}</span>
-                                <p class="text-xs text-[var(--text-secondary)]">${modelToUse.modelKey}</p>
-                            </div>
-                        </div>
-                        <div class="text-sm whitespace-pre-wrap" id="${stageContentId}">Generating...</div>
-                    </div>
-                `;
-                container.scrollTop = container.scrollHeight;
-            }
-            
-            try {
-                const prompt = AGGREGATOR_PROMPTS[`stage${stage}`];
-                
-                const onStageToken = (text, thinking, chunk) => {
-                    if (state.currentChatId !== chatId) return;
-                    const el = document.getElementById(stageContentId);
-                    if (el) el.textContent += chunk;
-                    if (container) container.scrollTop = container.scrollHeight;
-                };
-                
-                const stageContentEl = document.getElementById(stageContentId);
-                if (stageContentEl) stageContentEl.textContent = "";
-                
-                const res = await callModelWithFallback(modelToUse.provider, modelToUse.modelId,
-                    [{ role: 'system', content: prompt }, { role: 'user', content: currentContext }],
-                    0, onStageToken);
-                
-                if (state.currentChatId !== chatId) return;
-                
-                currentContext = res.content;
-                window.lastAnswer = res.content;
-                
-                // Save final answer to chat history
-                if (stage === stagesToRun[stagesToRun.length - 1]) {
-                    // FIX 2: include thinking + sources so history shows them
-                    const assistMsgObj = { role: 'assistant', content: res.content, thinking: res.thinking || '', sources: (state.lastSources || []).slice(0, 12), timestamp: Date.now() };
-                    state.messages.push(assistMsgObj);
-                    // BUG FIX 3: currentChat was never defined in this function,
-                    // so assistant responses were NEVER saved in standard mode.
-                    const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
-                    if (currentChat) currentChat.messages.push(assistMsgObj);
-                    persistChatHistory();
-                }
-                
-                // Update stage UI
-                const stageEl = document.getElementById(stageId);
-                if (stageEl) {
-                    stageEl.innerHTML = `
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-green-500">${stage}</div>
-                            <div class="flex-1">
-                                <span class="font-semibold text-sm">Stage ${stage}</span>
-                                <p class="text-xs text-[var(--text-secondary)]">${modelToUse.modelKey}</p>
-                            </div>
-                            <button onclick="togglePin('${escapeHtml(res.content.substring(0, 100))}')"
-                                class="text-[var(--text-secondary)] hover:text-yellow-500">
-                                <i class="fas fa-thumbtack"></i>
-                            </button>
-                        </div>
-                        ${res.thinking ? `
-                            <div class="thinking-block">
-                                <div class="thinking-header"><i class="fas fa-brain"></i> Thinking</div>
-                                <div class="text-[var(--text-secondary)] text-xs whitespace-pre-wrap">${escapeHtml(res.thinking)}</div>
-                            </div>
-                        ` : ''}
-                        <div class="prose max-w-none text-sm">${formatMarkdown(res.content)}</div>
-                    `;
-                }
-            } catch (e) {
-                const stageEl = document.getElementById(stageId);
-                if (stageEl) {
-                    stageEl.innerHTML += `
-                        <div class="text-red-500 text-sm mt-2">
-                            Aggregation Failed: ${e.message}
-                        </div>
-                    `;
-                }
-            }
-        }
+        window.lastAnswer = best.content;
+
+        // Save final answer to chat history (with thinking + sources)
+        const assistMsgObj = { role: 'assistant', content: best.content, thinking: best.thinking || '', sources: (state.lastSources || []).slice(0, 12), timestamp: Date.now() };
+        state.messages.push(assistMsgObj);
+        const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
+        if (currentChat) currentChat.messages.push(assistMsgObj);
+        persistChatHistory();
     }
-    
-    // Add export buttons
+
+        // Add export buttons
     if (container) {
         container.innerHTML += `
             <div class="export-buttons">
@@ -11409,6 +11421,19 @@ async function runSingleModelMode(fullPrompt, container, chatId) {
  * @param {HTMLElement} container - Container
  * @param {string} chatId - Chat ID
  */
+/**
+ * v5.2: Toggle the collapsible Sources panel (Search mode)
+ * @param {string} id - search element id
+ */
+function toggleSourcesPanel(id) {
+    const grid = document.getElementById('grid-' + id);
+    const chev = document.getElementById('chevron-' + id);
+    if (!grid) return;
+    const show = grid.style.display === 'none';
+    grid.style.display = show ? 'grid' : 'none';
+    if (chev) chev.style.transform = show ? 'rotate(180deg)' : '';
+}
+
 async function runSearchMode(fullPrompt, container, chatId) {
     // Use single best model for search mode (fast response)
     const model = state.selectedModels[0] || { provider: 'nvidia', modelId: 'minimaxai/minimax-m2.5', modelKey: 'MiniMax M2.5' };
@@ -11496,15 +11521,15 @@ async function runSearchMode(fullPrompt, container, chatId) {
         }
         
     } catch (e) {
+        // v5.2: user pressed Stop - show a neutral "stopped" note, not an error
+        const aborted = e && (e.name === 'AbortError' || /abort/i.test(e.message || ''));
         const card = document.getElementById(divId);
         if (card) {
-            card.innerHTML = `
-                <div class="text-red-500 text-sm">
-                    Search failed: ${e.message}
-                </div>
-            `;
+            card.innerHTML = aborted
+                ? '<div class="text-[var(--text-secondary)] text-sm">Generation stopped.</div>'
+                : `<div class="text-red-500 text-sm">Search failed: ${escapeHtml(e.message)}</div>`;
         }
-        showToast('Search failed', 'error');
+        if (!aborted) showToast('Search failed', 'error');
     }
 }
 
@@ -11980,6 +12005,10 @@ window.togglePin = togglePin;
 window.sendMessage = sendMessage;
 window.updateResearchStageConfig = updateResearchStageConfig;
 window.triggerVideoUpload = triggerVideoUpload;
+window.toggleSourcesPanel = toggleSourcesPanel;
+window.triggerCameraUpload = triggerCameraUpload;
+window.triggerImageUpload = triggerImageUpload;
+window.triggerDocUpload = triggerDocUpload;
 window.handleVideoUpload = handleVideoUpload;
 window.setResponseStyle = setResponseStyle;
 window.updateStyleOptionsUI = updateStyleOptionsUI;

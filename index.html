@@ -6235,7 +6235,18 @@ const SEARCH_ENGINES_CONFIG = {
     grokipedia: { name: 'Grokipedia', type: 'searx', bang: '!w', site: 'grokipedia.com' },
     github_api: { name: 'GitHub (API)', type: 'api', endpoint: 'https://api.github.com' },
     stackexchange: { name: 'Stack Overflow (API)', type: 'api', endpoint: 'https://api.stackexchange.com' },
-    hackernews: { name: 'Hacker News (API)', type: 'api', endpoint: 'https://hn.algolia.com/api/v1/search' }
+    hackernews: { name: 'Hacker News (API)', type: 'api', endpoint: 'https://hn.algolia.com/api/v1/search' },
+    // v5.8: keyless engines that are verified CORS-open from the browser -
+    // these give the agentic model a REAL multi-engine pool to choose from.
+    wikidata: { name: 'Wikidata (facts)', type: 'api', endpoint: 'https://www.wikidata.org/w/api.php' },
+    crossref: { name: 'Crossref (papers)', type: 'api', endpoint: 'https://api.crossref.org' },
+    arxiv: { name: 'arXiv (papers)', type: 'api', endpoint: 'https://export.arxiv.org/api/query' },
+    openalex: { name: 'OpenAlex (papers)', type: 'api', endpoint: 'https://api.openalex.org' },
+    openlibrary: { name: 'Open Library (books)', type: 'api', endpoint: 'https://openlibrary.org' },
+    archive: { name: 'Internet Archive', type: 'api', endpoint: 'https://archive.org' },
+    npm: { name: 'npm (packages)', type: 'api', endpoint: 'https://registry.npmjs.org' },
+    musicbrainz: { name: 'MusicBrainz (music)', type: 'api', endpoint: 'https://musicbrainz.org' },
+    dictionary: { name: 'Dictionary', type: 'api', endpoint: 'https://api.dictionaryapi.dev' }
 };
 
 /**
@@ -8538,25 +8549,29 @@ function fallbackBrowserSTT() {
  * @param {string} query - Search query
  * @returns {Promise<string>} - JSON string of results
  */
-async function searchWeb(query) {
+async function searchWeb(query, enginesOverride) {
     // v5.5: fixed per-engine caps removed - every engine returns as many
     // results as the source provides for the query.
+    // v5.8: enginesOverride = optional array of engine keys requested by the
+    // agentic model (SEARCH[engine1, engine2]: query) - the model decides
+    // which and how many engines to run, and they all run in parallel.
     let limit = 30;
 
     const encodedQuery = encodeURIComponent(query);
 
     /**
-     * v5.6 DIRECT-ONLY pipeline (every CORS proxy removed per user request):
-     *   - Wikipedia API (CORS via origin=*)
-     *   - DuckDuckGo Instant Answer API (direct CORS)
-     *   - GitHub / Stack Overflow / Hacker News APIs (direct CORS)
-     *   - DuckDuckGo Lite direct HTML attempt (CORS-gated, often empty)
-     * Every remote fetch is a single DIRECT browser call with a timeout.
+     * v5.8 engine pipeline: DIRECT browser call first; only if it fails
+     * (CORS-locked or IP-filtered), ONE retry through the app's OWN worker
+     * relay - the same self-hosted relay NVIDIA/Z.ai already use. No
+     * third-party proxy services anywhere. This leg is essential: without it
+     * several keyless CORS engines are unreachable from some networks and
+     * only Wikipedia would reliably return results.
+     * (DDG Lite HTML itself bot-blocks datacenter IPs with a captcha, so
+     * DuckDuckGo web results come from the CORS-open Instant Answer API.)
      */
-    // v5.6: the chain is DIRECT-ONLY - all public readers and relay services
-    // are removed from the app; every fetch below is a direct browser call.
     const PROXY_BUILDERS = [
-        (u) => u
+        (u) => u,
+        (u) => 'https://ancient-tree-1c06.sahusaksham453675.workers.dev/?url=' + encodeURIComponent(u)
     ];
 
     const fetchTextViaChain = async (url, timeoutMs = 8000) => {
@@ -8764,9 +8779,41 @@ async function searchWeb(query) {
     };
 
     const promises = [];
-    const activeEngines = state.activeSearchEngines.length > 0
-        ? state.activeSearchEngines
-        : ['duckduckgo', 'duckduckgo_instant', 'wikipedia', 'github_api', 'stackexchange', 'hackernews'];
+    // v5.8: the agentic model may request specific engines per query via
+    // SEARCH[engine1, engine2]: query. Names are normalized (aliases like
+    // so/stackoverflow -> stackexchange, gh/github -> github_api, hn ->
+    // hackernews, wiki -> wikipedia, ddg -> duckduckgo); unknown names are
+    // dropped. If nothing valid remains we fall back to the user's enabled
+    // engines so a bad guess never yields zero searches.
+    const _aliasMap = {
+        'ddg': 'duckduckgo', 'duckduckgolite': 'duckduckgo_lite', 'ddglite': 'duckduckgo_lite',
+        'instant': 'duckduckgo_instant', 'ddginstant': 'duckduckgo_instant',
+        'wiki': 'wikipedia', 'wikipedia_en': 'wikipedia',
+        'stackoverflow': 'stackexchange', 'stack': 'stackexchange', 'so': 'stackexchange',
+        'gh': 'github_api', 'github': 'github_api',
+        'hn': 'hackernews', 'yc': 'hackernews',
+        'x': 'twitter', 'ia': 'archive', 'books': 'openlibrary',
+        'papers': 'crossref', 'scholar': 'openalex', 'music': 'musicbrainz',
+        'dict': 'dictionary', 'npmjs': 'npm'
+    };
+    const _normEng = (s) => {
+        let k = String(s || '').trim().toLowerCase().replace(/[\s_-]+/g, '_');
+        if (_aliasMap[k]) k = _aliasMap[k];
+        const squeezed = k.replace(/_/g, '');
+        if (_aliasMap[squeezed]) k = _aliasMap[squeezed];
+        return k;
+    };
+    const _validEngine = (k) => !!SEARCH_ENGINES_CONFIG[k] || !!(state.customSearchEngines || []).find(e => e.id === k);
+    let activeEngines = null;
+    if (Array.isArray(enginesOverride) && enginesOverride.length > 0) {
+        const req = [...new Set(enginesOverride.map(_normEng).filter(_validEngine))];
+        if (req.length > 0) activeEngines = req;
+    }
+    if (!activeEngines) {
+        activeEngines = state.activeSearchEngines.length > 0
+            ? state.activeSearchEngines
+            : ['duckduckgo', 'duckduckgo_instant', 'wikipedia', 'wikidata', 'reddit', 'github_api', 'stackexchange', 'hackernews', 'crossref'];
+    }
 
     activeEngines.forEach(key => {
         const config = SEARCH_ENGINES_CONFIG[key] || (state.customSearchEngines || []).find(e => e.id === key);
@@ -8875,6 +8922,145 @@ async function searchWeb(query) {
                 }
                 return [];
             });
+        } else if (key === 'wikidata') {
+            // v5.8: Wikidata entity search - CORS open, keyless
+            promises.push(async () => {
+                const data = await fetchJsonViaChain('https://www.wikidata.org/w/api.php?action=wbsearchentities&search=' + encodedQuery + '&language=en&format=json&origin=*&limit=' + Math.min(limit, 20));
+                if (data && Array.isArray(data.search)) {
+                    return data.search.map(e => ({
+                        title: (e.label || e.id || 'Entity') + (e.id ? ' (' + e.id + ')' : ''),
+                        link: e.concepturi || ('https://www.wikidata.org/wiki/' + encodeURIComponent(e.id || '')),
+                        snippet: (e.description || e.label || e.id || '').substring(0, 300),
+                        source: 'Wikidata'
+                    })).filter(r => r.link && r.link.startsWith('http'));
+                }
+                return [];
+            });
+        } else if (key === 'crossref') {
+            // v5.8: Crossref academic paper search - CORS open, keyless
+            promises.push(async () => {
+                const data = await fetchJsonViaChain('https://api.crossref.org/works?query=' + encodedQuery + '&rows=' + Math.min(limit, 20) + '&select=title,DOI,container-title,issued,URL');
+                if (data && data.message && Array.isArray(data.message.items)) {
+                    return data.message.items.map(w => {
+                        const year = w.issued && w.issued['date-parts'] && w.issued['date-parts'][0] ? w.issued['date-parts'][0][0] : null;
+                        return {
+                            title: (Array.isArray(w.title) && w.title[0]) || w.DOI || 'Paper',
+                            link: w.URL || ('https://doi.org/' + (w.DOI || '')),
+                            snippet: (((Array.isArray(w['container-title']) && w['container-title'][0]) || '') + (year ? ' · ' + year : '')).replace(/^ · /, '').substring(0, 300),
+                            source: 'Crossref'
+                        };
+                    }).filter(r => r.link && r.link.startsWith('http') && r.title);
+                }
+                return [];
+            });
+        } else if (key === 'arxiv') {
+            // v5.8: arXiv paper search (Atom XML) - parsed with DOMParser
+            promises.push(async () => {
+                const xml = await fetchTextViaChain('https://export.arxiv.org/api/query?search_query=all:' + encodedQuery + '&max_results=' + Math.min(limit, 20) + '&sortBy=relevance', 10000);
+                if (xml && xml.indexOf('<entry>') !== -1) {
+                    try {
+                        const doc = new DOMParser().parseFromString(xml, 'text/xml');
+                        return [...doc.querySelectorAll('entry')].slice(0, Math.min(limit, 20)).map(en => {
+                            const t = ((en.querySelector('title') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+                            const id = ((en.querySelector('id') || {}).textContent || '').trim();
+                            const s = ((en.querySelector('summary') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+                            return { title: t || 'arXiv paper', link: id, snippet: s.substring(0, 300), source: 'arXiv' };
+                        }).filter(r => r.link && r.link.startsWith('http'));
+                    } catch (e) {}
+                }
+                return [];
+            });
+        } else if (key === 'openalex') {
+            // v5.8: OpenAlex scholarly works - CORS open, keyless
+            promises.push(async () => {
+                const data = await fetchJsonViaChain('https://api.openalex.org/works?search=' + encodedQuery + '&per-page=' + Math.min(limit, 20));
+                if (data && Array.isArray(data.results)) {
+                    return data.results.map(w => ({
+                        title: w.display_name || 'Work',
+                        link: (w.doi || '').replace('http://', 'https://') || '',
+                        snippet: ((w.publication_year ? w.publication_year + ' · ' : '') + (((w.primary_location || {}).source || {}).display_name || '')).replace(/^ · /, '').substring(0, 300),
+                        source: 'OpenAlex'
+                    })).filter(r => r.link);
+                }
+                return [];
+            });
+        } else if (key === 'openlibrary') {
+            // v5.8: Open Library book search - CORS open, keyless
+            promises.push(async () => {
+                const data = await fetchJsonViaChain('https://openlibrary.org/search.json?q=' + encodedQuery + '&limit=' + Math.min(limit, 20) + '&fields=title,author_name,key,first_publish_year');
+                if (data && Array.isArray(data.docs)) {
+                    return data.docs.filter(d => d.key).map(d => ({
+                        title: d.title || 'Book',
+                        link: 'https://openlibrary.org' + d.key,
+                        snippet: (((d.author_name || []).slice(0, 2).join(', ')) + (d.first_publish_year ? ' · ' + d.first_publish_year : '')).replace(/^ · /, '').substring(0, 300),
+                        source: 'Open Library'
+                    }));
+                }
+                return [];
+            });
+        } else if (key === 'archive') {
+            // v5.8: Internet Archive search - keyless
+            promises.push(async () => {
+                const data = await fetchJsonViaChain('https://archive.org/advancedsearch.php?q=' + encodedQuery + '&rows=' + Math.min(limit, 20) + '&page=1&output=json');
+                if (data && data.response && Array.isArray(data.response.docs)) {
+                    return data.response.docs.filter(d => d.identifier).map(d => ({
+                        title: (typeof d.title === 'string' && d.title) || d.identifier,
+                        link: 'https://archive.org/details/' + d.identifier,
+                        snippet: ((d.year ? d.year + ' · ' : '') + (d.mediatype || '')).replace(/^ · /, '').substring(0, 300),
+                        source: 'Internet Archive'
+                    }));
+                }
+                return [];
+            });
+        } else if (key === 'npm') {
+            // v5.8: npm package registry search - CORS open, keyless
+            promises.push(async () => {
+                const data = await fetchJsonViaChain('https://registry.npmjs.org/-/v1/search?text=' + encodedQuery + '&size=' + Math.min(limit, 20));
+                if (data && Array.isArray(data.objects)) {
+                    return data.objects.filter(o => o.package && o.package.name).map(o => ({
+                        title: o.package.name + (o.package.version ? ' v' + o.package.version : ''),
+                        link: (o.package.links && o.package.links.npm) || ('https://www.npmjs.com/package/' + o.package.name),
+                        snippet: (o.package.description || '').substring(0, 300),
+                        source: 'npm'
+                    }));
+                }
+                return [];
+            });
+        } else if (key === 'musicbrainz') {
+            // v5.8: MusicBrainz recording search - CORS open, keyless
+            promises.push(async () => {
+                const data = await fetchJsonViaChain('https://musicbrainz.org/ws/2/recording/?query=' + encodedQuery + '&limit=' + Math.min(limit, 20) + '&fmt=json');
+                if (data && Array.isArray(data.recordings)) {
+                    return data.recordings.filter(r => r.id && r.title).map(r => ({
+                        title: r.title,
+                        link: 'https://musicbrainz.org/recording/' + r.id,
+                        snippet: (((r['artist-credit'] || []).map(a => a.name || (a.artist && a.artist.name) || '').filter(Boolean).join(', ')) + (r.length ? ' · ' + Math.round(r.length / 1000) + 's' : '')).replace(/^ · /, '').substring(0, 300),
+                        source: 'MusicBrainz'
+                    }));
+                }
+                return [];
+            });
+        } else if (key === 'dictionary') {
+            // v5.8: dictionary definitions (first word of the query)
+            promises.push(async () => {
+                const w = (query.split(/\s+/)[0] || '').replace(/[^a-zA-Z'-]/g, '').toLowerCase();
+                if (!w) return [];
+                const data = await fetchJsonViaChain('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(w));
+                if (Array.isArray(data) && data[0]) {
+                    const e = data[0];
+                    const defs = [];
+                    (e.meanings || []).forEach(m => (m.definitions || []).slice(0, 2).forEach(d => {
+                        defs.push((m.partOfSpeech ? '[' + m.partOfSpeech + '] ' : '') + (d.definition || ''));
+                    }));
+                    return defs.filter(Boolean).slice(0, Math.min(limit, 8)).map((d, i) => ({
+                        title: (e.word || w) + (e.phonetic ? ' ' + e.phonetic : '') + (i > 0 ? ' (def ' + (i + 1) + ')' : ''),
+                        link: 'https://en.wiktionary.org/wiki/' + encodeURIComponent(e.word || w),
+                        snippet: d.substring(0, 300),
+                        source: 'Dictionary'
+                    }));
+                }
+                return [];
+            });
         } else if (config.type === 'searx') {
             // FIX 5: all former SearXNG engines now route through DuckDuckGo
             // (meta-search). Strategy:
@@ -8915,9 +9101,10 @@ async function searchWeb(query) {
         }
     });
 
-    // Stagger engine launches slightly to spread proxy load
+    // Stagger engine launches slightly (v5.8: 150ms - the pool is bigger
+    // now and every call is direct or via our own worker)
     const resultsNested = await Promise.all(promises.map((p, i) =>
-        new Promise(res => setTimeout(() => res(p().catch(() => [])), i * 350))
+        new Promise(res => setTimeout(() => res(p().catch(() => [])), i * 150))
     ));
     const flat = resultsNested.flat().filter(x => x && x.title && x.link);
     const unique = flat.filter((v, i, a) => a.findIndex(t => t.link === v.link) === i);
@@ -11231,19 +11418,29 @@ const SAHU_SKILLS = [
 function buildSearchLoopPrompt() {
     const has = (id) => (state.enabledSkills || []).includes(id);
     const lines = [];
-    if (has('web_search')) lines.push('SEARCH: <query> - search the web. You may search as many times as you want, each time with a better or different query.');
+    if (has('web_search')) lines.push('SEARCH: <query> - search the web with the enabled engines.\nSEARCH[engine1, engine2, ...]: <query> - YOU choose which engines to run for this query; list as many as you want. Several SEARCH lines in one turn all run IN PARALLEL.');
     if (has('web_scrape')) lines.push('READ: <url> - scrape a page and read its full text (use on a promising result to dig deeper).');
     if (has('web_fetch')) lines.push('FETCH: <url> - fetch the raw content of a URL (useful for articles, APIs and files).');
     if (has('web_browse')) lines.push('BROWSE: <url> - browse a page: quick content summary plus the links it contains for further browsing.');
     return `\n\nAGENTIC WEB LOOP:
-You are an autonomous research agent running inside the user's app. YOU decide everything.
+You are an autonomous research agent running inside the user's app. YOU decide everything - including WHICH search engines to use and HOW MANY to run in parallel.
 ${lines.length ? 'Your skills - output a line in EXACTLY this format to use one:\n' + lines.join('\n') : 'You have no web skills available this session.'}
+Engine menu (keys for SEARCH[...]):
+- General web: duckduckgo, duckduckgo_instant
+- Facts/encyclopedia: wikipedia, wikidata, grokipedia
+- Community/discussions: reddit, hackernews
+- Code/packages: stackexchange, github_api, npm
+- Science/papers: crossref, openalex, arxiv
+- Culture/media: openlibrary (books), archive (Internet Archive), musicbrainz (music), dictionary (definitions)
+- Site-focused: youtube, twitter, google, bing, brave, startpage, yandex, qwant, baidu, yahoo, ernie, facebook, instagram, linkedin
 How you work:
 1. THINK about the request first. Decide whether it needs web information at all - if not, go straight to the final answer.
-2. If it does: decide what must be searched and run the right skill.
-3. After every round of results: RETHINK. Are the results relevant and complete? If not, search again with different or more specific queries (as many times as you want), or READ/BROWSE a promising page to go deeper.
-   Sources are direct keyless feeds: Wikipedia, DuckDuckGo Instant, GitHub, Stack Overflow and Hacker News. If one fails or looks thin, change the wording and search again, then READ the best URLs.
-4. Never stop after a single search - refine and re-search until you are satisfied, but never repeat identical queries.
+2. If it does: pick 2-4 engines that fit the question and launch SEVERAL SEARCHES IN PARALLEL in one turn, e.g.:
+   SEARCH[duckduckgo, wikipedia]: main query
+   SEARCH[reddit, hackernews]: community opinions query
+   (code -> stackexchange/github_api/npm, science -> arxiv/crossref/openalex, facts -> wikipedia/wikidata, news -> duckduckgo/hackernews, opinions -> reddit)
+3. After every round of results: RETHINK. Are the results relevant and complete? If not, run another parallel round with different queries and/or DIFFERENT engines (as many rounds as you want), or READ/FETCH/BROWSE a promising page to go deeper. If an engine returns nothing, switch engines - never repeat the identical query+engine pair.
+4. Never stop after a single round - widen coverage until you are satisfied. You can call as many search engines as you want.
 5. When you have everything (or nothing needed searching), output your complete final answer for the user starting with:
 ANSWER: 
 One decision block per turn. After your skill lines you will receive the results and another turn.`;
@@ -11359,7 +11556,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
     try {
         let convo = [{ role: 'user', content: fullPrompt + buildSearchLoopPrompt() }];
         const MAX_TURNS = 14;      // agent turns (rethinks) - the loop may
-        const MAX_TOOL_RUNS = 24;  // re-search as many times as it needs
+        const MAX_TOOL_RUNS = 40;  // re-search as many times as it needs
         const skillsOn = (id) => (state.enabledSkills || []).includes(id);
 
         while (turn < MAX_TURNS && toolRuns < MAX_TOOL_RUNS) {
@@ -11397,8 +11594,13 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             }
             if (liveThink) liveThink.textContent = '';
 
+            // v5.8: two SEARCH forms - plain SEARCH: <query> (enabled engines)
+            // and SEARCH[engine1, engine2]: <query> (model-chosen engines).
             const queries = skillsOn('web_search')
-                ? [...text.matchAll(/SEARCH:\s*(.+)/gi)].map(m => m[1].replace(/[*`]/g, '').trim()).filter(Boolean).slice(0, 3) : [];
+                ? [...text.matchAll(/SEARCH(?:\[([^\]]*)\])?:\s*([^\n]+)/gi)].map(m => ({
+                    engines: (m[1] || '').split(/[,;|]+/).map(s => s.trim()).filter(Boolean),
+                    query: m[2].replace(/[*`]/g, '').trim()
+                })).filter(q => q.query).slice(0, 4) : [];
             const reads = skillsOn('web_scrape')
                 ? [...text.matchAll(/READ:\s*(https?:\/\/\S+)/gi)].map(m => m[1].replace(/[)`\]]+$/, '')).slice(0, 2) : [];
             const fetches = skillsOn('web_fetch')
@@ -11418,31 +11620,39 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             convo.push({ role: 'assistant', content: text });
             const parts = [];
 
+            // v5.8: dedupe, then fire every search of this turn IN PARALLEL.
+            const runnable = [];
             for (const q of queries) {
                 if (toolRuns >= MAX_TOOL_RUNS) break;
-                if (!state.isProcessing) throw stopErr();
-                // v5.6: NEVER run the same query twice. A repeat costs the
-                // agent nothing to skip and pushes it to either change the
-                // wording or write its final answer instead of looping.
-                const qKey = q.toLowerCase().replace(/\s+/g, ' ').trim();
+                // NEVER run the same query+engine pair twice.
+                const qKey = (q.engines.length ? '[' + q.engines.join(',').toLowerCase() + '] ' : '') + q.query.toLowerCase().replace(/\s+/g, ' ').trim();
                 if (searchedQueries.has(qKey)) {
                     addTrace(`<span class="ml-4 text-amber-500">skipped - already searched</span>`);
-                    parts.push(`[SEARCH] "${q}" -> SKIPPED: you already ran this exact query. DO NOT repeat it. Either search with a genuinely DIFFERENT query (different wording or different aspect of the topic) or, if the information you have is sufficient, output your final answer now starting with ANSWER:.`);
+                    parts.push(`[SEARCH] "${q.query}" -> SKIPPED: you already ran this exact query. DO NOT repeat it. Either search with a genuinely DIFFERENT query (different wording or different aspect of the topic), try DIFFERENT engines, or, if the information you have is sufficient, output your final answer now starting with ANSWER:.`);
                     continue;
                 }
                 searchedQueries.add(qKey);
-                toolRuns++;
-                setBusy('Searching: ' + q);
-                addTrace(`<i class="fas fa-search text-blue-500 mr-1"></i><span class="font-medium">Search:</span> ${escapeHtml(q)}`);
+                runnable.push(q);
+            }
+            toolRuns += runnable.length;
+            const outs = await Promise.all(runnable.map(async (q) => {
+                if (!state.isProcessing) throw stopErr();
+                const engTag = q.engines.length ? '[' + q.engines.join(', ') + ']' : '';
+                setBusy('Searching ' + (engTag || '') + ': ' + q.query);
+                addTrace(`<i class="fas fa-search text-blue-500 mr-1"></i><span class="font-medium">Search${escapeHtml(engTag)}:</span> ${escapeHtml(q.query)}`);
                 let found = [];
-                try { found = JSON.parse(await searchWeb(q)) || []; } catch (e) { found = []; }
+                try { found = JSON.parse(await searchWeb(q.query, q.engines.length ? q.engines : null)) || []; } catch (e) { found = []; }
                 found.forEach(r => {
                     if (r && r.link && !seenLinks.has(r.link)) { seenLinks.add(r.link); collected.push(r); }
                 });
-                addTrace(`<span class="ml-4">${found.length} result${found.length === 1 ? '' : 's'} found</span>`);
-                const list = found.slice(0, 10).map((s, i) => `${i + 1}. ${s.title} (${s.link})${s.snippet ? '\n   ' + s.snippet : ''}`).join('\n');
-                parts.push(`[SEARCH] "${q}" -> ${found.length} results\n${list || 'No results found. Try different or simpler queries.'}`);
-            }
+                const byEngine = {};
+                found.forEach(r => { const k = (r && r.source) || 'web'; byEngine[k] = (byEngine[k] || 0) + 1; });
+                const engSummary = Object.keys(byEngine).map(k => k + ' ' + byEngine[k]).join(', ');
+                addTrace(`<span class="ml-4">${found.length} result${found.length === 1 ? '' : 's'}${engSummary ? ' - ' + escapeHtml(engSummary) : ''}</span>`);
+                const list = found.slice(0, 10).map((s, i) => `${i + 1}. [${s.source || 'web'}] ${s.title} (${s.link})${s.snippet ? '\n   ' + s.snippet : ''}`).join('\n');
+                return `[SEARCH${engTag}] "${q.query}" -> ${found.length} results${engSummary ? ' (' + engSummary + ')' : ''}\n${list || 'No results found. Try different or simpler queries, or other engines.'}`;
+            }));
+            parts.push(...outs);
 
             for (const u of reads) {
                 if (toolRuns >= MAX_TOOL_RUNS) break;
@@ -11489,7 +11699,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
 
             convo.push({
                 role: 'user',
-                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries, READ, FETCH or BROWSE) - you may redo this as many times as you need.`
+                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries and/or OTHER engines, READ, FETCH or BROWSE) - you may redo this as many times as you need.`
             });
         }
 
@@ -11527,13 +11737,17 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                     <span class="text-[10px] text-[var(--text-secondary)] ml-1">(${escapeHtml(s.source || 'web')})</span>
                     <div class="text-xs text-[var(--text-secondary)] mt-0.5">${escapeHtml(s.snippet || '')}</div>
                 </li>`).join('');
-            displayHtml = `<ol class="list-decimal pl-5">${items}</ol>`;
+            // v5.8: explicit summary header - search mode shows ONLY sources,
+            // never the model's full content.
+            const _enginesUsed = [...new Set(collected.map(s => s.source || 'web'))];
+            displayHtml = `<div class="text-xs text-[var(--text-secondary)] mb-2">Agent searched ${searchedQueries.size} quer${searchedQueries.size === 1 ? 'y' : 'ies'} · ${collected.length} source${collected.length === 1 ? '' : 's'} · engines: ${escapeHtml(_enginesUsed.join(', '))}</div><ol class="list-decimal pl-5">${items}</ol>`;
             savedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
         } else if (searchedQueries.size > 0) {
-            // v5.6d: the agent DID search but nothing usable was retrieved -
-            // never silently fall back to a content-only answer.
-            displayHtml = `<div class="text-xs text-[var(--text-secondary)] mb-2">Searched ${searchedQueries.size} quer${searchedQueries.size === 1 ? 'y' : 'ies'} but no sources could be retrieved (engines returned nothing usable). Showing the agent's answer:</div>` +
-                `<div class="prose max-w-none text-sm">${formatMarkdown(finalAnswer || 'No results found. Please try again.')}</div>`;
+            // v5.8: the agent DID search but nothing usable was retrieved.
+            // Search mode must never dump full model content - show the
+            // notice with the answer COLLAPSED so sources stay the focus.
+            displayHtml = `<div class="text-xs text-[var(--text-secondary)] mb-2">Searched ${searchedQueries.size} quer${searchedQueries.size === 1 ? 'y' : 'ies'} but no sources could be retrieved (engines returned nothing usable).</div>` +
+                `<details class="search-round-think"><summary class="cursor-pointer text-xs text-[var(--text-secondary)]"><i class="fas fa-comment-dots mr-1"></i>Show the agent's answer (no sources available)</summary><div class="prose max-w-none text-sm mt-2">${formatMarkdown(finalAnswer || 'No results found. Please try again.')}</div></details>`;
             savedContent = finalAnswer || 'No results found.';
         } else {
             // No search needed - show the agent's direct answer

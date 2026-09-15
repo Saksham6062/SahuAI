@@ -9651,12 +9651,15 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
             let fullText = "";
             let thinkingText = "";
             let buffer = "";  // Buffer for partial chunks split across reads
+            let rawStreamText = "";  // v5.6c: raw log for error diagnosis
             
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 
-                buffer += decoder.decode(value, { stream: true });
+                const _decoded = decoder.decode(value, { stream: true });
+                buffer += _decoded;
+                rawStreamText += _decoded;
                 const lines = buffer.split('\n');
                 // Keep the last (potentially incomplete) line in the buffer
                 buffer = lines.pop() || "";
@@ -9729,6 +9732,28 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
                 }
             }
             
+            // v5.6c: provider answered 200 but streamed ZERO answer text -
+            // usually an error payload the SSE parser skipped. Surface the
+            // real reason and throw so the fallback chain (next keyed
+            // provider, then Pollinations) engages instead of rendering
+            // "Failed: unknown error" with no rescue.
+            if (!fullText.trim()) {
+                let reason = '';
+                try {
+                    const _probe = (rawStreamText || '').replace(/data:\s*/g, '\n');
+                    if (/"error"\s*:/i.test(_probe)) {
+                        const _m = _probe.match(/"error"\s*:\s*(\{[\s\S]{0,500}?\}|"[^"\n]{0,300}")/);
+                        if (_m) {
+                            try {
+                                const _pe = JSON.parse(_m[1].replace(/\n/g, ' '));
+                                reason = (_pe && (_pe.message || _pe.code || _pe.type)) || '';
+                            } catch (_) { reason = _m[1].slice(0, 180); }
+                        }
+                    }
+                    if (!reason && _probe.trim()) reason = _probe.replace(/\s+/g, ' ').trim().slice(0, 180);
+                } catch (_) {}
+                throw new Error(reason || 'Model returned an empty response');
+            }
             // FIX 1: extract inline <think> blocks some models emit inside content
             const _inlineThink = fullText.match(/<think>([\s\S]*?)<\/think>/);
             if (_inlineThink) {
@@ -9745,8 +9770,20 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
         } else {
             // Handle non-streaming response
             const data = await response.json();
+            // v5.6c: treat provider-side error payloads as real failures so
+            // the caller can fall back / show a useful message instead of
+            // rendering an empty or error-text answer.
+            if (data.error) {
+                throw new Error((data.error.message || data.error.code || data.error.type || 'Provider error'));
+            }
             let content = data.choices?.[0]?.message?.content || '';
             let thinking = data.choices?.[0]?.message?.reasoning_content || '';
+            if (!content.trim() && data.choices && data.choices.length) {
+                throw new Error('Model returned an empty response');
+            }
+            if (/API key used for this request has reached|reached its budget|quota exceeded|rate limit exceeded/i.test(content)) {
+                throw new Error('Free fallback model pool is rate-limited right now - add your own API key in Settings, Active Providers, API Keys for reliable answers');
+            }
             
             // Extract thinking blocks
             const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/);
@@ -10987,8 +11024,17 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
     }));
 
     if (state.currentChatId !== chatId) return;
-    // v5.2 FIX 6: user pressed Stop - do not render any further results
-    if (!state.isProcessing) return;
+    // v5.2 FIX 6: user pressed Stop - do not render any further results.
+    // v5.6c: but NEVER leave the "Thinking..." placeholder stuck on screen.
+    if (!state.isProcessing) {
+        activeModels.forEach((m, idx) => {
+            const pendEl = document.getElementById(`anscontent-${idx}`);
+            if (pendEl && /thinking/i.test(pendEl.textContent || '')) {
+                pendEl.innerHTML = '<span class="text-xs text-[var(--text-secondary)]">Generation stopped.</span>';
+            }
+        });
+        return;
+    }
 
     let lastSavedContent = '';
     results.forEach(r => {

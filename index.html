@@ -847,11 +847,13 @@
             box-shadow: var(--shadow-md);
         }
         
+        /* v5.5: model answers are plain text - no box/grid around them */
         .message-assistant .message-bubble {
-            background-color: var(--bg-tertiary);
+            background: transparent;
             color: var(--text-primary);
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-sm);
+            border: none;
+            box-shadow: none;
+            max-width: 100%;
         }
         
         .message-content {
@@ -2096,52 +2098,6 @@
         .language-item-code {
             font-size: 0.625rem;
             color: var(--text-secondary);
-        }
-        
-        /* ============================================
-           TRANSLATION PANEL (Search Mode Only)
-           ============================================ */
-        .translation-panel {
-            display: none;
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 0.625rem;
-            padding: 0.75rem;
-            margin-bottom: 0.75rem;
-        }
-        
-        .translation-panel.show {
-            display: block;
-        }
-        
-        .translation-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--accent);
-        }
-        
-        .translation-controls {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .translation-select {
-            flex: 1;
-            padding: 0.375rem 0.5rem;
-            border-radius: 0.375rem;
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            font-size: 0.75rem;
-            color: var(--text-primary);
-        }
-        
-        .translation-select:focus {
-            outline: none;
-            border-color: var(--accent);
         }
         
         /* ============================================
@@ -4238,26 +4194,6 @@
                         <!-- Dynamically populated -->
                     </div>
                     
-                    <!-- Translation Panel (Search Mode Only) -->
-                    <div id="translationPanel" class="translation-panel">
-                        <div class="translation-header">
-                            <i class="fas fa-language"></i>
-                            <span>Translate Response</span>
-                        </div>
-                        <div class="translation-controls">
-                            <select id="translationSource" class="translation-select">
-                                <option value="auto">Detect Language</option>
-                                <!-- Populated dynamically -->
-                            </select>
-                            <select id="translationTarget" class="translation-select">
-                                <!-- Populated dynamically -->
-                            </select>
-                            <button onclick="translateResponse()" class="btn btn-primary">
-                                <i class="fas fa-exchange-alt"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
                     <!-- Tools Menu Popover (Add to Chat) -->
                     <div id="toolsMenu" class="tools-popover">
                         <!-- Header -->
@@ -4317,16 +4253,6 @@
                                 <div class="toggle-container">
                                     <input type="checkbox" id="toolWebSearch" class="toggle-checkbox" onchange="toggleWebSearchFromMenu(this.checked)">
                                     <label for="toolWebSearch" class="toggle-label"></label>
-                                </div>
-                            </label>
-                            <label class="tools-popover-item" id="toolTranslateContainer" style="display: none;">
-                                <span class="tools-popover-item-label">
-                                    <i class="fas fa-globe text-green-500"></i>
-                                    <span>Translate</span>
-                                </span>
-                                <div class="toggle-container">
-                                    <input type="checkbox" id="toolTranslate" class="toggle-checkbox" onchange="toggleTranslateFromMenu(this.checked)">
-                                    <label for="toolTranslate" class="toggle-label"></label>
                                 </div>
                             </label>
                         </div>
@@ -4620,6 +4546,21 @@
                                     <div>
                                         <div class="settings-card-title">Search Engines</div>
                                         <div class="settings-card-desc">Sources &amp; Fallback</div>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right settings-card-chevron"></i>
+                            </div>
+                        </button>
+                        <!-- Skills (v5.5) -->
+                        <button onclick="navigateSettings('skills')" class="settings-card">
+                            <div class="settings-card-content">
+                                <div class="settings-card-left">
+                                    <div class="settings-card-icon yellow">
+                                        <i class="fas fa-bolt"></i>
+                                    </div>
+                                    <div>
+                                        <div class="settings-card-title">Skills</div>
+                                        <div class="settings-card-desc">Search, scrape, fetch &amp; browse</div>
                                     </div>
                                 </div>
                                 <i class="fas fa-chevron-right settings-card-chevron"></i>
@@ -5003,14 +4944,6 @@
         </label>
     
         <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('discord', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">Discord</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
             <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('facebook', this.checked)">
             <div class="search-engine-info">
                 <div class="search-engine-name">Facebook</div>
@@ -5030,14 +4963,6 @@
             <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('github', this.checked)">
             <div class="search-engine-info">
                 <div class="search-engine-name">GitHub</div>
-                <div class="search-engine-type">(SearXNG)</div>
-            </div>
-        </label>
-    
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('googlenews', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">Google News</div>
                 <div class="search-engine-type">(SearXNG)</div>
             </div>
         </label>
@@ -5084,6 +5009,16 @@
                     </div>
                 </div>
                 
+                <!-- Skills View (v5.5) -->
+                <div id="settings-skills" class="settings-view">
+                    <div class="customize-section">
+                        <div class="customize-card">
+                            <label class="customize-label">Agent Skills</label>
+                            <p class="safety-model-hint" style="margin-bottom: 0.75rem;">These are the abilities the SahuAI agent can use while working on your request. It decides on its own when to use them, thinks between steps, and can use them again and again until the answer is complete.</p>
+                            <div id="skillsList"></div>
+                        </div>
+                    </div>
+                </div>
                 <!-- Providers View -->
                 <div id="settings-providers" class="settings-view">
                     <div id="providerCheckboxes" class="providers-list">
@@ -5579,7 +5514,6 @@
         function toggleDeepThink() {}
         function toggleDeepThinkFromMenu(checked) {}
         function toggleWebSearchFromMenu(checked) {}
-        function toggleTranslateFromMenu(checked) {}
         function updateMode(mode) {}
         function toggleTaskType() {}
         function updateTaskTypeLabel() {}
@@ -5652,9 +5586,6 @@
         
         // Voice
         function startVoiceInput() {}
-        
-        // Translation
-        function translateResponse() {}
         
         // Toast Notifications
         function showToast(message, type) {}
@@ -5828,10 +5759,8 @@ const state = {
         total: 0
     },
     
-    // Translation State
-    translationEnabled: false,
-    translationSource: 'auto',
-    translationTarget: 'en',
+    // v5.5: Agent skills - abilities the loop can use, toggled in Settings > Skills
+    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse'],
     
     // Response Style
     responseStyle: 'normal'
@@ -5889,30 +5818,6 @@ const MODEL_CONFIGS = {
     'poolside/laguna-xs-2.1': { max_tokens: 20000 },
     'openai/gpt-oss-20b': { max_tokens: 30000 },
     'sarvam-m': { max_tokens: 20000, noStream: true }
-};
-
-/**
- * Translation model mapping by language
- */
-const TRANSLATION_MODELS = {
-    // Indian languages
-    'hi': 'nvidia/nemotron-3-super-120b-a12b', 'bn': 'nvidia/nemotron-3-super-120b-a12b', 'te': 'nvidia/nemotron-3-super-120b-a12b', 'ta': 'nvidia/nemotron-3-super-120b-a12b',
-    'mr': 'nvidia/nemotron-3-super-120b-a12b', 'gu': 'nvidia/nemotron-3-super-120b-a12b', 'kn': 'nvidia/nemotron-3-super-120b-a12b', 'ml': 'nvidia/nemotron-3-super-120b-a12b',
-    'pa': 'nvidia/nemotron-3-super-120b-a12b', 'or': 'nvidia/nemotron-3-super-120b-a12b', 'as': 'nvidia/nemotron-3-super-120b-a12b',
-    // European languages - Mistral (live on NVIDIA API)
-    'en': 'mistralai/mistral-large', 'fr': 'mistralai/mistral-large', 'de': 'mistralai/mistral-large',
-    'es': 'mistralai/mistral-large', 'it': 'mistralai/mistral-large', 'pt': 'mistralai/mistral-large',
-    'nl': 'mistralai/mistral-large', 'sv': 'mistralai/mistral-large', 'da': 'mistralai/mistral-large',
-    'no': 'mistralai/mistral-large', 'fi': 'mistralai/mistral-large', 'pl': 'mistralai/mistral-large',
-    'cs': 'mistralai/mistral-large', 'sk': 'mistralai/mistral-large', 'hu': 'mistralai/mistral-large',
-    'ro': 'mistralai/mistral-large', 'bg': 'mistralai/mistral-large', 'hr': 'mistralai/mistral-large',
-    'sl': 'mistralai/mistral-large', 'et': 'mistralai/mistral-large', 'lv': 'mistralai/mistral-large',
-    'lt': 'mistralai/mistral-large', 'el': 'mistralai/mistral-large',
-    // Asian languages
-    'ja': 'z-ai/glm-5.3-flash', 'zh': 'z-ai/glm-5.3-flash', 'zh-CN': 'z-ai/glm-5.3-flash', 'zh-TW': 'z-ai/glm-5.3-flash', 'ko': 'z-ai/glm-5.3-flash',
-    'ru': 'z-ai/glm-5.3-flash',
-    // All other languages - Gemma (live)
-    'default': 'google/gemma-4-31b-it'
 };
 
 /**
@@ -6313,11 +6218,9 @@ const SEARCH_ENGINES_CONFIG = {
     youtube: { name: 'YouTube', type: 'searx', bang: '!yt', site: 'youtube.com' },
     twitter: { name: 'X (Twitter)', type: 'searx', bang: '!twitter', site: 'x.com' },
     ernie: { name: 'ERNIE', type: 'searx', site: 'baidu.com' },
-    discord: { name: 'Discord', type: 'searx', site: 'discord.com' },
     facebook: { name: 'Facebook', type: 'searx', site: 'facebook.com' },
     instagram: { name: 'Instagram', type: 'searx', site: 'instagram.com' },
     github: { name: 'GitHub', type: 'searx', site: 'github.com' },
-    googlenews: { name: 'Google News', type: 'searx', bang: '!news', site: 'news.google.com' },
     linkedin: { name: 'LinkedIn', type: 'searx', site: 'linkedin.com' },
     grokipedia: { name: 'Grokipedia', type: 'searx', bang: '!w', site: 'grokipedia.com' }
 };
@@ -6656,20 +6559,6 @@ function toggleWebSearchFromMenu(checked) {
 }
 
 /**
- * Toggle Translate from tools menu
- * @param {boolean} checked - Toggle state
- */
-function toggleTranslateFromMenu(checked) {
-    state.translationEnabled = checked;
-    const panel = document.getElementById('translationPanel');
-    if (panel) {
-        panel.classList.toggle('show', checked);
-    }
-    showToast(checked ? 'Translate Enabled' : 'Translate Disabled');
-    saveState();
-}
-
-/**
  * Update current mode
  * @param {string} mode - New mode
  */
@@ -6678,9 +6567,6 @@ function updateMode(mode) {
     const btn = document.getElementById('taskTypeBtn');
     const welcome = document.getElementById('defaultWelcomeContent');
     const discovery = document.getElementById('discoveryFeed');
-    const translateContainer = document.getElementById('toolTranslateContainer');
-    const translatePanel = document.getElementById('translationPanel');
-    
     // Set Thinking Budget Defaults based on Mode
     if (mode === 'research') {
         state.thinkingBudget = 'max';
@@ -6707,14 +6593,6 @@ function updateMode(mode) {
         showToast((modeLabels[mode] || mode) + ' Mode Active');
     } else {
         state.activeModeTag = null;
-    }
-    
-    // Translate only visible in Search mode
-    if (translateContainer) {
-        translateContainer.style.display = mode === 'search' ? 'flex' : 'none';
-    }
-    if (translatePanel) {
-        translatePanel.classList.toggle('show', mode === 'search' && state.translationEnabled);
     }
     
     if (mode === 'search') {
@@ -7019,6 +6897,10 @@ function navigateSettings(view) {
         if (view === 'search') name = 'Search Engines';
         if (view === 'configuration') name = 'Configuration';
         if (view === 'customize') name = 'Customize';
+        if (view === 'skills') {
+            name = 'Skills';
+            if (typeof renderSkillsSettings === 'function') renderSkillsSettings();
+        }
         if (view === 'advanced') name = 'Advanced Features';
         if (view === 'style') name = 'Response Style';
         if (title) title.textContent = name;
@@ -8646,32 +8528,6 @@ function fallbackBrowserSTT() {
 }
 
 // ============================================
-// SECTION 11: TRANSLATION FUNCTIONS
-// ============================================
-
-/**
- * Translate response
- */
-function translateResponse() {
-    const source = document.getElementById('translationSource')?.value || 'auto';
-    const target = document.getElementById('translationTarget')?.value || 'en';
-    
-    if (!window.lastAnswer) {
-        showToast('No response to translate', 'error');
-        return;
-    }
-    
-    showToast('Translation in progress...');
-    
-    // Use translation model based on target language
-    const modelId = TRANSLATION_MODELS[target] || TRANSLATION_MODELS.default;
-    
-    // Implementation would call translation API
-    // For now, show placeholder
-    showToast('Translation feature coming soon', 'info');
-}
-
-// ============================================
 // SECTION 12: WEB SEARCH FUNCTIONS
 // ============================================
 
@@ -8681,9 +8537,9 @@ function translateResponse() {
  * @returns {Promise<string>} - JSON string of results
  */
 async function searchWeb(query) {
-    let limit = 5;
-    if (state.mode === 'research') limit = 15;
-    else if (state.mode === 'search') limit = 20;
+    // v5.5: fixed per-engine caps removed - every engine returns as many
+    // results as the source provides for the query.
+    let limit = 30;
 
     const encodedQuery = encodeURIComponent(query);
 
@@ -11263,17 +11119,129 @@ function toggleSourcesPanel(id) {
     if (chev) chev.style.transform = show ? 'rotate(180deg)' : '';
 }
 
-// v5.4: AGENTIC SEARCH LOOP - the user's query goes to the MODEL FIRST.
-// The model decides what to search (SEARCH: lines), the system searches,
-// results are fed back and the model may refine with more searches, up to
-// 3 rounds. Display: ONLY the web resources found - no source panel, no
-// pipeline cards. If no search is needed, the model's direct answer shows.
-const SEARCH_LOOP_PROMPT = `\n\nWEB SEARCH LOOP:
-You can search the web. To search, output one or two lines in EXACTLY this format:
-SEARCH: <search query>
-After each search round you will receive the results and one more turn: either output more SEARCH: lines to refine, or output DONE if the results are enough.
-If the user's request does not need any web search at all, just reply with the final answer directly (no SEARCH lines).`;
+// =====================================================================
+// v5.5: AGENTIC LOOP + SKILLS
+// The user's query goes to the MODEL FIRST. The model thinks, decides
+// whether it needs web information and what must be searched, then uses
+// its skills any number of times: SEARCH (web search), READ (scrape a
+// page's full text), FETCH (raw page content), BROWSE (skim a page and
+// its links). After every skill run it rethinks and may re-search as
+// many times as it wants. It finishes with ANSWER:.
+// =====================================================================
 
+const SAHU_SKILLS = [
+    { id: 'web_search', name: 'Web Search',   icon: 'fa-search',   color: 'blue',   desc: 'Searches the web with your enabled search engines and collects the results.' },
+    { id: 'web_scrape', name: 'Web Scraping', icon: 'fa-spider',   color: 'purple', desc: 'Opens any web page and extracts its full readable text for deep reading.' },
+    { id: 'web_fetch',  name: 'Web Fetching', icon: 'fa-download', color: 'green',  desc: 'Fetches the raw content of any URL (page text, markdown or JSON).' },
+    { id: 'web_browse', name: 'Web Browsing', icon: 'fa-compass',  color: 'cyan',   desc: 'Browses a page like a person: skims the content and picks up links to follow next.' }
+];
+
+function buildSearchLoopPrompt() {
+    const has = (id) => (state.enabledSkills || []).includes(id);
+    const lines = [];
+    if (has('web_search')) lines.push('SEARCH: <query> - search the web. You may search as many times as you want, each time with a better or different query.');
+    if (has('web_scrape')) lines.push('READ: <url> - scrape a page and read its full text (use on a promising result to dig deeper).');
+    if (has('web_fetch')) lines.push('FETCH: <url> - fetch the raw content of a URL (useful for articles, APIs and files).');
+    if (has('web_browse')) lines.push('BROWSE: <url> - browse a page: quick content summary plus the links it contains for further browsing.');
+    return `\n\nAGENTIC WEB LOOP:
+You are an autonomous research agent running inside the user's app. YOU decide everything.
+${lines.length ? 'Your skills - output a line in EXACTLY this format to use one:\n' + lines.join('\n') : 'You have no web skills available this session.'}
+How you work:
+1. THINK about the request first. Decide whether it needs web information at all - if not, go straight to the final answer.
+2. If it does: decide what must be searched and run the right skill.
+3. After every round of results: RETHINK. Are the results relevant and complete? If not, search again with different or more specific queries (as many times as you want), or READ/BROWSE a promising page to go deeper.
+4. Never stop after a single search - refine and re-search until you are satisfied, but never repeat identical queries.
+5. When you have everything (or nothing needed searching), output your complete final answer for the user starting with:
+ANSWER: 
+One decision block per turn. After your skill lines you will receive the results and another turn.`;
+}
+
+// ---- v5.5: WEB SCRAPING / FETCHING / BROWSING helpers ----
+window._pageJinaQueue = window._pageJinaQueue || Promise.resolve();
+
+function _jinaReader(url) {
+    const run = async () => {
+        try {
+            const res = await fetch('https://r.jina.ai/' + url, { headers: { 'Accept': 'text/plain' } });
+            if (res.status === 429) {
+                await new Promise(r => setTimeout(r, 3500));
+                const retry = await fetch('https://r.jina.ai/' + url, { headers: { 'Accept': 'text/plain' } });
+                return retry.ok ? await retry.text() : null;
+            }
+            return res.ok ? await res.text() : null;
+        } catch (e) { return null; }
+        finally { await new Promise(r => setTimeout(r, 400)); }
+    };
+    window._pageJinaQueue = window._pageJinaQueue.then(run, run);
+    return window._pageJinaQueue;
+}
+
+function _fetchPageText(url, timeoutMs, headers) {
+    return new Promise((resolve) => {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), timeoutMs || 12000);
+        fetch(url, { signal: ctrl.signal, headers: headers || {} })
+            .then(res => res.ok ? res.text() : null)
+            .then(t => { clearTimeout(timer); resolve(t); })
+            .catch(() => { clearTimeout(timer); resolve(null); });
+    });
+}
+
+function _extractPageHtml(html, baseUrl) {
+    try {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        doc.querySelectorAll('script,style,noscript,svg,iframe,nav,footer,header,aside,form').forEach(el => el.remove());
+        const title = (doc.title || '').trim();
+        const text = (doc.body ? (doc.body.innerText || doc.body.textContent) : '').replace(/\n{3,}/g, '\n\n').trim();
+        const links = [];
+        const seen = new Set();
+        doc.querySelectorAll('a[href]').forEach(a => {
+            try {
+                const abs = new URL(a.getAttribute('href'), baseUrl).href;
+                if (!/^https?:/i.test(abs) || seen.has(abs)) return;
+                seen.add(abs);
+                const t = (a.textContent || '').replace(/\s+/g, ' ').trim().substring(0, 80);
+                if (t) links.push({ url: abs, text: t });
+            } catch (e) {}
+        });
+        return { title, text, links: links.slice(0, 15) };
+    } catch (e) { return { title: '', text: '', links: [] }; }
+}
+
+// mode: 'read' = full text | 'fetch' = raw content | 'browse' = summary + links
+async function scrapePageContent(url, mode) {
+    const cap = mode === 'read' ? 4000 : (mode === 'fetch' ? 3500 : 1500);
+    // 1) r.jina.ai reader - clean page text, CORS enabled, keyless
+    let md = await _jinaReader(url);
+    if (md && md.trim().length > 40) {
+        const titleMatch = md.match(/^Title:\s*(.+)$/m);
+        const t = md.replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/[ \t]+\n/g, '\n').trim();
+        return { ok: true, title: titleMatch ? titleMatch[1].trim() : url, text: t.substring(0, cap), links: [] };
+    }
+    // 2) direct fetch (works for CORS-enabled or same-origin pages)
+    let body = await _fetchPageText(url, 12000);
+    if (body && body.trim().length > 40) {
+        if (/<html|<body|<div|<p[\s>]/i.test(body)) {
+            const p = _extractPageHtml(body, url);
+            if (p.text && p.text.length > 40) return { ok: true, title: p.title || url, text: p.text.substring(0, cap), links: p.links };
+        } else {
+            return { ok: true, title: url, text: body.substring(0, cap), links: [] };
+        }
+    }
+    // 3) allorigins relay (scraping fallback for CORS-locked pages)
+    body = await _fetchPageText('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), 15000);
+    if (body && body.trim().length > 40) {
+        if (/<html|<body|<div|<p[\s>]/i.test(body)) {
+            const p = _extractPageHtml(body, url);
+            if (p.text && p.text.length > 40) return { ok: true, title: p.title || url, text: p.text.substring(0, cap), links: p.links };
+        } else {
+            return { ok: true, title: url, text: body.substring(0, cap), links: [] };
+        }
+    }
+    return { ok: false, title: url, text: '', links: [] };
+}
+
+// ---- v5.5: the agent loop itself ----
 async function runSearchMode(fullPrompt, container, chatId) {
     const model = state.selectedModels[0] || { provider: 'nvidia', modelId: 'z-ai/glm-5.3-flash', modelKey: 'GLM 5.3 Flash' };
     const divId = `search-${Date.now()}`;
@@ -11282,99 +11250,175 @@ async function runSearchMode(fullPrompt, container, chatId) {
         container.innerHTML += `
             <div class="message-container message-assistant" id="${divId}">
                 <div class="message-bubble">
-                    <div class="text-[10px] font-semibold text-[var(--text-secondary)] mb-1">Web Search</div>
-                    <div class="text-sm" id="content-${divId}"><span class="text-[var(--text-secondary)]">Thinking...</span></div>
+                    <div class="text-[10px] font-semibold text-[var(--text-secondary)] mb-1">Agent</div>
+                    <div id="trace-${divId}"></div>
+                    <div class="text-sm" id="busy-${divId}"></div>
+                    <div class="text-sm" id="content-${divId}"></div>
                 </div>
             </div>`;
         container.scrollTop = container.scrollHeight;
     }
 
-    const setStatus = (t) => {
-        const el = document.getElementById(`content-${divId}`);
-        if (el) el.innerHTML = `<span class="text-[var(--text-secondary)] text-sm">${escapeHtml(t)}</span>`;
+    const setBusy = (t) => {
+        const el = document.getElementById(`busy-${divId}`);
+        if (el) el.innerHTML = t ? `<span class="text-[var(--text-secondary)] text-xs"><i class="fas fa-circle-notch fa-spin mr-1"></i>${escapeHtml(t)}</span>` : '';
+        if (container) container.scrollTop = container.scrollHeight;
     };
+    const addTrace = (html) => {
+        const el = document.getElementById(`trace-${divId}`);
+        if (el) {
+            el.innerHTML += `<div class="text-[11px] leading-4 text-[var(--text-secondary)] mb-0.5">${html}</div>`;
+            if (container) container.scrollTop = container.scrollHeight;
+        }
+    };
+    const stopErr = () => Object.assign(new Error('Generation stopped'), { name: 'AbortError' });
 
     try {
         const collected = [];
         const seenLinks = new Set();
-        let directAnswer = '';
-        let convo = [{ role: 'user', content: fullPrompt + SEARCH_LOOP_PROMPT }];
-        const MAX_ROUNDS = 3;
+        const visitedUrls = new Set();
+        let finalAnswer = '';
+        let toolRuns = 0;
+        let turn = 0;
+        let convo = [{ role: 'user', content: fullPrompt + buildSearchLoopPrompt() }];
+        const MAX_TURNS = 10;      // hard safety cap on agent turns
+        const MAX_TOOL_RUNS = 15;  // hard safety cap on total skill executions
+        const skillsOn = (id) => (state.enabledSkills || []).includes(id);
 
-        for (let round = 0; round < MAX_ROUNDS; round++) {
-            if (!state.isProcessing) throw Object.assign(new Error('Generation stopped'), { name: 'AbortError' });
-            setStatus(round === 0 ? 'Thinking...' : 'Checking results...');
+        while (turn < MAX_TURNS && toolRuns < MAX_TOOL_RUNS) {
+            if (!state.isProcessing) throw stopErr();
+            turn++;
+            setBusy(turn === 1 ? 'Thinking about the request...' : 'Rethinking...');
             const res = await callModelWithFallback(model.provider, model.modelId, convo, 0, null);
             if (state.currentChatId !== chatId) return;
-            const text = (res.content || '').replace(/<think>[\s\S]*?<\/think>/g, '');
-            const queries = [...text.matchAll(/SEARCH:\s*(.+)/gi)]
-                .map(m => m[1].replace(/[*`]/g, '').trim()).filter(Boolean).slice(0, 2);
+            const text = (res.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 
-            if (queries.length === 0) {
-                // No (more) searches requested - loop ends here.
-                if (round === 0) directAnswer = text.trim();
+            const queries = skillsOn('web_search')
+                ? [...text.matchAll(/SEARCH:\s*(.+)/gi)].map(m => m[1].replace(/[*`]/g, '').trim()).filter(Boolean).slice(0, 3) : [];
+            const reads = skillsOn('web_scrape')
+                ? [...text.matchAll(/READ:\s*(https?:\/\/\S+)/gi)].map(m => m[1].replace(/[)`\]]+$/, '')).slice(0, 2) : [];
+            const fetches = skillsOn('web_fetch')
+                ? [...text.matchAll(/FETCH:\s*(https?:\/\/\S+)/gi)].map(m => m[1].replace(/[)`\]]+$/, '')).slice(0, 2) : [];
+            const browses = skillsOn('web_browse')
+                ? [...text.matchAll(/BROWSE:\s*(https?:\/\/\S+)/gi)].map(m => m[1].replace(/[)`\]]+$/, '')).slice(0, 2) : [];
+
+            const ansMatch = text.match(/ANSWER:\s*([\s\S]+)$/i);
+            const hasTools = queries.length + reads.length + fetches.length + browses.length > 0;
+
+            if (!hasTools) {
+                // The agent is done (or never needed to search at all).
+                finalAnswer = (ansMatch ? ansMatch[1] : text).trim();
                 break;
             }
 
             convo.push({ role: 'assistant', content: text });
+            const parts = [];
+
             for (const q of queries) {
-                if (!state.isProcessing) throw Object.assign(new Error('Generation stopped'), { name: 'AbortError' });
-                setStatus('Searching: ' + q);
+                if (toolRuns >= MAX_TOOL_RUNS) break;
+                if (!state.isProcessing) throw stopErr();
+                toolRuns++;
+                setBusy('Searching: ' + q);
+                addTrace(`<i class="fas fa-search text-blue-500 mr-1"></i><span class="font-medium">Search:</span> ${escapeHtml(q)}`);
                 let found = [];
                 try { found = JSON.parse(await searchWeb(q)) || []; } catch (e) { found = []; }
                 found.forEach(r => {
-                    if (r && r.link && !seenLinks.has(r.link)) {
-                        seenLinks.add(r.link);
-                        collected.push(r);
-                    }
+                    if (r && r.link && !seenLinks.has(r.link)) { seenLinks.add(r.link); collected.push(r); }
                 });
+                addTrace(`<span class="ml-4">${found.length} result${found.length === 1 ? '' : 's'} found</span>`);
+                const list = found.slice(0, 10).map((s, i) => `${i + 1}. ${s.title} (${s.link})${s.snippet ? '\n   ' + s.snippet : ''}`).join('\n');
+                parts.push(`[SEARCH] "${q}" -> ${found.length} results\n${list || 'No results found. Try different or simpler queries.'}`);
             }
 
-            // Only pay for a refinement round when results are scarce -
-            // with enough resources we show them immediately (saves minutes).
-            if (round < MAX_ROUNDS - 1 && collected.length < 5) {
-                const resultsText = collected.slice(0, 10).map((s, i) => `[${i + 1}] ${s.title} (${s.link})\n${s.snippet || ''}`).join('\n\n');
-                convo.push({ role: 'user', content: `SEARCH RESULTS:\n${resultsText || 'No results found. Try different or simpler queries.'}\n\nReply ONLY with more SEARCH: lines to refine the search, or DONE if the current results are enough.` });
-            } else {
-                break;
+            for (const u of reads) {
+                if (toolRuns >= MAX_TOOL_RUNS) break;
+                if (!state.isProcessing) throw stopErr();
+                toolRuns++;
+                setBusy('Reading: ' + u);
+                let host = u; try { host = new URL(u).hostname; } catch (e) {}
+                if (visitedUrls.has(u)) { parts.push(`[READ] ${u}\nAlready read this page earlier.`); continue; }
+                visitedUrls.add(u);
+                addTrace(`<i class="fas fa-spider text-purple-500 mr-1"></i><span class="font-medium">Scrape:</span> ${escapeHtml(host)}`);
+                const page = await scrapePageContent(u, 'read');
+                addTrace(`<span class="ml-4">${page.ok ? 'read ' + page.text.length + ' chars' : 'could not open'}</span>`);
+                parts.push(`[READ] ${u}${page.title && page.title !== u ? ' (title: ' + page.title + ')' : ''}\n${page.ok ? page.text : 'Could not open this page.'}`);
             }
+
+            for (const u of fetches) {
+                if (toolRuns >= MAX_TOOL_RUNS) break;
+                if (!state.isProcessing) throw stopErr();
+                toolRuns++;
+                setBusy('Fetching: ' + u);
+                let host = u; try { host = new URL(u).hostname; } catch (e) {}
+                if (visitedUrls.has(u)) { parts.push(`[FETCH] ${u}\nAlready fetched this URL earlier.`); continue; }
+                visitedUrls.add(u);
+                addTrace(`<i class="fas fa-download text-green-500 mr-1"></i><span class="font-medium">Fetch:</span> ${escapeHtml(host)}`);
+                const page = await scrapePageContent(u, 'fetch');
+                addTrace(`<span class="ml-4">${page.ok ? page.text.length + ' chars' : 'could not fetch'}</span>`);
+                parts.push(`[FETCH] ${u}\n${page.ok ? page.text : 'Could not fetch this URL.'}`);
+            }
+
+            for (const u of browses) {
+                if (toolRuns >= MAX_TOOL_RUNS) break;
+                if (!state.isProcessing) throw stopErr();
+                toolRuns++;
+                setBusy('Browsing: ' + u);
+                let host = u; try { host = new URL(u).hostname; } catch (e) {}
+                if (visitedUrls.has(u)) { parts.push(`[BROWSE] ${u}\nAlready browsed this page earlier.`); continue; }
+                visitedUrls.add(u);
+                addTrace(`<i class="fas fa-compass text-cyan-500 mr-1"></i><span class="font-medium">Browse:</span> ${escapeHtml(host)}`);
+                const page = await scrapePageContent(u, 'browse');
+                addTrace(`<span class="ml-4">${page.ok ? page.text.length + ' chars, ' + page.links.length + ' links' : 'could not open'}</span>`);
+                const linkList = page.links.slice(0, 10).map(l => `- ${l.text} -> ${l.url}`).join('\n');
+                parts.push(`[BROWSE] ${u}${page.title && page.title !== u ? ' (title: ' + page.title + ')' : ''}\n${page.ok ? page.text + (linkList ? '\nLinks on this page:\n' + linkList : '') : 'Could not open this page.'}`);
+            }
+
+            convo.push({
+                role: 'user',
+                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries, READ, FETCH or BROWSE) - you may redo this as many times as you need.`
+            });
         }
 
         if (state.currentChatId !== chatId) return;
+
+        if (!finalAnswer) {
+            // Tool budget reached without an ANSWER - one last model call.
+            setBusy('Writing the final answer...');
+            const res2 = await callModelWithFallback(model.provider, model.modelId,
+                convo.concat([{ role: 'user', content: 'You have reached the tool budget. Output your final answer to the user now, starting with ANSWER:.' }]), 0, null);
+            const t2 = (res2.content || '').replace(/<think>[\s\S]*?<\/think>/g, '');
+            const m2 = t2.match(/ANSWER:\s*([\s\S]+)$/i);
+            finalAnswer = (m2 ? m2[1] : t2).trim();
+        }
+
+        setBusy('');
 
         let displayHtml = '';
         let savedContent = '';
 
         if (collected.length > 0) {
-            // v5.4: ONLY the resources - a plain list, no source panel
-            const items = collected.slice(0, 12).map((s) => `
+            // Search mode shows ONLY the resources the agent gathered
+            const items = collected.slice(0, 30).map((s) => `
                 <li class="mb-3">
                     <a href="${s.link}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(s.title || s.link)}</a>
                     <span class="text-[10px] text-[var(--text-secondary)] ml-1">(${escapeHtml(s.source || 'web')})</span>
                     <div class="text-xs text-[var(--text-secondary)] mt-0.5">${escapeHtml(s.snippet || '')}</div>
                 </li>`).join('');
             displayHtml = `<ol class="list-decimal pl-5">${items}</ol>`;
-            savedContent = collected.slice(0, 12).map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
-            window.lastAnswer = savedContent;
+            savedContent = collected.slice(0, 30).map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
         } else {
-            // No search needed - show the model's direct answer
-            displayHtml = `<div class="prose max-w-none text-sm">${formatMarkdown(directAnswer || 'No results found. Please try again.')}</div>`;
-            savedContent = directAnswer || 'No results found.';
-            window.lastAnswer = savedContent;
+            // No search needed - show the agent's direct answer
+            displayHtml = `<div class="prose max-w-none text-sm">${formatMarkdown(finalAnswer || 'No results found. Please try again.')}</div>`;
+            savedContent = finalAnswer || 'No results found.';
         }
+        window.lastAnswer = savedContent;
 
-        const card = document.getElementById(divId);
-        if (card) {
-            card.innerHTML = `
-                <div class="message-bubble">
-                    <div class="text-[10px] font-semibold text-[var(--text-secondary)] mb-2">${escapeHtml(model.modelKey)} \u00b7 Web Search</div>
-                    ${displayHtml}
-                </div>`;
-        }
-        container.scrollTop = container.scrollHeight;
+        const contentEl = document.getElementById(`content-${divId}`);
+        if (contentEl) contentEl.innerHTML = displayHtml;
+        if (container) container.scrollTop = container.scrollHeight;
 
         // Save to history (sources included for the saved-sources feature)
-        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: collected.slice(0, 12), timestamp: Date.now() };
+        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: collected.slice(0, 30), timestamp: Date.now() };
         state.messages.push(assistMsgObj);
         const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
         if (currentChat) currentChat.messages.push(assistMsgObj);
@@ -11391,12 +11435,39 @@ async function runSearchMode(fullPrompt, container, chatId) {
         }
     } catch (e) {
         const aborted = e && (e.name === 'AbortError' || /abort|stopped/i.test(e.message || ''));
-        const card = document.getElementById(divId);
-        if (card) {
-            card.innerHTML = `<div class="message-bubble"><div class="text-sm ${aborted ? 'text-[var(--text-secondary)]' : 'text-red-500'}">${aborted ? 'Generation stopped.' : 'Search failed: ' + escapeHtml(e.message)}</div></div>`;
-        }
-        if (!aborted) showToast('Search failed', 'error');
+        setBusy('');
+        const contentEl = document.getElementById(`content-${divId}`);
+        if (contentEl) contentEl.innerHTML = `<div class="text-sm ${aborted ? 'text-[var(--text-secondary)]' : 'text-red-500'}">${aborted ? 'Generation stopped.' : 'Agent failed: ' + escapeHtml(e.message)}</div>`;
+        if (!aborted) showToast('Agent failed', 'error');
     }
+}
+
+// ---- v5.5: Skills settings (Settings > Skills) ----
+function toggleSkill(id, checked) {
+    const set = new Set(state.enabledSkills || SAHU_SKILLS.map(s => s.id));
+    if (checked) set.add(id); else set.delete(id);
+    state.enabledSkills = SAHU_SKILLS.map(s => s.id).filter(sid => set.has(sid));
+    saveState();
+    const s = SAHU_SKILLS.find(x => x.id === id);
+    showToast((checked ? 'Skill enabled: ' : 'Skill disabled: ') + (s ? s.name : id));
+}
+
+function renderSkillsSettings() {
+    const wrap = document.getElementById('skillsList');
+    if (!wrap) return;
+    wrap.innerHTML = SAHU_SKILLS.map(s => `
+        <label class="tools-popover-item" style="display:flex;">
+            <span class="tools-popover-item-label">
+                <i class="fas ${s.icon} text-${s.color}-500"></i>
+                <span>${s.name}</span>
+            </span>
+            <div class="toggle-container">
+                <input type="checkbox" class="toggle-checkbox" ${(state.enabledSkills || []).includes(s.id) ? 'checked' : ''} onchange="toggleSkill('${s.id}', this.checked)">
+                <label class="toggle-label"></label>
+            </div>
+        </label>
+        <div class="text-[11px] text-[var(--text-secondary)] mb-2 -mt-1 pl-1">${s.desc}</div>
+    `).join('');
 }
 
 // ============================================
@@ -11577,7 +11648,6 @@ window.toggleSidebar = toggleSidebar;
 window.toggleDeepThink = toggleDeepThink;
 window.toggleDeepThinkFromMenu = toggleDeepThinkFromMenu;
 window.toggleWebSearchFromMenu = toggleWebSearchFromMenu;
-window.toggleTranslateFromMenu = toggleTranslateFromMenu;
 window.updateMode = updateMode;
 window.toggleTaskType = toggleTaskType;
 window.setTaskMode = setTaskMode;
@@ -11627,7 +11697,7 @@ window.generateShareLink = generateShareLink;
 window.loadChat = loadChat;
 window.filterHistory = filterHistory;
 window.startVoiceInput = startVoiceInput;
-window.translateResponse = translateResponse;
+window.toggleSkill = toggleSkill;
 window.copyToClipboard = copyToClipboard;
 window.downloadMarkdown = downloadMarkdown;
 window.downloadTxt = downloadTxt;

@@ -4517,14 +4517,15 @@
                                     <span id="modelSelectLabel" style="font-size:0.625rem;font-weight:500;margin-left:0.125rem;">Model</span>
                                 </button>
                                 
-                                <!-- File Inputs (Hidden) - v5.2: one input per picker
-                                     type so Photos / Videos / Files each open their OWN
-                                     native picker instead of one mixed chooser -->
+                                <!-- File Inputs (Hidden) - v5.3: Photos / Videos use explicit MIME+extension
+                                     accept lists (wildcards like image/* make Android show
+                                     the mixed "Photos/Videos/Files" action chooser instead
+                                     of opening the dedicated picker) -->
                                 <input type="file" id="fileInput" class="hidden" accept=".txt,.pdf,.doc,.docx,.md,.json,.csv,.js,.py,.html,.css,.png,.jpg,.jpeg,.gif,.webp,.svg,.bmp,.wav,.mp3,.webm,.mp4" onchange="handleFileUpload(event)">
                                 <input type="file" id="cameraInput" class="hidden" accept="image/*" capture="environment" onchange="handleFileUpload(event)">
-                                <input type="file" id="imageInput" class="hidden" accept="image/*" onchange="handleFileUpload(event)">
+                                <input type="file" id="imageInput" class="hidden" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.bmp,.heic,.heif" onchange="handleFileUpload(event)">
                                 <input type="file" id="docInput" class="hidden" accept=".txt,.pdf,.doc,.docx,.md,.json,.csv,.js,.py,.html,.css,.xml" onchange="handleFileUpload(event)">
-                                <input type="file" id="videoInput" class="hidden" accept="video/*" onchange="handleVideoUpload(event)">
+                                <input type="file" id="videoInput" class="hidden" accept="video/mp4,video/webm,video/3gpp,video/quicktime,video/x-matroska,.mp4,.webm,.3gp,.mov,.mkv" onchange="handleVideoUpload(event)">
                                 
                                 <!-- Spacer -->
                                 <div style="flex:1"></div>
@@ -4829,7 +4830,23 @@
             <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('duckduckgo', this.checked)">
             <div class="search-engine-info">
                 <div class="search-engine-name">DuckDuckGo</div>
-                <div class="search-engine-type">(SearXNG)</div>
+                <div class="search-engine-type">(Web)</div>
+            </div>
+        </label>
+    
+        <label class="search-engine-item">
+            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('duckduckgo_lite', this.checked)">
+            <div class="search-engine-info">
+                <div class="search-engine-name">DuckDuckGo Lite</div>
+                <div class="search-engine-type">(Web)</div>
+            </div>
+        </label>
+    
+        <label class="search-engine-item">
+            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('duckduckgo_instant', this.checked)">
+            <div class="search-engine-info">
+                <div class="search-engine-name">DuckDuckGo Instant</div>
+                <div class="search-engine-type">(API)</div>
             </div>
         </label>
     
@@ -6391,6 +6408,8 @@ const SEARCH_ENGINES_CONFIG = {
     google: { name: 'Google', type: 'searx', bang: '!g' },
     bing: { name: 'Bing', type: 'searx', bang: '!bing' },
     duckduckgo: { name: 'DuckDuckGo', type: 'searx', bang: '!ddg' },
+    duckduckgo_lite: { name: 'DuckDuckGo Lite', type: 'searx' },
+    duckduckgo_instant: { name: 'DuckDuckGo Instant', type: 'api' },
     yahoo: { name: 'Yahoo', type: 'searx', bang: '!yahoo' },
     yandex: { name: 'Yandex', type: 'searx', bang: '!yandex' },
     qwant: { name: 'Qwant', type: 'searx', bang: '!qwant' },
@@ -7654,7 +7673,7 @@ function renderSearchEngines() {
             <input type="checkbox" class="search-engine-checkbox" ${state.activeSearchEngines.includes(key) ? 'checked' : ''} onchange="toggleSearchEngine('${key}', this.checked)">
             <div class="search-engine-info">
                 <div class="search-engine-name">${config.name}</div>
-                <div class="search-engine-type">${config.type === 'api' ? '(API)' : '(SearXNG)'}</div>
+                <div class="search-engine-type">${config.type === 'api' ? '(API)' : '(Web)'}</div>
             </div>
         </label>
     `).join('');
@@ -8981,6 +9000,39 @@ async function searchWeb(query) {
         return raw.slice(0, maxResults).map(r => ({ ...r, source: sourceLabel }));
     };
 
+    // v5.3: standalone DuckDuckGo Instant Answers engine.
+    // api.duckduckgo.com supports CORS directly (no proxy needed) and needs no key.
+    // Returns the instant abstract plus related-topic links as results.
+    const queryDuckDuckGoInstant = async (q, maxResults, sourceLabel) => {
+        const ia = await fetchJsonViaChain(
+            'https://api.duckduckgo.com/?q=' + encodeURIComponent(q) + '&format=json&no_html=1&skip_disambig=1&t=sahuai'
+        );
+        const out = [];
+        if (ia) {
+            if (ia.AbstractText && ia.AbstractURL) {
+                out.push({
+                    title: ia.Heading || 'Result',
+                    link: ia.AbstractURL,
+                    snippet: ia.AbstractText.substring(0, 300),
+                    source: sourceLabel
+                });
+            }
+            const topics = (ia.RelatedTopics || []).flatMap(t => t.Topics ? t.Topics : [t]);
+            topics.forEach(t => {
+                if (out.length >= maxResults) return;
+                if (t && t.FirstURL && t.Text) {
+                    out.push({
+                        title: t.Text.split(' - ')[0].substring(0, 200),
+                        link: t.FirstURL,
+                        snippet: t.Text.substring(0, 300),
+                        source: sourceLabel
+                    });
+                }
+            });
+        }
+        return out;
+    };
+
     const promises = [];
     const activeEngines = state.activeSearchEngines.length > 0
         ? state.activeSearchEngines
@@ -9045,6 +9097,12 @@ async function searchWeb(query) {
         } else if (key === 'duckduckgo') {
             // Dedicated DuckDuckGo engine (FIX 4) - free, no bang, no site filter
             promises.push(() => queryDuckDuckGoLite(query, limit, 'DuckDuckGo'));
+        } else if (key === 'duckduckgo_lite') {
+            // v5.3: dedicated DuckDuckGo Lite engine (html-only DDG endpoint)
+            promises.push(() => queryDuckDuckGoLite(query, limit, 'DDG Lite'));
+        } else if (key === 'duckduckgo_instant') {
+            // v5.3: dedicated DuckDuckGo Instant Answers engine (CORS API, keyless)
+            promises.push(() => queryDuckDuckGoInstant(query, limit, 'DDG Instant'));
         } else if (config.type === 'searx') {
             // FIX 5: all former SearXNG engines now route through DuckDuckGo
             // (meta-search). Strategy:

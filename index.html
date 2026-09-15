@@ -9674,7 +9674,7 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
                         try {
                             const json = JSON.parse(jsonStr);
                             const contentChunk = json.choices?.[0]?.delta?.content || "";
-                            const thinkingChunk = json.choices?.[0]?.delta?.reasoning_content || "";
+                            const thinkingChunk = json.choices?.[0]?.delta?.reasoning_content || json.choices?.[0]?.delta?.reasoning || "";
                             
                             fullText += contentChunk;
                             thinkingText += thinkingChunk;
@@ -9709,7 +9709,7 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
                     try {
                         const json = JSON.parse(jsonStr);
                         const contentChunk = json.choices?.[0]?.delta?.content || "";
-                        const thinkingChunk = json.choices?.[0]?.delta?.reasoning_content || "";
+                        const thinkingChunk = json.choices?.[0]?.delta?.reasoning_content || json.choices?.[0]?.delta?.reasoning || "";
                         fullText += contentChunk;
                         thinkingText += thinkingChunk;
                         if (contentChunk || thinkingChunk) {
@@ -9750,8 +9750,12 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
                             } catch (_) { reason = _m[1].slice(0, 180); }
                         }
                     }
-                    if (!reason && _probe.trim()) reason = _probe.replace(/\s+/g, ' ').trim().slice(0, 180);
+                    // v5.6e: NEVER dump raw stream text into the UI. If the
+                    // model produced reasoning but no answer, say so cleanly.
                 } catch (_) {}
+                if (!reason && thinkingText.trim()) {
+                    reason = 'Model used its token budget on internal reasoning without producing an answer - please try again';
+                }
                 throw new Error(reason || 'Model returned an empty response');
             }
             // FIX 1: extract inline <think> blocks some models emit inside content
@@ -9777,7 +9781,7 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
                 throw new Error((data.error.message || data.error.code || data.error.type || 'Provider error'));
             }
             let content = data.choices?.[0]?.message?.content || '';
-            let thinking = data.choices?.[0]?.message?.reasoning_content || '';
+            let thinking = data.choices?.[0]?.message?.reasoning_content || data.choices?.[0]?.message?.reasoning || '';
             if (!content.trim() && data.choices && data.choices.length) {
                 throw new Error('Model returned an empty response');
             }

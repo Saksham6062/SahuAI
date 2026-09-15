@@ -8707,9 +8707,10 @@ async function searchWeb(query, enginesOverride) {
         }
 
         // Last resort: DuckDuckGo Instant Answer API (direct, CORS enabled)
+        // v5.9: 20s budget - DDG can be slow to answer while throttling.
         if (results.length === 0) {
             const ia = await fetchJsonViaChain(
-                'https://api.duckduckgo.com/?q=' + encodeURIComponent(rawQuery || '') + '&format=json&no_html=1&skip_disambig=1&t=sahuai'
+                'https://api.duckduckgo.com/?q=' + encodeURIComponent(rawQuery || '') + '&format=json&no_html=1&skip_disambig=1&t=sahuai', 20000
             );
             if (ia) {
                 if (ia.AbstractText && ia.AbstractURL) {
@@ -8763,7 +8764,7 @@ async function searchWeb(query, enginesOverride) {
     // Returns the instant abstract plus related-topic links as results.
     const queryDuckDuckGoInstant = async (q, maxResults, sourceLabel) => {
         const ia = await fetchJsonViaChain(
-            'https://api.duckduckgo.com/?q=' + encodeURIComponent(q) + '&format=json&no_html=1&skip_disambig=1&t=sahuai'
+            'https://api.duckduckgo.com/?q=' + encodeURIComponent(q) + '&format=json&no_html=1&skip_disambig=1&t=sahuai', 20000
         );
         const out = [];
         if (ia) {

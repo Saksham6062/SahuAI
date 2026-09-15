@@ -8553,12 +8553,15 @@ async function searchWeb(query) {
      * Every remote fetch goes through fetchTextWithFallback() which tries
      * direct first, then a chain of CORS proxies.
      */
-    // v5.4: all Cloudflare workers and public proxies removed per user request.
-    // Chain is now: direct fetch, then the r.jina.ai reader (needed because
-    // lite.duckduckgo.com sends no CORS headers for HTML pages).
+    // v5.5: chain is direct -> r.jina.ai reader -> allorigins relay.
+    // r.jina.ai 401-blocks requests coming from hosted app origins (like
+    // github.io pages), so allorigins (CORS *) is required as the working
+    // relay on the live site - it returns raw HTML which the DOMParser
+    // path below handles.
     const PROXY_BUILDERS = [
         (u) => u,
-        (u) => 'https://r.jina.ai/' + u
+        (u) => 'https://r.jina.ai/' + u,
+        (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)
     ];
 
     // r.jina.ai anonymous tier rate-limits bursts: serialize all jina calls
@@ -11230,6 +11233,16 @@ async function scrapePageContent(url, mode) {
     }
     // 3) allorigins relay (scraping fallback for CORS-locked pages)
     body = await _fetchPageText('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), 15000);
+    if (body && body.trim().length > 40) {
+        if (/<html|<body|<div|<p[\s>]/i.test(body)) {
+            const p = _extractPageHtml(body, url);
+            if (p.text && p.text.length > 40) return { ok: true, title: p.title || url, text: p.text.substring(0, cap), links: p.links };
+        } else {
+            return { ok: true, title: url, text: body.substring(0, cap), links: [] };
+        }
+    }
+    // 4) codetabs relay (second scraping fallback)
+    body = await _fetchPageText('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url), 15000);
     if (body && body.trim().length > 40) {
         if (/<html|<body|<div|<p[\s>]/i.test(body)) {
             const p = _extractPageHtml(body, url);

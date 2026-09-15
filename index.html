@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v5.1 - Official Saksham Intelligence AI Models Chat - 57+ models, 15+ providers, consensus-powered AI">
+    <meta name="description" content="SahuAI Agent v6 - Official Saksham Intelligence AI Models Chat - 57+ models, 15+ providers, consensus-powered AI">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v5.1 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v6 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v5.1</span>
+                        <span>SahuAI Agent v6</span>
                     </div>
                 </div>
                 
@@ -6521,7 +6521,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v5.1</span>
+                        <span>v6</span>
                     </div>
                 </div>
             </div>
@@ -8560,25 +8560,26 @@ async function searchWeb(query, enginesOverride) {
     const encodedQuery = encodeURIComponent(query);
 
     /**
-     * v5.9b search fetch chain - proxies ONLY where essential (user policy):
-     * direct browser call first, then CORS-proxy legs that make keyless
-     * engines and page skills workable (DDG Lite, SearXNG, scraping):
-     *   1. direct
-     *   2. corsproxy.io - USER-ENDORSED, from the original SahuAI code
-     *      ("works fine without IP tracking"). On networks where corsproxy
-     *      demands an API key it 401s instantly and the chain just falls
-     *      through to the next leg.
-     *   3. api.allorigins.win/raw - raw HTML, CORS *
-     *   4. api.codetabs.com/v1/proxy - raw, CORS *
-     * r.jina.ai REMOVED: it 401-blocks every request whose Origin is
-     * github.io (re-verified on the live site), so the reader leg never
-     * succeeded in production - a dead, non-essential proxy.
-     * The OWN Cloudflare worker is no longer used for search - it stays
-     * reserved for the NVIDIA/Z.ai model relays where it is essential.
+     * v6 search fetch chain - the FULL v5.5 keyless proxy set, all CORS
+     * proxies that need NO API key, NO sign-up and have no hard IP lock
+     * (user directive: "use all the proxies which are in v5.5"):
+     *   1. direct browser call
+     *   2. corsproxy.io - user-endorsed, from the original SahuAI code
+     *      ("works fine without IP tracking"); 401s instantly on networks
+     *      that demand an API key, so the chain just falls through
+     *   3. r.jina.ai reader - clean reader markdown, keyless (the v5.5
+     *      workhorse; only some datacenter IPs get 401'd, residential OK)
+     *   4. api.allorigins.win/raw - raw HTML, CORS * (v5.5)
+     *   5. api.codetabs.com/v1/proxy - raw, CORS * (v5.5)
+     * Each leg fails fast into the next, so at least one keyless path
+     * reaches CORS-locked engines (DDG Lite, SearXNG) on any network.
+     * The OWN Cloudflare worker stays reserved for the NVIDIA/Z.ai model
+     * relays (+ Whisper audio) where it is essential - never for search.
      */
     const PROXY_BUILDERS = [
         (u) => u,
         (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+        (u) => 'https://r.jina.ai/' + u,
         (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
         (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)
     ];
@@ -11563,17 +11564,15 @@ async function scrapePageContent(url, mode) {
             }
         }
     } catch (e) {}
-    // v5.9b: direct first, then ESSENTIAL CORS-proxy legs so scrape/fetch/
-    // browse also work on CORS-locked pages. corsproxy.io (user-endorsed,
-    // from the original SahuAI code, no IP tracking) leads the proxy legs;
-    // allorigins + codetabs stay as raw fallbacks. r.jina.ai removed - it
-    // 401-blocks the github.io origin on the live site, so the reader leg
-    // never succeeded in production. The own worker is NOT used here - only
-    // the third-party CORS proxies the user allows for making search skills
-    // workable.
+    // v6: scrape/fetch/browse chain = the FULL v5.5 keyless proxy set
+    // (corsproxy.io + r.jina.ai reader + allorigins + codetabs). No API
+    // keys, no sign-ups; every leg fails fast into the next so CORS-locked
+    // pages stay reachable on any network. The own worker is NOT used here
+    // - only the third-party CORS proxies that make page skills workable.
     const _pageLegs = [
         (u) => u,
         (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+        (u) => 'https://r.jina.ai/' + u,
         (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
         (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)
     ];
@@ -12051,7 +12050,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v5.1 Initializing...');
+    console.log('🚀 SahuAI Agent v6 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -12093,8 +12092,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v5.1 Ready');
-    showToast('SahuAI Agent v5.1 Loaded');
+    console.log('✅ SahuAI Agent v6 Ready');
+    showToast('SahuAI Agent v6 Loaded');
 }
 
 // ============================================
@@ -12211,7 +12210,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v5.1 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v6 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v6.3 - Official Saksham Intelligence AI Models Chat - 57+ models, 15+ providers, consensus-powered AI">
+    <meta name="description" content="SahuAI Agent v6.4 - Official Saksham Intelligence AI Models Chat - 57+ models, 15+ providers, consensus-powered AI">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v6.3 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v6.4 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v6.3</span>
+                        <span>SahuAI Agent v6.4</span>
                     </div>
                 </div>
                 
@@ -5760,7 +5760,7 @@ const state = {
     },
     
     // v5.5: Agent skills - abilities the loop can use, toggled in Settings > Skills
-    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse'],
+    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files'],
     
     // Response Style
     responseStyle: 'normal'
@@ -6403,7 +6403,15 @@ function loadState() {
         // v5.6: skills must ALWAYS default to all-on. Older saved states lack
         // the key entirely, which silently disabled every agentic skill.
         if (!Array.isArray(state.enabledSkills) || state.enabledSkills.length === 0) {
-            state.enabledSkills = ['web_search', 'web_scrape', 'web_fetch', 'web_browse'];
+            state.enabledSkills = ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files'];
+        }
+        // v6.4: one-time migration - the two new skills join any saved list
+        if (!state._v64Skills) {
+            const _v64set = new Set(state.enabledSkills || []);
+            _v64set.add('run_code');
+            _v64set.add('make_files');
+            state.enabledSkills = (typeof SAHU_SKILLS !== 'undefined' ? SAHU_SKILLS.map(s => s.id) : ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files']).filter(id => _v64set.has(id));
+            state._v64Skills = true;
         }
         
         const history = localStorage.getItem('sahu_chat_history');
@@ -6526,7 +6534,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v6.3</span>
+                        <span>v6.4</span>
                     </div>
                 </div>
             </div>
@@ -8178,6 +8186,7 @@ function loadChat(id) {
                             ${_thinkingHtml}
                             <div class="message-content">${formatMarkdown(msg.content, msg.sources)}</div>
                             ${_sourcesHtml}
+                            ${renderSavedFileCards(msg.files)}
                         </div>
                     </div>
                 `;
@@ -9593,6 +9602,14 @@ function openPreview() {
  */
 function formatMarkdown(text, sources = null) {
     if (!text) return '';
+    // v6.4: strip dangerous constructs + hide raw FILE blocks
+    // (FILE blocks are turned into download cards by the v6.4 hooks)
+    text = String(text)
+        .replace(/<script[\s\S]*?<\/script\s*>/gi, '')
+        .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1="#"')
+        .replace(/FILE\s*\[\s*[a-z0-9]{1,8}\s*\]\s*:[^\n]*\n[\s\S]*?(?:\n\/FILE(?![a-z])|\nFILE\s*\[|$)/gi, '');
+    
     
     // Citation handling (FIX 2: use provided sources when rendering saved chats)
     const _srcList = (Array.isArray(sources) && sources.length) ? sources : (state.lastSources || []);
@@ -9627,9 +9644,12 @@ function formatMarkdown(text, sources = null) {
             </button>
         `;
         
-        if (lang === 'python') {
+        const _runLang = ({ python: 'python', py: 'python', python3: 'python', runpython: 'python', run_py: 'python', js: 'js', javascript: 'js', runjs: 'js', run_js: 'js' })[String(lang).toLowerCase()];
+        if (_runLang) {
+            window.__sahuCodeReg = window.__sahuCodeReg || {};
+            window.__sahuCodeReg[id] = { code: code, lang: _runLang };
             actions += `
-                <button onclick="executeTool('CODE:${code.replace(/"/g, '\\"').replace(/\n/g, '\\n')}')" class="artifact-action">
+                <button onclick="sahuRunCode('${id}')" class="artifact-action">
                     <i class="fas fa-play"></i> Run
                 </button>
             `;
@@ -9679,6 +9699,9 @@ function formatMarkdown(text, sources = null) {
         `;
     });
     
+    // v6.4: markdown tables, headings and lists
+    text = _sahuRichBlocks(text);
+
     // Inline code
     text = text.replace(/`([^`]+)`/g,
         '<code class="bg-[var(--bg-tertiary)] px-1 py-0.5 rounded text-xs">$1</code>');
@@ -11239,6 +11262,8 @@ async function sendMessage() {
             // no blind pre-search, no sources panel, no duplicate response.
             await runSearchMode(fullPrompt, container, thisChatId, 'chat');
         } else if (state.mode === 'standard' || state.mode === 'task' || state.mode === 'artifacts' || state.mode === 'appdev') {
+            // v6.4: tell the model it can run code, create files, use rich styling
+            fullPrompt = fullPrompt + buildV64StandardHint();
             // Check for Debate Mode
             if (state.features.debateMode) {
                 await runDebateMode(fullPrompt, container, thisChatId);
@@ -11375,6 +11400,8 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
         const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
         if (currentChat) currentChat.messages.push(assistMsgObj);
         lastSavedContent = r.content;
+        // v6.4: generate files the model delivered (standard mode)
+        attachV64Final(el, r.content, assistMsgObj);
     });
     persistChatHistory();
     window.lastAnswer = lastSavedContent;
@@ -11542,6 +11569,8 @@ const SAHU_SKILLS = [
     { id: 'web_search', name: 'Web Search',   icon: 'fa-search',   color: 'blue',   desc: 'Searches the web with your enabled search engines and collects the results.' },
     { id: 'web_scrape', name: 'Web Scraping', icon: 'fa-spider',   color: 'purple', desc: 'Opens any web page and extracts its full readable text for deep reading.' },
     { id: 'web_fetch',  name: 'Web Fetching', icon: 'fa-download', color: 'green',  desc: 'Fetches the raw content of any URL (page text, markdown or JSON).' },
+    { id: 'run_code', name: 'Code Interpreter', icon: 'fa-terminal', color: 'amber', desc: 'Gives the model a real sandboxed code interpreter: Python 3 (Pyodide) and JavaScript with npm packages (esm.sh). It can run code, see the output and iterate.' },
+    { id: 'make_files', name: 'File Creation', icon: 'fa-file-export', color: 'rose', desc: 'The model can create downloadable files: pdf, pptx, xlsx, docx, md, txt, csv and json - with fonts, tables and emojis.' },
     { id: 'web_browse', name: 'Web Browsing', icon: 'fa-compass',  color: 'cyan',   desc: 'Browses a page like a person: skims the content and picks up links to follow next.' }
 ];
 
@@ -11551,6 +11580,9 @@ function buildSearchLoopPrompt() {
     if (has('web_search')) lines.push('SEARCH[key]: <query> - run ONE search. The key is ONE engine (e.g. SEARCH[wikipedia]: ...) or ONE whole CATEGORY (e.g. SEARCH[social]: ... runs EVERY enabled Social Media engine). YOU decide which, on your own thinking. To use several engines/categories, output several SEPARATE SEARCH lines (one key per line) - they all run IN PARALLEL. There are NO default engines: a bare SEARCH line without [key] is NOT executed, and engines outside your enabled menu NEVER run.');
     if (has('web_scrape')) lines.push('READ: <url> - scrape a page and read its full text (use on a promising result to dig deeper).');
     if (has('web_fetch')) lines.push('FETCH: <url> - fetch the raw content of a URL (useful for articles, APIs and files).');
+    if (has('run_code')) lines.push('RUN CODE - you have a REAL sandboxed code interpreter. Output a fenced code block with language runpython (Python 3: print() to show output, top-level await works, numpy/pandas/matplotlib auto-load on import, pure-Python packages via import micropip; await micropip.install(\"pkg\"); the last matplotlib figure is auto-captured and shown to the user) or runjs (JavaScript: console.log() to show output, import npm packages from https://esm.sh/<package> e.g. import _ from \"https://esm.sh/lodash\", top-level await works). The code runs in a sandbox, the FULL output comes back to you, and you can run more code in your next turns to iterate, verify or fix errors.');
+    if (has('make_files')) lines.push('CREATE FILES - deliver downloadable files with a FILE block (emit them in your final ANSWER - blocks there are turned into download cards for the user):\nFILE[ext]: filename.ext\n<content>\n/FILE\nFormats + content rules: txt/md = raw text/markdown. csv = raw CSV. json = raw JSON. xlsx = rows with cells separated by | (first row = headers; start a new sheet with a ## SheetName line). docx/pdf = markdown-ish: # H1, ## H2, - bullets, 1. numbered, > quote, **bold**, tables as | a | b | rows, optional first line FONT: Georgia (pdf built-in fonts only: helvetica, times, courier; emojis are NOT supported in pdf and get stripped). pptx = slides separated by --- lines; first line of a slide = title, then - bullets or | a | b | tables, optional first line FONT: Arial. If a file fails, fix the content and emit the FILE block again.');
+    lines.push('STYLE: In answers and files you may freely use emojis, markdown tables (| A | B |) to compare or contrast things, **bold**, headings (#, ##), and <font face=\"Georgia\" color=\"#c026d3\" size=\"4\">font spans</font> for different fonts and colors.');
     if (has('web_browse')) lines.push('BROWSE: <url> - browse a page: quick content summary plus the links it contains for further browsing.');
     // v6.2: the engine menu is built DYNAMICALLY from the user's ENABLED
     // engines only - no engine is a default; the model only sees what can
@@ -11672,6 +11704,659 @@ async function scrapePageContent(url, mode) {
     return { ok: false, title: url, text: '', links: [] };
 }
 
+// =====================================================================
+// v6.4: CODE INTERPRETER + FILE CREATION + RICH RENDERING
+// - run_code skill: the model can run Python (Pyodide, sandboxed
+//   Worker, abortable) and JavaScript (module Worker, esm.sh npm
+//   imports). stdout/stderr come back to the model so it can iterate.
+// - make_files skill: the model delivers downloadable files with
+//   FILE[ext]: name blocks (pdf, pptx, xlsx, docx, md, txt, csv, json).
+// - Rich rendering: markdown tables, headings, lists, font spans and
+//   emojis everywhere; Run buttons on runnable code blocks.
+// =====================================================================
+
+let _v64PyWorker = null;
+let v64LastPlot = '';
+window.__sahuCodeReg = window.__sahuCodeReg || {};
+window.__sahuFiles = window.__sahuFiles || {};
+window.v64SandboxStatus = '';
+
+function ensureV64Styles() {
+    if (document.getElementById('sahuV64Styles')) return;
+    const st = document.createElement('style');
+    st.id = 'sahuV64Styles';
+    st.textContent = [
+        '.sahu-table-wrap{overflow-x:auto;margin:8px 0;border-radius:10px;border:1px solid rgba(148,163,184,.28);}',
+        '.sahu-table{width:100%;border-collapse:collapse;font-size:12.5px;}',
+        '.sahu-table th{background:rgba(59,130,246,.12);font-weight:700;text-align:left;padding:8px 10px;border-bottom:2px solid rgba(59,130,246,.35);white-space:nowrap;}',
+        '.sahu-table td{padding:7px 10px;border-bottom:1px solid rgba(148,163,184,.18);vertical-align:top;}',
+        '.sahu-table tr:last-child td{border-bottom:none;}',
+        '.sahu-h{font-weight:800;line-height:1.25;margin:10px 0 4px;}',
+        '.sahu-h1{font-size:1.35em;}.sahu-h2{font-size:1.2em;}.sahu-h3{font-size:1.08em;}.sahu-h4,.sahu-h5,.sahu-h6{font-size:1em;}',
+        '.sahu-list{margin:6px 0 6px 20px;padding:0;list-style:disc;}',
+        'ol.sahu-list{list-style:decimal;}',
+        '.sahu-list li{margin:3px 0;}',
+        '.sahu-file-card{display:flex;align-items:center;gap:8px;padding:9px 12px;margin:8px 0;border:1px solid rgba(148,163,184,.3);border-radius:12px;background:rgba(148,163,184,.08);text-decoration:none!important;color:inherit;transition:border-color .15s;max-width:460px;}',
+        '.sahu-file-card:hover{border-color:#3b82f6;}',
+        '.sahu-file-name{font-weight:600;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+        '.sahu-file-size{font-size:11px;color:#64748b;white-space:nowrap;}',
+        '.sahu-file-dl{font-size:11px;font-weight:700;color:#3b82f6;white-space:nowrap;}',
+        '.sahu-files-row{margin:6px 0;}',
+        '.sahu-code-out{margin:6px 0 10px;border:1px solid rgba(148,163,184,.25);border-radius:10px;overflow:hidden;}',
+        '.sahu-code-out-h{padding:5px 10px;font-size:11px;font-weight:700;background:rgba(148,163,184,.1);color:#64748b;display:flex;gap:8px;align-items:center;}',
+        '.sahu-code-out-p{margin:0;padding:10px;font-size:12px;max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-word;}',
+        '.sahu-plot{max-width:100%;border-radius:8px;margin:8px 0;border:1px solid rgba(148,163,184,.25);background:#fff;}',
+        '.sahu-run-err{color:#ef4444;}'
+    ].join('\n');
+    document.head.appendChild(st);
+}
+
+// v6.4: capability hint appended to standard-mode prompts so every
+// model knows it can run code, create files and use rich styling.
+function buildV64StandardHint() {
+    const on = state.enabledSkills || [];
+    const parts = [];
+    if (on.includes('run_code')) parts.push('runnable code blocks: a fenced block with language runpython for Python 3 (use print() to show output; numpy/pandas/matplotlib work; top-level await works) or runjs for JavaScript (use console.log(); import npm packages from https://esm.sh/<package>; top-level await works). The user gets a Run button for each block.');
+    if (on.includes('make_files')) parts.push('downloadable files via a FILE block: FILE[ext]: filename.ext on one line, the raw content on the following lines, closed by a line with exactly /FILE. Formats: txt, md, csv, json; xlsx = rows with cells separated by | (first row = headers; start a new sheet with a ## SheetName line); docx and pdf = markdown-ish content (# H1, ## H2, - bullets, > quote, **bold**, | a | b | tables, optional first line FONT: Georgia); pptx = slides separated by a --- line (first line of a slide = title, then - bullets or | a | b | table).');
+    if (!parts.length) return '';
+    return '\n\n[CAPABILITIES] You can output ' + parts.join(' And you can output ') + '. In your answer, freely use emojis, markdown tables (| A | B |) to compare or contrast things, **bold**, headings (#, ##) and font spans like <font face="Georgia" color="#c026d3" size="4">colored text</font> to make the answer clearer and richer.';
+}
+
+// v6.4: extract runnable code blocks (```runpython / ```runjs)
+function extractRunnableCode(text) {
+    const out = [];
+    const re = /```([A-Za-z0-9_+#-]*)[ \t]*\r?\n([\s\S]*?)```/g;
+    let m;
+    while ((m = re.exec(text || '')) !== null) {
+        const lang = String(m[1] || '').toLowerCase();
+        const py = ['runpython', 'run-python', 'run_py', 'pyrun'].indexOf(lang) >= 0;
+        const js = ['runjs', 'run-js', 'run_js', 'jsrun'].indexOf(lang) >= 0;
+        if (!py && !js) continue;
+        const code = (m[2] || '').replace(/\s+$/, '');
+        if (!code.trim()) continue;
+        out.push({ lang: py ? 'python' : 'js', code: code });
+        if (out.length >= 8) break;
+    }
+    return out;
+}
+
+// v6.4: extract FILE blocks
+function extractFileBlocks(text) {
+    const out = [];
+    const re = /FILE\s*\[\s*([a-z0-9]{1,8})\s*\]\s*:[ \t]*([^\n]*)\r?\n([\s\S]*?)(?:\r?\n\/FILE(?![a-z])|\r?\nFILE\s*\[|$)/gi;
+    let m;
+    while ((m = re.exec(text || '')) !== null) {
+        const ext = (m[1] || '').toLowerCase();
+        const name = (m[2] || '').trim().replace(/[*`]/g, '');
+        const content = (m[3] || '').replace(/^\r?\n/, '').replace(/\s+$/, '');
+        if (!content) continue;
+        out.push({ ext: ext, name: name, content: content });
+        if (out.length >= 10) break;
+    }
+    return out;
+}
+
+// v6.4: markdown tables + headings + lists (runs on text AFTER code
+// fences were consumed, BEFORE inline replacements; generated HTML is
+// newline-free so the later \n -> <br> pass cannot damage it).
+function _sahuRichBlocks(text) {
+    if (!text || text.indexOf('\n') === -1) return text;
+    const lines = String(text).split('\n');
+    const out = [];
+    let i = 0;
+    const isPipeRow = (l) => /^\s*\|.*\|\s*$/.test(l);
+    const isSepRow = (l) => /^\s*\|[\s:|-]+\|\s*$/.test(l) && /-/.test(l);
+    const splitRow = (l) => l.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
+    while (i < lines.length) {
+        const L = lines[i];
+        if (isPipeRow(L) && i + 1 < lines.length && isSepRow(lines[i + 1])) {
+            const head = splitRow(L);
+            const aligns = splitRow(lines[i + 1]).map((c) => (/^:-+:$/.test(c) ? 'center' : (/:$/.test(c) ? 'right' : 'left')));
+            i += 2;
+            const rows = [];
+            while (i < lines.length && isPipeRow(lines[i]) && !isSepRow(lines[i])) { rows.push(splitRow(lines[i])); i++; }
+            const th = (c, ci) => '<th' + (aligns[ci] && aligns[ci] !== 'left' ? ' style="text-align:' + aligns[ci] + '"' : '') + '>' + c + '</th>';
+            const td = (r, ci) => '<td' + (aligns[ci] && aligns[ci] !== 'left' ? ' style="text-align:' + aligns[ci] + '"' : '') + '>' + (r[ci] || '') + '</td>';
+            out.push('<div class="sahu-table-wrap"><table class="sahu-table"><thead><tr>' + head.map(th).join('') + '</tr></thead><tbody>' + rows.map((r) => '<tr>' + head.map((_, ci) => td(r, ci)).join('') + '</tr>').join('') + '</tbody></table></div>');
+            continue;
+        }
+        const h = L.match(/^(#{1,6})\s+(.*)$/);
+        if (h) { out.push('<div class="sahu-h sahu-h' + h[1].length + '">' + h[2] + '</div>'); i++; continue; }
+        if (/^\s*[-*•]\s+/.test(L)) {
+            const items = [];
+            while (i < lines.length && /^\s*[-*•]\s+/.test(lines[i])) { items.push(lines[i].replace(/^\s*[-*•]\s+/, '')); i++; }
+            out.push('<ul class="sahu-list">' + items.map((it) => '<li>' + it + '</li>').join('') + '</ul>');
+            continue;
+        }
+        if (/^\s*\d+[.)]\s+/.test(L)) {
+            const items = [];
+            while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i])) { items.push(lines[i].replace(/^\s*\d+[.)]\s+/, '')); i++; }
+            out.push('<ol class="sahu-list">' + items.map((it) => '<li>' + it + '</li>').join('') + '</ol>');
+            continue;
+        }
+        out.push(L);
+        i++;
+    }
+    return out.join('\n');
+}
+
+// ---- v6.4: the sandboxed code runners -------------------------------
+
+// Python: a dedicated Worker runs its OWN Pyodide instance. A runaway
+// script can never freeze the page - the worker is simply terminated.
+const _V64_PY_WORKER_SRC = [
+    "let _py = null;",
+    "const _send = (m) => self.postMessage(m);",
+    "self.onmessage = async (e) => {",
+    "  const d = e.data || {};",
+    "  if (d.cmd !== 'run') return;",
+    "  try {",
+    "    if (!_py) {",
+    "      _send({ id: d.id, type: 'status', text: 'loading Python runtime (first run only, ~10s)...' });",
+    "      importScripts('https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js');",
+    "      _py = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/' });",
+    "      _py.runPython('import sys\\nif \"_sahu_plot_b64\" not in dir():\\n    import io, base64\\n    def _sahu_plot_b64():\\n        if \"matplotlib.pyplot\" not in sys.modules:\\n            return None\\n        try:\\n            import matplotlib.pyplot as plt\\n            if not plt.get_fignums():\\n                return None\\n            buf = io.BytesIO()\\n            plt.savefig(buf, format=\"png\", dpi=110, bbox_inches=\"tight\")\\n            plt.close(\"all\")\\n            return base64.b64encode(buf.getvalue()).decode()\\n        except Exception:\\n            return None');",
+    "      _send({ id: d.id, type: 'status', text: 'Python ready' });",
+    "    }",
+    "    let out = [];",
+    "    _py.setStdout({ batched: (t) => out.push(t) });",
+    "    _py.setStderr({ batched: (t) => out.push('[stderr] ' + t) });",
+    "    try { await _py.loadPackagesFromImports(d.code); } catch (er) {}",
+    "    let val = await _py.runPythonAsync(d.code);",
+    "    let img = null;",
+    "    try { img = _py.runPython('_sahu_plot_b64()'); } catch (er) {}",
+    "    if (img && img.destroy) { try { img.destroy(); } catch (er) {} img = null; }",
+    "    let vs = '';",
+    "    if (val !== undefined && val !== null) { try { vs = String(val); if (val.destroy) { try { val.destroy(); } catch (er) {} } } catch (er) { vs = ''; } }",
+    "    _send({ id: d.id, type: 'done', output: out.join('\\n'), value: vs, image: (typeof img === 'string' ? img : null) });",
+    "  } catch (err) {",
+    "    _send({ id: d.id, type: 'done', output: '', value: '', image: null, error: String((err && err.message) || err) });",
+    "  }",
+    "};"
+].join('\n');
+
+function _v64GetPyWorker() {
+    if (_v64PyWorker) return _v64PyWorker;
+    _v64PyWorker = new Worker(URL.createObjectURL(new Blob([_V64_PY_WORKER_SRC], { type: 'text/javascript' })));
+    return _v64PyWorker;
+}
+
+function _v64KillPyWorker() {
+    try { if (_v64PyWorker) _v64PyWorker.terminate(); } catch (e) {}
+    _v64PyWorker = null;
+}
+
+function _v64RunPyWorker(code, timeoutMs) {
+    return new Promise((resolve) => {
+        let done = false;
+        let w;
+        try { w = _v64GetPyWorker(); } catch (e) { resolve({ ok: false, output: '', error: 'could not start Python sandbox: ' + e.message }); return; }
+        const runId = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const onMsg = (e) => {
+            const d = e.data || {};
+            if (d.id !== runId) return;
+            if (d.type === 'status') { window.v64SandboxStatus = d.text || ''; return; }
+            if (d.type === 'done') {
+                done = true;
+                w.removeEventListener('message', onMsg);
+                resolve(d.error ? { ok: false, output: d.output || '', error: d.error, image: null } : { ok: true, output: d.output || '', value: d.value || '', image: d.image || null });
+            }
+        };
+        w.addEventListener('message', onMsg);
+        setTimeout(() => {
+            if (!done) {
+                done = true;
+                try { w.removeEventListener('message', onMsg); } catch (e) {}
+                _v64KillPyWorker();
+                resolve({ ok: false, output: '', error: 'Execution timed out after ' + Math.round(timeoutMs / 1000) + 's - the Python sandbox was stopped.' });
+            }
+        }, timeoutMs);
+        w.postMessage({ cmd: 'run', id: runId, code: code });
+    });
+}
+
+// JavaScript: a fresh module Worker per run - supports top-level await
+// and static/dynamic imports of npm packages from esm.sh.
+function _v64RunJsWorker(code, timeoutMs) {
+    return new Promise((resolve) => {
+        const logs = [];
+        let done = false;
+        const src = [
+            "const __send = (t, x) => self.postMessage({ t: t, x: x });",
+            "const __fmt = (a) => a.map((v) => { try { return typeof v === 'string' ? v : JSON.stringify(v); } catch (e) { return String(v); } }).join(' ');",
+            "console.log = (...a) => __send('log', __fmt(a));",
+            "console.info = (...a) => __send('log', __fmt(a));",
+            "console.warn = (...a) => __send('log', '[warn] ' + __fmt(a));",
+            "console.error = (...a) => __send('log', '[error] ' + __fmt(a));",
+            code,
+            "__send('done', '');"
+        ].join('\n');
+        let w;
+        try {
+            w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })), { type: 'module' });
+        } catch (e) { resolve({ ok: false, output: '', error: 'could not start JS sandbox: ' + e.message }); return; }
+        const finish = (r) => { if (done) return; done = true; clearTimeout(timer); try { w.terminate(); } catch (e) {} resolve(r); };
+        const timer = setTimeout(() => finish({ ok: false, output: logs.join('\n'), error: 'Execution timed out after ' + Math.round(timeoutMs / 1000) + 's.' }), timeoutMs);
+        w.onmessage = (e) => {
+            const d = e.data || {};
+            if (d.t === 'log') logs.push(String(d.x));
+            else if (d.t === 'done') finish({ ok: true, output: logs.join('\n'), image: null });
+        };
+        w.onerror = (e) => finish({ ok: false, output: logs.join('\n'), error: String((e && e.message) || e) });
+        w.onmessageerror = () => finish({ ok: false, output: logs.join('\n'), error: 'message serialization error' });
+    });
+}
+
+// Unified runner: { ok, output, value, image, error, ms }
+async function runUserCode(code, lang) {
+    const t0 = Date.now();
+    if (lang === 'python') {
+        try {
+            const r = await _v64RunPyWorker(code, 120000);
+            r.ms = Date.now() - t0;
+            return r;
+        } catch (eW) {
+            // Fallback: the main-thread Pyodide (loaded at app start) is
+            // already warm; a runaway loop could freeze the tab, but this
+            // path only runs if the Worker API itself is unavailable.
+            if (typeof pyodide !== 'undefined' && pyodide) {
+                const out = [];
+                try {
+                    pyodide.setStdout({ batched: (t) => out.push(t) });
+                    pyodide.setStderr({ batched: (t) => out.push('[stderr] ' + t) });
+                    try { await pyodide.loadPackagesFromImports(code); } catch (e) {}
+                    await pyodide.runPythonAsync(code);
+                    let img = null;
+                    try { img = pyodide.runPython('_sahu_plot_b64()'); } catch (e) {}
+                    return { ok: true, output: out.join('\n'), image: (typeof img === 'string' ? img : null), ms: Date.now() - t0 };
+                } catch (eM) {
+                    return { ok: false, output: out.join('\n'), error: String((eM && eM.message) || eM), ms: Date.now() - t0 };
+                }
+            }
+            return { ok: false, output: '', error: 'Python sandbox failed: ' + String((eW && eW.message) || eW), ms: Date.now() - t0 };
+        }
+    }
+    const r = await _v64RunJsWorker(code, 30000);
+    r.ms = Date.now() - t0;
+    return r;
+}
+
+// v6.4: Run button handler for code blocks rendered in chat
+async function sahuRunCode(regId) {
+    const reg = (window.__sahuCodeReg || {})[regId];
+    if (!reg) return;
+    const pre = document.getElementById(regId);
+    const outId = 'out-' + regId;
+    let outEl = document.getElementById(outId);
+    if (!outEl && pre && pre.parentElement) {
+        pre.parentElement.insertAdjacentHTML('afterend', '<div id="' + outId + '" class="sahu-code-out"><div class="sahu-code-out-h"><i class="fas fa-terminal"></i> Output<span class="sahu-code-out-st">running...</span></div><pre class="sahu-code-out-p"></pre></div>');
+        outEl = document.getElementById(outId);
+    }
+    const stEl = outEl ? outEl.querySelector('.sahu-code-out-st') : null;
+    const pre2 = outEl ? outEl.querySelector('.sahu-code-out-p') : null;
+    if (stEl) stEl.textContent = ' - running...';
+    if (pre2) pre2.textContent = 'Running in the sandbox...';
+    const r = await runUserCode(reg.code, reg.lang);
+    if (outEl) {
+        if (r.image) outEl.insertAdjacentHTML('beforeend', '<img class="sahu-plot" src="data:image/png;base64,' + r.image + '">');
+        let txt = (r.output || '') + (r.value ? '\n=> ' + r.value : '') + (r.error ? '\n' + r.error : '');
+        if (pre2) pre2.textContent = txt || '(no output)';
+        if (stEl) stEl.textContent = ' - ' + (r.ok ? 'done in ' + (r.ms / 1000).toFixed(1) + 's' : 'failed');
+    }
+    showToast(r.ok ? 'Code ran in ' + (r.ms / 1000).toFixed(1) + 's' : 'Code failed - see output', r.ok ? 'success' : 'error');
+}
+
+// ---- v6.4: FILE CREATION ENGINE ------------------------------------
+// Shared markdown-ish parser used by the docx / pdf builders:
+// FONT: line (metadata), # headings, - bullets, 1. numbered, > quotes,
+// | a | b | tables, --- rules, paragraphs with **bold** inline runs.
+function _sahuRichParse(content) {
+    const meta = { font: '' };
+    const blocks = [];
+    const lines = String(content || '').replace(/\r/g, '').split('\n');
+    let i = 0;
+    while (i < lines.length) {
+        const line = lines[i].trim();
+        if (!line) { i++; continue; }
+        const fm = line.match(/^FONT:\s*(.+)$/i);
+        if (fm && !blocks.length) { meta.font = fm[1].trim(); i++; continue; }
+        if (/^(-{3,}|\*{3,}|_{3,})$/.test(line)) { blocks.push({ t: 'hr' }); i++; continue; }
+        const h = line.match(/^(#{1,6})\s+(.*)$/);
+        if (h) { blocks.push({ t: 'h', level: Math.min(h[1].length, 4), text: h[2] }); i++; continue; }
+        if (/^\s*\|.*\|\s*$/.test(lines[i])) {
+            const rows = [];
+            while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
+                const cl = lines[i].trim();
+                if (!/^[\s|:-]+$/.test(cl)) rows.push(cl.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim()));
+                i++;
+            }
+            if (rows.length) blocks.push({ t: 'table', rows: rows });
+            continue;
+        }
+        if (/^\s*[-*•]\s+/.test(line)) {
+            const items = [];
+            while (i < lines.length && /^\s*[-*•]\s+/.test(lines[i].trim())) { items.push(lines[i].trim().replace(/^\s*[-*•]\s+/, '')); i++; }
+            blocks.push({ t: 'ul', items: items });
+            continue;
+        }
+        if (/^\s*\d+[.)]\s+/.test(line)) {
+            const items = [];
+            while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i].trim())) { items.push(lines[i].trim()); i++; }
+            blocks.push({ t: 'ol', items: items });
+            continue;
+        }
+        if (/^>\s?/.test(line)) {
+            const qs = [];
+            while (i < lines.length && /^>\s?/.test(lines[i].trim())) { qs.push(lines[i].trim().replace(/^>\s?/, '')); i++; }
+            blocks.push({ t: 'quote', text: qs.join(' ') });
+            continue;
+        }
+        const ps = [line];
+        i++;
+        while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|[-*•]\s|\d+[.)]\s|>\s?|\|)/.test(lines[i].trim()) && !/^(-{3,}|\*{3,}|_{3,})$/.test(lines[i].trim()) && !/^FONT:/i.test(lines[i].trim())) { ps.push(lines[i].trim()); i++; }
+        blocks.push({ t: 'p', text: ps.join(' ') });
+    }
+    return { meta: meta, blocks: blocks };
+}
+
+function _sahuMakeXlsx(content) {
+    if (!window.XLSX) throw new Error('XLSX library not loaded');
+    const lines = String(content || '').replace(/\r/g, '').split('\n');
+    const sheets = [];
+    let cur = { name: 'Sheet1', rows: [] };
+    const parseRow = (l) => {
+        const sep = l.indexOf('|') >= 0 ? '|' : '\t';
+        let cells = l.trim();
+        if (sep === '|') cells = cells.replace(/^\|/, '').replace(/\|$/, '');
+        return cells.split(sep).map((v) => {
+            v = v.trim();
+            return (v !== '' && /^-?[\d.,]+$/.test(v)) ? parseFloat(v.replace(/,/g, '')) : v;
+        });
+    };
+    lines.forEach((l) => {
+        const sm = l.match(/^##\s*(.+)$/);
+        if (sm) { if (cur.rows.length) sheets.push(cur); cur = { name: sm[1].trim().substring(0, 31) || ('Sheet' + (sheets.length + 2)), rows: [] }; return; }
+        if (!l.trim()) return;
+        cur.rows.push(parseRow(l));
+    });
+    if (cur.rows.length) sheets.push(cur);
+    if (!sheets.length) throw new Error('no rows found - separate cells with | and put headers in the first row');
+    const wb = XLSX.utils.book_new();
+    sheets.forEach((sh, si) => {
+        const ws = XLSX.utils.aoa_to_sheet(sh.rows);
+        const widths = [];
+        sh.rows.forEach((r) => r.forEach((c, ci) => { widths[ci] = Math.max(widths[ci] || 8, String(c === null || c === undefined ? '' : c).length + 2); }));
+        ws['!cols'] = widths.map((w) => ({ wch: Math.min(w, 50) }));
+        XLSX.utils.book_append_sheet(wb, ws, sh.name || ('Sheet' + (si + 1)));
+    });
+    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    return new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+async function _sahuMakeDocx(content) {
+    if (!window.docx) throw new Error('docx library not loaded');
+    const D = window.docx;
+    const parsed = _sahuRichParse(content);
+    const F = parsed.meta.font || 'Calibri';
+    const runs = (text, extra) => {
+        extra = extra || {};
+        const out = [];
+        String(text).split(/\*\*(.+?)\*\*/g).forEach((p, idx) => {
+            if (p === '') return;
+            out.push(new D.TextRun({ text: p, bold: (idx % 2 === 1) || !!extra.bold, italics: !!extra.italics, font: F, size: extra.size || 22, color: extra.color }));
+        });
+        return out.length ? out : [new D.TextRun({ text: '', font: F, size: 22 })];
+    };
+    const HL = [D.HeadingLevel.HEADING_1, D.HeadingLevel.HEADING_2, D.HeadingLevel.HEADING_3, D.HeadingLevel.HEADING_4];
+    const HS = [36, 30, 26, 24];
+    const children = [];
+    parsed.blocks.forEach((b) => {
+        if (b.t === 'h') {
+            children.push(new D.Paragraph({ heading: HL[b.level - 1], children: runs(b.text, { bold: true, size: HS[b.level - 1], color: '1F3864' }) }));
+        } else if (b.t === 'ul') {
+            b.items.forEach((it) => children.push(new D.Paragraph({ bullet: { level: 0 }, children: runs(it) })));
+        } else if (b.t === 'ol') {
+            b.items.forEach((it) => children.push(new D.Paragraph({ children: runs(it), indent: { left: 360 } })));
+        } else if (b.t === 'quote') {
+            children.push(new D.Paragraph({ children: runs(b.text, { italics: true, color: '555555' }), indent: { left: 480 } }));
+        } else if (b.t === 'hr') {
+            children.push(new D.Paragraph({ text: '', border: { bottom: { style: 'single', size: 6, color: 'CCCCCC', space: 1 } } }));
+        } else if (b.t === 'table') {
+            const trs = b.rows.map((r, ri) => new D.TableRow({ children: r.map((c) => new D.TableCell({ children: [new D.Paragraph({ children: runs(c, ri === 0 ? { bold: true } : {}) })] })) }));
+            children.push(new D.Table({ rows: trs, width: { size: 100, type: D.WidthType.PERCENTAGE } }));
+            children.push(new D.Paragraph({ text: '' }));
+        } else {
+            children.push(new D.Paragraph({ children: runs(b.text) }));
+        }
+    });
+    if (!children.length) children.push(new D.Paragraph({ text: '' }));
+    const doc = new D.Document({ styles: { default: { document: { run: { font: F, size: 22 } } } }, sections: [{ properties: {}, children: children }] });
+    return await D.Packer.toBlob(doc);
+}
+
+function _sahuMakePdf(content) {
+    if (!window.jspdf) throw new Error('jsPDF library not loaded');
+    const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    const stripEmo = (s) => String(s).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}]/gu, '');
+    const parsed = _sahuRichParse(content);
+    const FONTS = { helvetica: 'helvetica', times: 'times', courier: 'courier', arial: 'helvetica', georgia: 'times', serif: 'times', mono: 'courier', 'times new roman': 'times' };
+    const font = FONTS[(parsed.meta.font || '').toLowerCase()] || 'helvetica';
+    const PW = 210, M = 16, maxW = PW - M * 2;
+    let y = 22;
+    const setF = (style, size) => { try { doc.setFont(font, style); } catch (e) { doc.setFont('helvetica', style); } doc.setFontSize(size); };
+    const ensure = (h) => { if (y + h > 280) { doc.addPage(); y = 22; } };
+    const writeInline = (text, size, lh, rgb, baseStyle, indent) => {
+        const segs = [];
+        stripEmo(text).split(/\*\*(.+?)\*\*/g).forEach((p, idx) => { if (p !== '') segs.push({ p: p, bold: idx % 2 === 1 }); });
+        if (!segs.length) { y += lh; return; }
+        ensure(lh);
+        y += lh;
+        let x = M + (indent || 0);
+        const put = (w, bold) => { setF(bold ? 'bold' : baseStyle, size); doc.setTextColor(rgb[0], rgb[1], rgb[2]); doc.text(w, x, y); x += doc.getTextWidth(w); };
+        segs.forEach((seg) => {
+            seg.p.split(/(\s+)/).forEach((w) => {
+                if (w === '') return;
+                const ww = doc.getTextWidth(w);
+                if (x + ww > PW - M) {
+                    if (/^\s+$/.test(w) || ww > maxW - 2) return;
+                    y += lh; ensure(lh); x = M + (indent || 0);
+                    if (/^\s+$/.test(w)) return;
+                }
+                put(w, seg.bold);
+            });
+        });
+        y += lh * 0.35;
+    };
+    parsed.blocks.forEach((b) => {
+        if (b.t === 'h') {
+            y += 4;
+            writeInline(b.text, b.level === 1 ? 19 : (b.level === 2 ? 15 : 12.5), b.level === 1 ? 9.5 : (b.level === 2 ? 8 : 7), [30, 58, 138], 'bold', 0);
+            y += 1.5;
+        } else if (b.t === 'ul') {
+            b.items.forEach((it) => { writeInline('•  ' + it, 11, 5.6, [30, 41, 59], 'normal', 3); });
+        } else if (b.t === 'ol') {
+            b.items.forEach((it) => { writeInline(it, 11, 5.6, [30, 41, 59], 'normal', 3); });
+        } else if (b.t === 'quote') {
+            doc.setDrawColor(148, 163, 184);
+            doc.setLineWidth(0.8);
+            doc.line(M + 1, y - 3, M + 1, y + 6);
+            writeInline(b.text, 11, 5.6, [85, 85, 85], 'italic', 5);
+        } else if (b.t === 'hr') {
+            ensure(6);
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineWidth(0.4);
+            doc.line(M, y, PW - M, y);
+            y += 5;
+        } else if (b.t === 'table') {
+            const cols = Math.max.apply(null, b.rows.map((r) => r.length));
+            const colW = maxW / cols;
+            b.rows.forEach((r, ri) => {
+                const cells = [];
+                let rowH = 8;
+                for (let ci = 0; ci < cols; ci++) {
+                    setF(ri === 0 ? 'bold' : 'normal', 9);
+                    const ls = doc.splitTextToSize(stripEmo(String(r[ci] === undefined ? '' : r[ci])).replace(/\*\*/g, ''), colW - 3);
+                    cells.push(ls);
+                    rowH = Math.max(rowH, ls.length * 4.4 + 3.2);
+                }
+                ensure(rowH + 1);
+                if (ri === 0) { doc.setFillColor(30, 58, 138); doc.rect(M, y, maxW, rowH, 'F'); }
+                else { doc.setFillColor(ri % 2 ? 244 : 255, ri % 2 ? 247 : 255, ri % 2 ? 252 : 255); doc.setDrawColor(210); doc.rect(M, y, maxW, rowH, 'FD'); }
+                for (let ci = 0; ci < cols; ci++) {
+                    setF(ri === 0 ? 'bold' : 'normal', 9);
+                    doc.setTextColor(ri === 0 ? 255 : 30, ri === 0 ? 255 : 41, ri === 0 ? 255 : 59);
+                    doc.text(cells[ci], M + ci * colW + 1.5, y + 4.2);
+                }
+                y += rowH;
+            });
+            y += 3;
+        } else {
+            writeInline(b.text, 11, 5.6, [30, 41, 59], 'normal', 0);
+        }
+    });
+    return doc.output('blob');
+}
+
+async function _sahuMakePptx(content) {
+    if (!window.PptxGenJS) throw new Error('PptxGenJS library not loaded');
+    const pres = new window.PptxGenJS();
+    pres.layout = 'LAYOUT_16x9';
+    const deckFont = ((String(content || '').match(/^FONT:\s*(.+)$/im) || [])[1] || 'Arial').trim();
+    const rawSlides = String(content || '').replace(/\r/g, '').split(/\n\s*---+\s*\n/);
+    let made = 0;
+    for (const rs of rawSlides) {
+        const lines = rs.split('\n').map((l) => l.trim()).filter(Boolean).filter((l) => !/^FONT:/i.test(l));
+        if (!lines.length) continue;
+        const slide = pres.addSlide();
+        made++;
+        let title = '';
+        const bodyLines = [];
+        lines.forEach((l) => {
+            const hm = l.match(/^#{1,6}\s+(.*)$/);
+            if (hm) { if (!title) { title = hm[1]; return; } }
+            bodyLines.push(l);
+        });
+        const tRows = bodyLines.filter((l) => /^\|.*\|$/.test(l) && !/^[\s|:-]+$/.test(l)).map((l) => l.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim()));
+        const clean = (t) => String(t).replace(/\*\*/g, '');
+        if (tRows.length >= 2) {
+            const intro = bodyLines.filter((l) => !/^\|.*\|$/.test(l) && !/^[\s|:-]+$/.test(l));
+            if (title) slide.addText(clean(title), { x: 0.6, y: 0.35, w: 8.8, h: 0.8, fontSize: 26, bold: true, fontFace: deckFont, color: '1F3864' });
+            if (intro.length) slide.addText(clean(intro.join(' ')), { x: 0.6, y: 1.25, w: 8.8, h: 0.7, fontSize: 13, fontFace: deckFont });
+            const header = tRows[0].map((t) => ({ text: clean(t), options: { bold: true, color: 'FFFFFF', fill: { color: '1F3864' }, fontFace: deckFont } }));
+            const rows = [header].concat(tRows.slice(1).map((r) => r.map((t) => ({ text: clean(t), options: { fontFace: deckFont } }))));
+            slide.addTable(rows, { x: 0.6, y: 1.95, w: 8.8, fontSize: 12, border: { pt: 0.5, color: 'CBD5E1' }, autoPage: true });
+        } else {
+            if (title) slide.addText(clean(title), { x: 0.6, y: 0.5, w: 8.8, h: 1.0, fontSize: 30, bold: true, fontFace: deckFont, color: '1F3864' });
+            const bl = bodyLines.filter((l) => !/^[\s|:-]+$/.test(l)).map((l) => ({ text: clean(l.replace(/^\s*[-*•]\s+/, '')), options: { breakLine: true, fontSize: 17, fontFace: deckFont, bullet: /^\s*[-*•]\s+/.test(l) } }));
+            if (bl.length) slide.addText(bl, { x: 0.8, y: 1.8, w: 8.4, h: 3.6, fontSize: 17, fontFace: deckFont });
+        }
+    }
+    if (!made) throw new Error('no slides found - separate slides with a --- line');
+    return await pres.write({ outputType: 'blob' });
+}
+
+async function generateFileBlob(ext, name, content) {
+    if (ext === 'txt' || ext === 'md' || ext === 'json') {
+        let body = String(content || '');
+        if (ext === 'json') { try { body = JSON.stringify(JSON.parse(body), null, 2); } catch (e) {} }
+        return new Blob([body], { type: ext === 'md' ? 'text/markdown' : (ext === 'json' ? 'application/json' : 'text/plain') });
+    }
+    if (ext === 'csv') return new Blob(['\ufeff' + String(content || '')], { type: 'text/csv' });
+    if (ext === 'xlsx') return _sahuMakeXlsx(content);
+    if (ext === 'docx') return await _sahuMakeDocx(content);
+    if (ext === 'pdf') return _sahuMakePdf(content);
+    if (ext === 'pptx') return await _sahuMakePptx(content);
+    return null;
+}
+
+function sahuFileCardHtml(fid, name, ext, size, href) {
+    const kb = (size / 1024).toFixed(1);
+    const icon = { pdf: 'fas fa-file-pdf text-red-500', docx: 'fas fa-file-word text-blue-500', xlsx: 'fas fa-file-excel text-green-600', pptx: 'fas fa-file-powerpoint text-orange-500', csv: 'fas fa-file-csv text-teal-500', md: 'fab fa-markdown text-sky-500', json: 'fas fa-file-code text-purple-500' }[ext] || 'fas fa-file-alt text-slate-400';
+    return '<a class="sahu-file-card" href="' + href + '" download="' + escapeHtml(name) + '"><i class="' + icon + '"></i><span class="sahu-file-name">' + escapeHtml(name) + '</span><span class="sahu-file-size">' + kb + ' KB</span><span class="sahu-file-dl"><i class="fas fa-download"></i> Download</span></a>';
+}
+
+// Generate one file: { ok, name, size, card, persist, error }
+async function makeSahuFile(block) {
+    const extMap = { doc: 'docx', docs: 'docx', dox: 'docx', ppt: 'pptx', xls: 'xlsx', text: 'txt', markdown: 'md' };
+    const ext = extMap[(block.ext || '').toLowerCase()] || (block.ext || 'txt').toLowerCase();
+    let name = (block.name || '').trim().replace(/[*`<>|":]/g, '').replace(/\s+/g, ' ') || ('file.' + ext);
+    if (!name.toLowerCase().endsWith('.' + ext)) name = name.replace(/\.[a-z0-9]{1,8}$/i, '') + '.' + ext;
+    try {
+        const blob = await generateFileBlob(ext, name, block.content || '');
+        if (!blob) throw new Error('unsupported format: ' + ext);
+        const url = URL.createObjectURL(blob);
+        const fid = 'sahuf' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        window.__sahuFiles[fid] = { url: url, blob: blob, name: name };
+        let dataUrl = null;
+        if (blob.size <= 1800000) {
+            try {
+                dataUrl = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => rej(new Error('read failed')); fr.readAsDataURL(blob); });
+            } catch (e) { dataUrl = null; }
+        }
+        const card = sahuFileCardHtml(fid, name, ext, blob.size, url);
+        return { ok: true, name: name, size: blob.size, card: card, persist: { name: name, ext: ext, size: blob.size, dataUrl: dataUrl } };
+    } catch (e) {
+        return { ok: false, name: name, error: String((e && e.message) || e) };
+    }
+}
+
+// Process every FILE block in a text: generate files, strip the raw
+// blocks from the text and return download-card HTML + persistence metas.
+async function generateFilesFromText(text, traceFn) {
+    const blocks = extractFileBlocks(text || '');
+    const stripped = (text || '').replace(/FILE\s*\[\s*[a-z0-9]{1,8}\s*\]\s*:[^\n]*\n[\s\S]*?(?:\n\/FILE(?![a-z])|\nFILE\s*\[|$)/gi, '').replace(/\n{3,}/g, '\n\n').trim();
+    const files = [];
+    let cards = '';
+    if (!blocks.length) return { text: stripped, html: '', files: files };
+    const byName = {};
+    blocks.forEach((b) => { byName[(b.name || 'file').toLowerCase() + '::' + b.ext] = b; });
+    for (const key of Object.keys(byName)) {
+        const meta = await makeSahuFile(byName[key]);
+        if (meta.ok) {
+            if (traceFn) traceFn('File ready: ' + meta.name + ' (' + (meta.size / 1024).toFixed(1) + ' KB)');
+            files.push(meta.persist);
+            cards += meta.card;
+        } else if (traceFn) {
+            traceFn('File FAILED: ' + meta.name + ' - ' + meta.error);
+        }
+    }
+    return { text: stripped, html: cards ? '<div class="sahu-files-row">' + cards + '</div>' : '', files: files };
+}
+
+function _v64MergeFileMeta(sessionArr, finalArr) {
+    const byName = {};
+    (sessionArr || []).forEach((f) => { if (f && f.name) byName[f.name.toLowerCase()] = f; });
+    (finalArr || []).forEach((f) => { if (f && f.name) byName[f.name.toLowerCase()] = f; });
+    return Object.keys(byName).map((k) => byName[k]);
+}
+
+// v6.4: standard-mode hook - generate files the model delivered and
+// append the download cards under its answer bubble.
+async function attachV64Final(el, content, msgObj) {
+    try {
+        if (!content || !/FILE\s*\[\s*[a-z0-9]{1,8}\s*\]\s*:/i.test(content)) return;
+        const gen = await generateFilesFromText(content, null);
+        if (el && gen.html) el.insertAdjacentHTML('beforeend', gen.html);
+        if (msgObj && gen.files.length) {
+            msgObj.files = (msgObj.files || []).concat(gen.files);
+            if (!state.incognitoMode) { try { persistChatHistory(); } catch (e) {} }
+        }
+    } catch (e) {}
+}
+
+// v6.4: history renderer for persisted files
+function renderSavedFileCards(files) {
+    if (!Array.isArray(files) || !files.length) return '';
+    const cards = files.map((f) => {
+        if (!f || !f.name) return '';
+        const size = f.size ? ((f.size / 1024).toFixed(1) + ' KB') : '';
+        if (f.dataUrl) return sahuFileCardHtml('', f.name, f.ext, f.size || 0, f.dataUrl);
+        return '<div class="sahu-file-card"><i class="fas fa-file"></i><span class="sahu-file-name">' + escapeHtml(f.name) + '</span><span class="sahu-file-size">' + size + ' - session only</span></div>';
+    }).join('');
+    return cards ? '<div class="sahu-files-row">' + cards + '</div>' : '';
+}
+
+
 // ---- v5.5: the agent loop itself ----
 async function runSearchMode(fullPrompt, container, chatId, displayMode) {
     displayMode = displayMode || 'resources'; // 'resources' = search mode, 'chat' = normal chat with web tool
@@ -11712,6 +12397,9 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
     const seenLinks = new Set();
     const visitedUrls = new Set();
     const searchedQueries = new Set();
+    const v64RunCodes = new Set();   // v6.4: dedupe identical code runs
+    const v64SessionFiles = [];      // v6.4: files created mid-loop
+    let v64LastPlot = '';            // v6.4: last matplotlib plot (base64)
     let finalAnswer = '';
     let toolRuns = 0;
     let turn = 0;
@@ -11780,8 +12468,11 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             const browses = skillsOn('web_browse')
                 ? [...text.matchAll(/BROWSE:\s*(https?:\/\/\S+)/gi)].map(m => m[1].replace(/[)`\]]+$/, '')) : [];
 
+            // v6.4: code interpreter blocks + FILE blocks
+            const v64Code = skillsOn('run_code') ? extractRunnableCode(text) : [];
+            const v64Files = skillsOn('make_files') ? extractFileBlocks(text) : [];
             const ansMatch = text.match(/ANSWER:\s*([\s\S]+)$/i);
-            const hasTools = queries.length + reads.length + fetches.length + browses.length > 0;
+            const hasTools = queries.length + reads.length + fetches.length + browses.length + v64Code.length + v64Files.length > 0;
 
             if (!hasTools) {
                 // The agent is done (or never needed to search at all).
@@ -11878,12 +12569,62 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                     return `[BROWSE] ${u}${page.title && page.title !== u ? ' (title: ' + page.title + ')' : ''}\n${page.ok ? page.text + (linkList ? '\nLinks on this page:\n' + linkList : '') : 'Could not open this page.'}`;
                 });
             }
+            // v6.4: CODE INTERPRETER tasks (sandboxed, output fed back)
+            const codeTasks = [];
+            for (const cb of v64Code) {
+                if (toolRuns >= MAX_TOOL_RUNS) break;
+                const cKey = cb.lang + '::' + cb.code.trim();
+                if (v64RunCodes.has(cKey)) { parts.push('[CODE] this exact code already ran - see the earlier output. Change the code or move on.'); continue; }
+                v64RunCodes.add(cKey);
+                codeTasks.push(async () => {
+                    if (!state.isProcessing) throw stopErr();
+                    setBusy('Running ' + (cb.lang === 'python' ? 'Python' : 'JavaScript') + ' sandbox...');
+                    addTrace('<i class="fas fa-terminal text-amber-500 mr-1"></i><span class="font-medium">' + (cb.lang === 'python' ? 'Python' : 'JS') + ' sandbox:</span> ' + cb.code.split('\n').length + ' line(s)');
+                    const r = await runUserCode(cb.code, cb.lang);
+                    addTrace('<span class="ml-4">' + (r.ok ? 'ok in ' + (r.ms / 1000).toFixed(1) + 's' : 'FAILED') + '</span>');
+                    if (r.ok && r.image && cb.lang === 'python') v64LastPlot = r.image;
+                    let fb = '[CODE ' + cb.lang.toUpperCase() + '] exit ' + (r.ok ? '0' : '1') + ' in ' + (r.ms / 1000).toFixed(1) + 's\n';
+                    if (r.image) fb += '[a matplotlib plot was captured and will be shown to the user]\n';
+                    fb += (r.output || '').substring(0, 4000);
+                    if (r.value) fb += '\n=> ' + String(r.value).substring(0, 500);
+                    if (r.error) fb += '\nERRORS:\n' + String(r.error).substring(0, 2000);
+                    return fb;
+                });
+            }
+            // v6.4: FILE CREATION tasks
+            const fileTasks = [];
+            for (const fb of v64Files) {
+                if (toolRuns >= MAX_TOOL_RUNS) break;
+                fileTasks.push(async () => {
+                    if (!state.isProcessing) throw stopErr();
+                    setBusy('Creating ' + (fb.name || 'file') + '...');
+                    addTrace('<i class="fas fa-file-export text-rose-500 mr-1"></i><span class="font-medium">File:</span> ' + escapeHtml(fb.name || fb.ext));
+                    const meta = await makeSahuFile(fb);
+                    if (meta.ok) {
+                        addTrace('<span class="ml-4">created (' + (meta.size / 1024).toFixed(1) + ' KB)</span>');
+                        v64SessionFiles.push(meta.persist);
+                        return '[FILE] ' + meta.name + ' -> CREATED (' + (meta.size / 1024).toFixed(1) + ' KB). The user can download it. Deliver final files in your ANSWER, or create more FILE blocks.';
+                    }
+                    addTrace('<span class="ml-4 text-red-500">failed</span>');
+                    return '[FILE] ' + (fb.name || fb.ext) + ' -> FAILED: ' + meta.error + '. Fix the content and emit the FILE block again.';
+                });
+            }
             toolRuns += pageTasks.length;
             const pageOuts = await Promise.all(pageTasks.map(t => t().catch(e => {
                 if (e && (e.name === 'AbortError' || /abort|stopped/i.test(e.message || ''))) throw e;
                 return '[READ/FETCH/BROWSE] This page task failed - try another URL or move on.';
             })));
             parts.push(...pageOuts);
+
+            // v6.4: run code + file tasks in parallel, feed results back
+            toolRuns += codeTasks.length + fileTasks.length;
+            const codeOuts = await Promise.all(codeTasks.map(t => t().catch(e => {
+                if (e && (e.name === 'AbortError' || /abort|stopped/i.test(e.message || ''))) throw e;
+                return '[CODE] the sandbox task crashed - try different code or move on.';
+            })));
+            parts.push(...codeOuts);
+            const fileOuts = await Promise.all(fileTasks.map(t => t().catch(() => '[FILE] file creation crashed - fix the block or move on.')));
+            parts.push(...fileOuts);
 
             convo.push({
                 role: 'user',
@@ -11904,6 +12645,14 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
         }
 
         setBusy('');
+
+        // v6.4: FILE blocks in the final answer become real downloadable files
+        const _v64Final = /FILE\s*\[\s*[a-z0-9]{1,8}\s*\]\s*:/i.test(finalAnswer)
+            ? await generateFilesFromText(finalAnswer, addTrace)
+            : { text: finalAnswer, html: '', files: [] };
+        finalAnswer = _v64Final.text;
+        const _v64AllFiles = _v64MergeFileMeta(v64SessionFiles, _v64Final.files);
+        const _v64PlotHtml = v64LastPlot ? '<div class="sahu-files-row"><img class="sahu-plot" src="data:image/png;base64,' + v64LastPlot + '"></div>' : '';
 
         let displayHtml = '';
         let savedContent = '';
@@ -11950,6 +12699,8 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             displayHtml = `<div class="prose max-w-none text-sm">${formatMarkdown(finalAnswer || 'No results found. Please try again.')}</div>`;
             savedContent = finalAnswer || 'No results found.';
         }
+        if (_v64Final.html || _v64PlotHtml) displayHtml += '<div class="sahu-files-row">' + _v64PlotHtml + _v64Final.html + '</div>';
+
         window.lastAnswer = savedContent;
 
         const contentEl = document.getElementById(`content-${divId}`);
@@ -11960,7 +12711,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
         // the trace (every search, scrape, fetch, browse + think step) so
         // history keeps them all. Alias-safe push (no double-append).
         const _traceElSave = document.getElementById(`trace-${divId}`);
-        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: collected.slice(0, 150), agentTrace: _traceElSave ? _traceElSave.innerHTML : '', timestamp: Date.now() };
+        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: collected.slice(0, 150), files: _v64AllFiles, agentTrace: _traceElSave ? _traceElSave.innerHTML : '', timestamp: Date.now() };
         state.messages.push(assistMsgObj);
         const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
         if (currentChat && currentChat.messages !== state.messages) currentChat.messages.push(assistMsgObj);
@@ -12155,7 +12906,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v6.3 Initializing...');
+    console.log('🚀 SahuAI Agent v6.4 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -12179,6 +12930,7 @@ async function init() {
     
     // Initialize external libraries
     await initPyodide();
+    ensureV64Styles();
     initSpeechRecognition();
     
     // Handle shared conversations
@@ -12197,8 +12949,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v6.3 Ready');
-    showToast('SahuAI Agent v6.3 Loaded');
+    console.log('✅ SahuAI Agent v6.4 Ready');
+    showToast('SahuAI Agent v6.4 Loaded');
 }
 
 // ============================================
@@ -12315,7 +13067,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v6.3 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v6.4 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

@@ -19,7 +19,7 @@
     
     <!-- Export Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docx@8.2.0/build/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.2.0/build/index.iife.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
     <!-- File Creation Libraries -->
@@ -11401,7 +11401,7 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
         if (currentChat) currentChat.messages.push(assistMsgObj);
         lastSavedContent = r.content;
         // v6.4: generate files the model delivered (standard mode)
-        attachV64Final(el, r.content, assistMsgObj);
+        attachV64Final('anscontent-' + r.idx, r.content, assistMsgObj);
     });
     persistChatHistory();
     window.lastAnswer = lastSavedContent;
@@ -11582,7 +11582,7 @@ function buildSearchLoopPrompt() {
     if (has('web_fetch')) lines.push('FETCH: <url> - fetch the raw content of a URL (useful for articles, APIs and files).');
     if (has('run_code')) lines.push('RUN CODE - you have a REAL sandboxed code interpreter. Output a fenced code block with language runpython (Python 3: print() to show output, top-level await works, numpy/pandas/matplotlib auto-load on import, pure-Python packages via import micropip; await micropip.install(\"pkg\"); the last matplotlib figure is auto-captured and shown to the user) or runjs (JavaScript: console.log() to show output, import npm packages from https://esm.sh/<package> e.g. import _ from \"https://esm.sh/lodash\", top-level await works). The code runs in a sandbox, the FULL output comes back to you, and you can run more code in your next turns to iterate, verify or fix errors.');
     if (has('make_files')) lines.push('CREATE FILES - deliver downloadable files with a FILE block (emit them in your final ANSWER - blocks there are turned into download cards for the user):\nFILE[ext]: filename.ext\n<content>\n/FILE\nFormats + content rules: txt/md = raw text/markdown. csv = raw CSV. json = raw JSON. xlsx = rows with cells separated by | (first row = headers; start a new sheet with a ## SheetName line). docx/pdf = markdown-ish: # H1, ## H2, - bullets, 1. numbered, > quote, **bold**, tables as | a | b | rows, optional first line FONT: Georgia (pdf built-in fonts only: helvetica, times, courier; emojis are NOT supported in pdf and get stripped). pptx = slides separated by --- lines; first line of a slide = title, then - bullets or | a | b | tables, optional first line FONT: Arial. If a file fails, fix the content and emit the FILE block again.');
-    lines.push('STYLE: In answers and files you may freely use emojis, markdown tables (| A | B |) to compare or contrast things, **bold**, headings (#, ##), and <font face=\"Georgia\" color=\"#c026d3\" size=\"4\">font spans</font> for different fonts and colors.');
+    lines.push('STYLE: In answers and files you may freely use emojis, markdown tables (| A | B |) to compare or contrast things, **bold**, headings (#, ##), and <font face=\"Georgia\" color=\"#c026d3\" size=\"4\">font spans</font> for different fonts and colors. Do NOT wrap markdown tables or FILE blocks inside code fences - output them as plain text.');
     if (has('web_browse')) lines.push('BROWSE: <url> - browse a page: quick content summary plus the links it contains for further browsing.');
     // v6.2: the engine menu is built DYNAMICALLY from the user's ENABLED
     // engines only - no engine is a default; the model only sees what can
@@ -12332,10 +12332,18 @@ function _v64MergeFileMeta(sessionArr, finalArr) {
 
 // v6.4: standard-mode hook - generate files the model delivered and
 // append the download cards under its answer bubble.
-async function attachV64Final(el, content, msgObj) {
+async function attachV64Final(elOrId, content, msgObj) {
     try {
         if (!content || !/FILE\s*\[\s*[a-z0-9]{1,8}\s*\]\s*:/i.test(content)) return;
         const gen = await generateFilesFromText(content, null);
+        // v6.4b: the container may have been reparsed while files were
+        // generating (innerHTML += detaches captured nodes) - re-resolve
+        // the target FRESH and fall back to the newest answer bubble.
+        let el = (typeof elOrId === 'string') ? document.getElementById(elOrId) : elOrId;
+        if (!el || !document.contains(el)) {
+            const _bs = document.querySelectorAll('.message-assistant .message-bubble');
+            el = _bs.length ? _bs[_bs.length - 1] : null;
+        }
         if (el && gen.html) el.insertAdjacentHTML('beforeend', gen.html);
         if (msgObj && gen.files.length) {
             msgObj.files = (msgObj.files || []).concat(gen.files);

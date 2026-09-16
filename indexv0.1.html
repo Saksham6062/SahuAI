@@ -12870,26 +12870,44 @@ async function fetchProviderModels(providerKey) {
     } else if (apiKey) {
         headers['Authorization'] = 'Bearer ' + apiKey;
     }
-    try {
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 15000);
-        const res = await fetch(base + '/models', { headers: headers, signal: ctrl.signal });
-        clearTimeout(timer);
-        if (!res.ok) {
-            const txt = await res.text().catch(() => '');
-            const hint = (res.status === 401 || res.status === 403) ? ' - add your API key in Settings > API Keys first' : '';
-            return { ok: false, error: 'HTTP ' + res.status + hint + (txt && res.status !== 401 && res.status !== 403 ? ' ' + txt.substring(0, 120) : '') };
-        }
-        const j = await res.json();
+    const _parseIds = (j) => {
         let ids = [];
         if (j && Array.isArray(j.data)) ids = j.data.map(m => (typeof m === 'string' ? m : (m && m.id))).filter(Boolean);
         else if (j && Array.isArray(j.models)) ids = j.models.map(m => (typeof m === 'string' ? m : ((m && (m.id || m.name)) || ''))).filter(Boolean);
         else if (Array.isArray(j)) ids = j.map(m => (typeof m === 'string' ? m : ((m && (m.id || m.name)) || ''))).filter(Boolean);
-        ids = [...new Set(ids)].sort();
-        return { ok: true, models: ids };
-    } catch (e) {
-        return { ok: false, error: (e && e.name === 'AbortError') ? 'Timed out after 15s' : ((e && e.message) || 'Fetch failed') };
+        return [...new Set(ids)].sort();
+    };
+    // Leg 1: direct browser call (works for CORS-open providers like B.AI).
+    // Leg 2 (keyless endpoints only): allorigins text relay, in case the
+    // provider's /models is CORS-locked but needs no auth (e.g. OpenCode Zen).
+    const _legs = [{ url: base + '/models', hdr: headers }];
+    if (!apiKey && !p.authHeader) {
+        _legs.push({ url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(base + '/models'), hdr: {} });
     }
+    let lastErr = 'Fetch failed';
+    for (let li = 0; li < _legs.length; li++) {
+        try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 15000);
+            const res = await fetch(_legs[li].url, { headers: _legs[li].hdr, signal: ctrl.signal });
+            clearTimeout(timer);
+            if (!res.ok) {
+                const txt = await res.text().catch(() => '');
+                const hint = (res.status === 401 || res.status === 403) ? ' - add your API key in Settings > API Keys first' : '';
+                return { ok: false, error: 'HTTP ' + res.status + hint + (txt && res.status !== 401 && res.status !== 403 ? ' ' + txt.substring(0, 120) : '') };
+            }
+            const j = await res.json();
+            return { ok: true, models: _parseIds(j) };
+        } catch (e) {
+            lastErr = (e && e.name === 'AbortError') ? 'Timed out after 15s' : ((e && e.message) || 'Network error');
+        }
+    }
+    if (lastErr === 'Failed to fetch') {
+        lastErr = (apiKey || p.authHeader)
+            ? 'Blocked by the provider (CORS) - this provider only allows server-side API calls, so the model list cannot be fetched from the browser'
+            : 'Blocked by the provider (CORS) - and the CORS relay is unreachable right now';
+    }
+    return { ok: false, error: lastErr };
 }
 window.fetchProviderModels = fetchProviderModels;
 

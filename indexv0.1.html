@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v6.2 - Official Saksham Intelligence AI Models Chat - 57+ models, 15+ providers, consensus-powered AI">
+    <meta name="description" content="SahuAI Agent v6.3 - Official Saksham Intelligence AI Models Chat - 57+ models, 15+ providers, consensus-powered AI">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v6.2 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v6.3 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v6.2</span>
+                        <span>SahuAI Agent v6.3</span>
                     </div>
                 </div>
                 
@@ -6221,7 +6221,6 @@ const SEARCH_ENGINES_CONFIG = {
     duckduckgo_instant: { name: 'DuckDuckGo Instant', type: 'api' },
     yahoo: { name: 'Yahoo', type: 'searx', bang: '!yahoo' },
     yandex: { name: 'Yandex', type: 'searx', bang: '!yandex' },
-    qwant: { name: 'Qwant', type: 'searx', bang: '!qwant' },
     brave: { name: 'Brave', type: 'searx', bang: '!brave' },
     startpage: { name: 'Startpage', type: 'searx', bang: '!startpage' },
     baidu: { name: 'Baidu (English)', type: 'searx', bang: '!baidu' },
@@ -6233,21 +6232,27 @@ const SEARCH_ENGINES_CONFIG = {
     github: { name: 'GitHub', type: 'searx', site: 'github.com' },
     linkedin: { name: 'LinkedIn', type: 'searx', site: 'linkedin.com' },
     grokipedia: { name: 'Grokipedia', type: 'searx', bang: '!w', site: 'grokipedia.com' },
-    github_api: { name: 'GitHub (API)', type: 'api', endpoint: 'https://api.github.com' },
-    stackexchange: { name: 'Stack Overflow (API)', type: 'api', endpoint: 'https://api.stackexchange.com' },
-    hackernews: { name: 'Hacker News (API)', type: 'api', endpoint: 'https://hn.algolia.com/api/v1/search' },
     // v5.8: keyless engines that are verified CORS-open from the browser -
     // these give the agentic model a REAL multi-engine pool to choose from.
     wikidata: { name: 'Wikidata (facts)', type: 'api', endpoint: 'https://www.wikidata.org/w/api.php' },
     crossref: { name: 'Crossref (papers)', type: 'api', endpoint: 'https://api.crossref.org' },
     arxiv: { name: 'arXiv (papers)', type: 'api', endpoint: 'https://export.arxiv.org/api/query' },
-    openalex: { name: 'OpenAlex (papers)', type: 'api', endpoint: 'https://api.openalex.org' },
     openlibrary: { name: 'Open Library (books)', type: 'api', endpoint: 'https://openlibrary.org' },
-    archive: { name: 'Internet Archive', type: 'api', endpoint: 'https://archive.org' },
-    npm: { name: 'npm (packages)', type: 'api', endpoint: 'https://registry.npmjs.org' },
-    musicbrainz: { name: 'MusicBrainz (music)', type: 'api', endpoint: 'https://musicbrainz.org' },
     dictionary: { name: 'Dictionary', type: 'api', endpoint: 'https://api.dictionaryapi.dev' }
 };
+
+// v6.3: engine CATEGORIES - the model may run a whole category
+// (SEARCH[social]: q runs EVERY enabled Social Media engine) or a single
+// engine, by its own thinking. Settings > Search Engines groups the list
+// under the same categories.
+const SEARCH_ENGINE_CATEGORIES = {
+    social: ['reddit', 'facebook', 'instagram', 'twitter', 'youtube'],
+    privacy: ['duckduckgo_lite', 'duckduckgo_instant', 'duckduckgo', 'brave', 'startpage'],
+    standard: ['google', 'bing', 'yahoo', 'baidu', 'yandex'],
+    productivity: ['wikipedia', 'grokipedia', 'ernie', 'github', 'linkedin'],
+    other: ['openlibrary', 'crossref', 'wikidata', 'arxiv', 'dictionary']
+};
+const SEARCH_CATEGORY_NAMES = { social: 'Social Media', privacy: 'Privacy search engines', standard: 'Standard search engines', productivity: 'Productivity', other: 'Other' };
 
 /**
  * Research stage configurations
@@ -6521,7 +6526,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v6.2</span>
+                        <span>v6.3</span>
                     </div>
                 </div>
             </div>
@@ -7481,15 +7486,31 @@ function renderSearchEngines() {
         allEngines[eng.id] = { name: eng.name, type: eng.type };
     });
     
-    list.innerHTML = Object.entries(allEngines).map(([key, config]) => `
+    // v6.3: engines grouped under the 5 CATEGORY headers (Social Media,
+    // Privacy search engines, Standard, Productivity, Other) + Custom.
+    const _row = (key, config) => `
         <label class="search-engine-item">
             <input type="checkbox" class="search-engine-checkbox" ${(state.activeSearchEngines.length === 0 || state.activeSearchEngines.includes(key)) ? 'checked' : ''} onchange="toggleSearchEngine('${key}', this.checked)">
             <div class="search-engine-info">
                 <div class="search-engine-name">${config.name}</div>
                 <div class="search-engine-type">${config.type === 'api' ? '(API)' : '(Web)'}</div>
             </div>
-        </label>
-    `).join('');
+        </label>`;
+    const _hdr = (t) => `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin:10px 0 4px 2px;">${t}</div>`;
+    let _html = '';
+    Object.keys(SEARCH_ENGINE_CATEGORIES).forEach(cat => {
+        const keys = SEARCH_ENGINE_CATEGORIES[cat].filter(k => allEngines[k]);
+        if (!keys.length) return;
+        _html += _hdr(SEARCH_CATEGORY_NAMES[cat] || cat);
+        keys.forEach(key => { _html += _row(key, allEngines[key]); });
+    });
+    const _categorized = Object.values(SEARCH_ENGINE_CATEGORIES).flat();
+    const _extra = Object.keys(allEngines).filter(k => !_categorized.includes(k));
+    if (_extra.length) {
+        _html += _hdr('Other engines');
+        _extra.forEach(key => { _html += _row(key, allEngines[key]); });
+    }
+    list.innerHTML = _html;
 }
 
 /**
@@ -8876,22 +8897,19 @@ async function searchWeb(query, enginesOverride) {
     };
 
     const promises = [];
-    // v5.8: the agentic model may request specific engines per query via
-    // SEARCH[engine1, engine2]: query. Names are normalized (aliases like
-    // so/stackoverflow -> stackexchange, gh/github -> github_api, hn ->
-    // hackernews, wiki -> wikipedia, ddg -> duckduckgo); unknown names are
-    // dropped. If nothing valid remains we fall back to the user's enabled
-    // engines so a bad guess never yields zero searches.
+    // v6.3: the model may name a single engine OR a whole category per
+    // SEARCH command (one key per separate line). Names are normalized
+    // (aliases like x -> twitter, wiki -> wikipedia, ddg -> duckduckgo,
+    // social_media -> social); unknown names are dropped. NO fallback
+    // defaults: named-but-disabled/unknown keys run zero legs.
     const _aliasMap = {
         'ddg': 'duckduckgo', 'duckduckgolite': 'duckduckgo_lite', 'ddglite': 'duckduckgo_lite',
         'instant': 'duckduckgo_instant', 'ddginstant': 'duckduckgo_instant',
         'wiki': 'wikipedia', 'wikipedia_en': 'wikipedia',
-        'stackoverflow': 'stackexchange', 'stack': 'stackexchange', 'so': 'stackexchange',
-        'gh': 'github_api', 'github': 'github_api',
-        'hn': 'hackernews', 'yc': 'hackernews',
-        'x': 'twitter', 'ia': 'archive', 'books': 'openlibrary',
-        'papers': 'crossref', 'scholar': 'openalex', 'music': 'musicbrainz',
-        'dict': 'dictionary', 'npmjs': 'npm'
+        'x': 'twitter', 'books': 'openlibrary',
+        'papers': 'crossref', 'dict': 'dictionary',
+        'socialmedia': 'social', 'social_media': 'social',
+        'privacyengines': 'privacy'
     };
     const _normEng = (s) => {
         let k = String(s || '').trim().toLowerCase().replace(/[\s_-]+/g, '_');
@@ -8912,9 +8930,15 @@ async function searchWeb(query, enginesOverride) {
     const _enabledEng = new Set(_noneEnabled ? [] : (_rawEnabled.length > 0 ? _rawEnabled : _allEngKeys).map(k => String(k).trim().toLowerCase()));
     let activeEngines;
     if (Array.isArray(enginesOverride) && enginesOverride.length > 0) {
-        // v6.2: ONLY the engines the model named (normalized + filtered to
-        // the enabled set). All named engines disabled/unknown -> zero runs.
-        activeEngines = [...new Set(enginesOverride.map(_normEng).filter(k => _validEngine(k) && _enabledEng.has(k)))];
+        // v6.3: the model may name a whole CATEGORY (expands to every engine
+        // in it) or a single engine, then filtered to the enabled set.
+        // All named engines disabled/unknown -> zero runs (no defaults).
+        const _req = [];
+        enginesOverride.map(_normEng).forEach(k => {
+            if (SEARCH_ENGINE_CATEGORIES[k]) _req.push(...SEARCH_ENGINE_CATEGORIES[k]);
+            else _req.push(k);
+        });
+        activeEngines = [...new Set(_req.filter(k => _validEngine(k) && _enabledEng.has(k)))];
     } else {
         // v6.2: no-override callers run exactly the user's enabled set:
         // '__none__' = none; empty list = all (fresh-profile select-all).
@@ -11524,7 +11548,7 @@ const SAHU_SKILLS = [
 function buildSearchLoopPrompt() {
     const has = (id) => (state.enabledSkills || []).includes(id);
     const lines = [];
-    if (has('web_search')) lines.push('SEARCH[engine]: <query> - run ONE search on ONE engine; YOU choose which engine fits the query. To use several engines, output several SEPARATE SEARCH lines (ONE engine per line) - they all run IN PARALLEL. There are NO default engines: a bare SEARCH line without [engine] is NOT executed, and engines outside your enabled menu NEVER run.');
+    if (has('web_search')) lines.push('SEARCH[key]: <query> - run ONE search. The key is ONE engine (e.g. SEARCH[wikipedia]: ...) or ONE whole CATEGORY (e.g. SEARCH[social]: ... runs EVERY enabled Social Media engine). YOU decide which, on your own thinking. To use several engines/categories, output several SEPARATE SEARCH lines (one key per line) - they all run IN PARALLEL. There are NO default engines: a bare SEARCH line without [key] is NOT executed, and engines outside your enabled menu NEVER run.');
     if (has('web_scrape')) lines.push('READ: <url> - scrape a page and read its full text (use on a promising result to dig deeper).');
     if (has('web_fetch')) lines.push('FETCH: <url> - fetch the raw content of a URL (useful for articles, APIs and files).');
     if (has('web_browse')) lines.push('BROWSE: <url> - browse a page: quick content summary plus the links it contains for further browsing.');
@@ -11537,36 +11561,31 @@ function buildSearchLoopPrompt() {
         const _noneEn = (state.activeSearchEngines || []).includes('__none__');
         const _rawEn = (state.activeSearchEngines || []).filter(k => k !== '__none__');
         const _on = new Set(_noneEn ? [] : (_rawEn.length > 0 ? _rawEn : _allKeys));
-        const _cats = [
-            ['General web', ['duckduckgo', 'duckduckgo_lite', 'duckduckgo_instant', 'google', 'bing', 'brave', 'startpage', 'yandex', 'qwant', 'baidu', 'yahoo']],
-            ['Facts/encyclopedia', ['wikipedia', 'wikidata', 'grokipedia']],
-            ['Community/discussions', ['reddit', 'hackernews']],
-            ['Code/packages', ['stackexchange', 'github_api', 'npm']],
-            ['Science/papers', ['crossref', 'openalex', 'arxiv']],
-            ['Culture/media', ['openlibrary', 'archive', 'musicbrainz', 'dictionary']],
-            ['Site-focused', ['youtube', 'twitter', 'ernie', 'facebook', 'instagram', 'linkedin', 'github']]
-        ];
-        const _menuLines = _cats.map(([cat, keys]) => {
-            const ks = keys.filter(k => _on.has(k));
-            return ks.length ? '- ' + cat + ': ' + ks.join(', ') : '';
-        }).filter(Boolean);
+        const _menuLines = [];
+        const _catKeys = [];
+        Object.keys(SEARCH_ENGINE_CATEGORIES).forEach(cat => {
+            const ks = SEARCH_ENGINE_CATEGORIES[cat].filter(k => _on.has(k));
+            if (!ks.length) return;
+            _catKeys.push(cat);
+            _menuLines.push('- ' + (SEARCH_CATEGORY_NAMES[cat] || cat) + ': ' + ks.join(', '));
+        });
         (state.customSearchEngines || []).forEach(e => { if (e && e.id && _on.has(e.id)) _menuLines.push('- Custom: ' + e.id); });
         engineMenu = _menuLines.length
-            ? 'Engine menu (the ONLY enabled engine keys) - pick ONE key per SEARCH line, ONE engine per separate line:\n' + _menuLines.join('\n')
+            ? 'Category keys (a category runs EVERY enabled engine in it): ' + _catKeys.join(', ') + '\nEngine menu (the ONLY enabled keys) - pick ONE key per separate SEARCH line, either ONE engine or ONE category:\n' + _menuLines.join('\n')
             : 'No search engines are enabled in Settings right now: do NOT output SEARCH lines - answer directly.';
     }
     return `\n\nAGENTIC WEB LOOP:
-You are an autonomous research agent running inside the user's app. YOU decide everything - including WHICH search engine each query uses and HOW MANY searches to run in parallel. There are NO default engines: for every search YOU name ONE engine.
+You are an autonomous research agent running inside the user's app. YOU decide everything - including WHICH search key each query uses (a single engine or a whole category) and HOW MANY searches to run in parallel. There are NO default engines: for every search YOU name ONE key, chosen on your own thinking.
 ${lines.length ? 'Your skills - output a line in EXACTLY this format to use one:\n' + lines.join('\n') : 'You have no web skills available this session.'}
 ${engineMenu}
 How you work:
 1. THINK about the request first. Decide whether it needs web information at all - if not, go straight to the final answer.
-2. If it does: pick the engines that fit the question and launch one SEPARATE SEARCH line PER ENGINE, all in one turn, e.g.:
-   SEARCH[duckduckgo]: main query
+2. If it does: pick the keys that fit the question and launch one SEPARATE SEARCH line PER KEY, all in one turn, e.g.:
+   SEARCH[social]: community opinions query
    SEARCH[wikipedia]: main query
-   SEARCH[reddit]: community opinions query
-   (code -> stackexchange/github_api/npm, science -> arxiv/crossref/openalex, facts -> wikipedia/wikidata, news -> duckduckgo/hackernews, opinions -> reddit)
-3. After every round of results: RETHINK. Are the results relevant and complete? If a round returned 0 results or weak/off-topic results, the NEXT round must fan out WIDER: 4-6 separate SEARCH[engine] lines (ONE engine per line, mix general + specialized) with reworded queries. You may also READ/FETCH/BROWSE several URLs in one turn - they run in parallel too. Never repeat the identical query+engine pair.
+   SEARCH[privacy]: reworded general query
+   (opinions/community -> social, privacy-first general web -> privacy, everyday web -> standard, facts/reference -> productivity, books/papers/definitions -> other)
+3. After every round of results: RETHINK. Are the results relevant and complete? If a round returned 0 results or weak/off-topic results, the NEXT round must fan out WIDER: 4-6 separate SEARCH[key] lines (one key per line, mix categories + single engines) with reworded queries. You may also READ/FETCH/BROWSE several URLs in one turn - they run in parallel too. Never repeat the identical query+engine pair.
 4. Never stop after a single round - widen coverage until you are satisfied. You can run as many separate engine searches as you want.
 5. When you have everything (or nothing needed searching), output your complete final answer for the user starting with:
 ANSWER: 
@@ -11780,7 +11799,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 // v6.2: NO default engines - a bare SEARCH line (no engine
                 // named) runs NOTHING and gets an explicit correction.
                 if (!q.engines.length) {
-                    parts.push(`[SEARCH] "${q.query}" -> NOT RUN: you named no engine. There are NO default engines. Run ONE engine per separate line: SEARCH[engine]: <query> (pick engines from the enabled menu).`);
+                    parts.push(`[SEARCH] "${q.query}" -> NOT RUN: you named no key. There are NO default engines. Run ONE key per separate line: SEARCH[engine-or-category]: <query> (pick from the enabled menu).`);
                     continue;
                 }
                 // NEVER run the same query+engine pair twice.
@@ -11809,7 +11828,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 const engSummary = Object.keys(byEngine).map(k => k + ' ' + byEngine[k]).join(', ');
                 addTrace(`<span class="ml-4">${found.length} result${found.length === 1 ? '' : 's'}${engSummary ? ' - ' + escapeHtml(engSummary) : ''}</span>`);
                 const list = found.slice(0, 10).map((s, i) => `${i + 1}. [${s.source || 'web'}] ${s.title} (${s.link})${s.snippet ? '\n   ' + s.snippet : ''}`).join('\n');
-                return `[SEARCH${engTag}] "${q.query}" -> ${found.length} results${engSummary ? ' (' + engSummary + ')' : ''}\n${list || 'No results (the engine may be disabled or returned nothing). NEXT ROUND: try a DIFFERENT enabled engine on its OWN separate SEARCH[engine] line, reword the query, or READ/FETCH a known good URL.'}`;
+                return `[SEARCH${engTag}] "${q.query}" -> ${found.length} results${engSummary ? ' (' + engSummary + ')' : ''}\n${list || 'No results (the key may be disabled or returned nothing). NEXT ROUND: try a DIFFERENT enabled key (single engine or category) on its OWN separate SEARCH[key] line, reword the query, or READ/FETCH a known good URL.'}`;
             }));
             parts.push(...outs);
 
@@ -11893,13 +11912,20 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             // v5.6: normal chat with Web Search tool - show the agent's ANSWER
             // as a normal chat reply plus a plain inline list of the links it
             // used. No sources panel, no grid, no duplicated response.
-            const srcLinks = collected.slice(0, 50).map((s) =>
-                `<li class="mb-1"><a href="${s.link}" target="_blank" class="text-blue-600 hover:underline">${escapeHtml(s.title || s.link)}</a></li>`).join('');
+            // v6.3: RESTORED the collapsible Sources panel in SahuAI (chat)
+            // mode - the SAME panel as history, replacing the plain list.
+            const _chatSrcs = collected.slice(0, 150);
+            const _chatEngs = [...new Set(_chatSrcs.map(s => s.source || 'web'))];
+            const _chatItems = _chatSrcs.map((s) =>
+                `<li class="text-xs mb-1"><a href="${s.link}" target="_blank" class="text-blue-500 hover:underline">${escapeHtml(s.title || s.link || 'source')}</a>${s.source ? ` <span class="text-[10px] text-[var(--text-secondary)]">(${escapeHtml(s.source)})</span>` : ''}</li>`).join('');
             displayHtml = `<div class="prose max-w-none text-sm">${formatMarkdown(finalAnswer || 'No results found. Please try again.')}</div>` +
-                (srcLinks ? `<div class="text-xs text-[var(--text-secondary)] mt-3 mb-1 font-medium">Sources the agent used:</div><ol class="list-decimal pl-5 text-xs">${srcLinks}</ol>` : '');
+                (_chatItems ? `<details class="search-round-think mt-2"><summary class="cursor-pointer text-xs text-[var(--text-secondary)]"><i class="fas fa-list-ul mr-1"></i>Sources (${_chatSrcs.length})${_chatEngs.length ? ' - ' + escapeHtml(_chatEngs.join(', ')) : ''}</summary><ol class="list-decimal pl-5 mt-2">${_chatItems}</ol></details>` : '');
             savedContent = finalAnswer || 'No results found.';
         } else if (collected.length > 0) {
-            // Search mode shows ONLY the resources the agent gathered
+            // Search mode shows ONLY the resources the agent gathered -
+            // v6.3: inside the SAME collapsible Sources panel as history
+            // (panel restored in BOTH search and SahuAI mode), open by
+            // default here since sources are the primary content.
             const items = collected.map((s) => `
                 <li class="mb-3">
                     <a href="${s.link}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(s.title || s.link)}</a>
@@ -11909,7 +11935,8 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             // v5.8: explicit summary header - search mode shows ONLY sources,
             // never the model's full content.
             const _enginesUsed = [...new Set(collected.map(s => s.source || 'web'))];
-            displayHtml = `<div class="text-xs text-[var(--text-secondary)] mb-2">Agent searched ${searchedQueries.size} quer${searchedQueries.size === 1 ? 'y' : 'ies'} · ${collected.length} source${collected.length === 1 ? '' : 's'} · engines: ${escapeHtml(_enginesUsed.join(', '))}</div><ol class="list-decimal pl-5">${items}</ol>`;
+            displayHtml = `<div class="text-xs text-[var(--text-secondary)] mb-2">Agent searched ${searchedQueries.size} quer${searchedQueries.size === 1 ? 'y' : 'ies'} · ${collected.length} source${collected.length === 1 ? '' : 's'} · engines: ${escapeHtml(_enginesUsed.join(', '))}</div>` +
+                `<details class="search-round-think mt-2" open><summary class="cursor-pointer text-xs text-[var(--text-secondary)]"><i class="fas fa-list-ul mr-1"></i>Sources (${collected.length})${_enginesUsed.length ? ' - ' + escapeHtml(_enginesUsed.join(', ')) : ''}</summary><ol class="list-decimal pl-5 mt-2">${items}</ol></details>`;
             savedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
         } else if (searchedQueries.size > 0) {
             // v5.8: the agent DID search but nothing usable was retrieved.
@@ -11962,7 +11989,8 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                     <span class="text-[10px] text-[var(--text-secondary)] ml-1">(${escapeHtml(s.source || 'web')})</span>
                     <div class="text-xs text-[var(--text-secondary)] mt-0.5">${escapeHtml(s.snippet || '')}</div>
                 </li>`).join('');
-            if (contentEl) contentEl.innerHTML = `<div class="text-xs text-[var(--text-secondary)] mb-2">${aborted ? 'Stopped' : 'The agent hit a provider error before writing an answer'} - showing the ${collected.length} source${collected.length === 1 ? '' : 's'} it gathered:</div><ol class="list-decimal pl-5">${rItems}</ol>`;
+            const _rEngs = [...new Set(collected.map(s => s.source || 'web'))];
+            if (contentEl) contentEl.innerHTML = `<div class="text-xs text-[var(--text-secondary)] mb-2">${aborted ? 'Stopped' : 'The agent hit a provider error before writing an answer'} - showing the ${collected.length} source${collected.length === 1 ? '' : 's'} it gathered:</div><details class="search-round-think mt-2" open><summary class="cursor-pointer text-xs text-[var(--text-secondary)]"><i class="fas fa-list-ul mr-1"></i>Sources (${collected.length})${_rEngs.length ? ' - ' + escapeHtml(_rEngs.join(', ')) : ''}</summary><ol class="list-decimal pl-5 mt-2">${rItems}</ol></details>`;
             const rescuedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
             window.lastAnswer = rescuedContent;
             const _rescueTraceEl = document.getElementById(`trace-${divId}`);
@@ -12127,7 +12155,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v6.2 Initializing...');
+    console.log('🚀 SahuAI Agent v6.3 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -12169,8 +12197,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v6.2 Ready');
-    showToast('SahuAI Agent v6.2 Loaded');
+    console.log('✅ SahuAI Agent v6.3 Ready');
+    showToast('SahuAI Agent v6.3 Loaded');
 }
 
 // ============================================
@@ -12287,7 +12315,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v6.2 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v6.3 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

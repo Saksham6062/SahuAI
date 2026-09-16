@@ -9616,7 +9616,9 @@ function formatMarkdown(text, sources = null) {
         .replace(/<script[\s\S]*?<\/script\s*>/gi, '')
         .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
         .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1="#"')
-        .replace(/FILE\s*\[\s*[a-z0-9]{1,8}\s*\]\s*:[^\n]*\n[\s\S]*?(?:\n\/FILE(?![a-z])|\nFILE\s*\[|$)/gi, '');
+        .replace(/FILE\s*\[\s*[a-z0-9]{1,8}\s*\]\s*:[^\n]*\n[\s\S]*?(?:\n\/FILE(?![a-z])|\nFILE\s*\[|$)/gi, '')
+        // v6.5b: hide the raw PREVIEW marker line (the preview auto-opens)
+        .replace(/PREVIEW\s*:[^\n]*\n+(?=```(?:html|react|jsx|tsx))/gi, '');
     
     
     // Citation handling (FIX 2: use provided sources when rendering saved chats)
@@ -13534,8 +13536,8 @@ window.updateToolsNavStyleLabel = updateToolsNavStyleLabel;
             const kind = m[1].toLowerCase() === 'html' ? 'html' : 'react';
             const code = m[2] || '';
             if (!code.trim()) return false;
-            const tm = String(text).match(/PREVIEW\s*:\s*([^\n`]+)/i);
-            const title = tm ? tm[1].trim().replace(/[*_`#]/g, '').slice(0, 60) : '';
+            const tm = String(text).match(/PREVIEW\s*:[ \t]*([^\n`]+)/i);
+            const title = tm ? tm[1].trim().replace(/^PREVIEW\s*:[ \t]*/i, '').replace(/[*_`#]/g, '').slice(0, 60) : '';
             setTimeout(function () { try { openWith(kind, code, title); } catch (e) {} }, 800);
             return true;
         } catch (e) { return false; }

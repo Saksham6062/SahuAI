@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v6.6 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, consensus-powered AI, live app previews">
+    <meta name="description" content="SahuAI Agent v6.7 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v6.6 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v6.7 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v6.6</span>
+                        <span>SahuAI Agent v6.7</span>
                     </div>
                 </div>
                 
@@ -5762,7 +5762,7 @@ const state = {
     },
     
     // v5.5: Agent skills - abilities the loop can use, toggled in Settings > Skills
-    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview'],
+    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview', 'mcp_date', 'mcp_calc'],
     
     // Response Style
     responseStyle: 'normal'
@@ -6457,7 +6457,7 @@ function loadState() {
         // v5.6: skills must ALWAYS default to all-on. Older saved states lack
         // the key entirely, which silently disabled every agentic skill.
         if (!Array.isArray(state.enabledSkills) || state.enabledSkills.length === 0) {
-            state.enabledSkills = ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview'];
+            state.enabledSkills = ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview', 'mcp_date', 'mcp_calc'];
         }
         // v6.4: one-time migration - the two new skills join any saved list
         if (!state._v64Skills) {
@@ -6488,6 +6488,16 @@ function loadState() {
                 ['bai', 'bynara', 'opencode'].forEach(k => { if (PROVIDERS[k] && !state.activeProviders.includes(k)) state.activeProviders.push(k); });
             }
             state._v66Skills = true;
+        }
+
+        // v6.7: one-time migration - the two MCP tools (Current Date +
+        // Calculator) join any saved list so existing users get them on.
+        if (!state._v67Skills) {
+            const _v67set = new Set(state.enabledSkills || []);
+            _v67set.add('mcp_date');
+            _v67set.add('mcp_calc');
+            state.enabledSkills = (typeof SAHU_SKILLS !== 'undefined' ? SAHU_SKILLS.map(s => s.id) : []).filter(id => _v67set.has(id));
+            state._v67Skills = true;
         }
         
         const history = localStorage.getItem('sahu_chat_history');
@@ -6610,7 +6620,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v6.6</span>
+                        <span>v6.7</span>
                     </div>
                 </div>
             </div>
@@ -11605,6 +11615,8 @@ const SAHU_SKILLS = [
     { id: 'make_files', name: 'File Creation', icon: 'fa-file-export', color: 'rose', desc: 'The model can create downloadable files: pdf, pptx, xlsx, docx, md, txt, csv and json - with fonts, tables and emojis.' },
     { id: 'live_preview', name: 'Live Preview', icon: 'fa-bolt', color: 'emerald', desc: 'HTML and React apps the model writes open in a real live preview window - sandboxed, with console output, phone/desktop width, refresh and open-in-tab.' },
     { id: 'skill_creator', name: 'Skill Creator', icon: 'fa-wand-magic-sparkles', color: 'violet', desc: 'Ask the model to create a new skill (MAKESKILL block) - it is saved with its own on/off toggle in Settings > Skills and taught to every model.' },
+    { id: 'mcp_date', name: 'MCP: Current Date & Time', icon: 'fa-calendar-day', color: 'sky', desc: 'MCP tool - gives the model the REAL current date & time on demand (local + UTC, weekday, timezone, Unix stamp). Time-sensitive answers are always correct - no more guessed dates.' },
+    { id: 'mcp_calc', name: 'MCP: Calculator', icon: 'fa-calculator', color: 'orange', desc: 'MCP tool - an exact math engine the model can call: arithmetic, powers, roots, trig, logs, factorials, constants (pi, e). It computes instead of guessing.' },
     { id: 'web_browse', name: 'Web Browsing', icon: 'fa-compass',  color: 'cyan',   desc: 'Browses a page like a person: skims the content and picks up links to follow next.' }
 ];
 
@@ -11617,6 +11629,8 @@ function buildSearchLoopPrompt() {
     if (has('run_code')) lines.push('RUN CODE - you have a REAL sandboxed code interpreter. Output a fenced code block with language runpython (Python 3: print() to show output, top-level await works, numpy/pandas/matplotlib auto-load on import, pure-Python packages via import micropip; await micropip.install(\"pkg\"); the last matplotlib figure is auto-captured and shown to the user) or runjs (JavaScript: console.log() to show output, import npm packages from https://esm.sh/<package> e.g. import _ from \"https://esm.sh/lodash\", top-level await works). The code runs in a sandbox, the FULL output comes back to you, and you can run more code in your next turns to iterate, verify or fix errors.');
     if (has('make_files')) lines.push('CREATE FILES - deliver downloadable files with a FILE block (emit them in your final ANSWER - blocks there are turned into download cards for the user):\nFILE[ext]: filename.ext\n<content>\n/FILE\nFormats + content rules: txt/md = raw text/markdown. csv = raw CSV. json = raw JSON. xlsx = rows with cells separated by | (first row = headers; start a new sheet with a ## SheetName line). docx/pdf = markdown-ish: # H1, ## H2, - bullets, 1. numbered, > quote, **bold**, tables as | a | b | rows, optional first line FONT: Georgia (pdf built-in fonts only: helvetica, times, courier; emojis are NOT supported in pdf and get stripped). pptx = slides separated by --- lines; first line of a slide = title, then - bullets or | a | b | tables, optional first line FONT: Arial. If a file fails, fix the content and emit the FILE block again.');
     if (has('live_preview')) lines.push('LIVE PREVIEW - when the user asks for an app, website, page, UI, game or anything visual/interactive, write it as ONE complete single-file app in a fenced code block with language html (plain HTML/CSS/JS, CDN links allowed) or react (React 18 + JSX, CDN libraries and Tailwind are available; ALWAYS end with ReactDOM.createRoot(document.getElementById("root")).render(<App />)), and put the line PREVIEW: <short title> on the line immediately BEFORE the fence. The user gets the app opened in a live preview window automatically (they can also click Preview on any html/react block). Everything must live in that single file - no local files or imports.');
+    if (has('mcp_date')) lines.push('MCP DATE TOOL - get the REAL current date/time: output a line DATE: (bare, for the user\'s local time) or DATE: <IANA timezone> (e.g. DATE: UTC, DATE: Asia/Kolkata, DATE: America/New_York). You receive the local date-time, UTC date-time, weekday and a Unix timestamp. Use it EVERY time an answer depends on today\'s date, the weekday, clocks, ages, deadlines or "days until/between" questions (then compute differences with CALC). NEVER guess or hardcode the current date.');
+    if (has('mcp_calc')) lines.push('MCP CALCULATOR - exact math: output a line CALC: <expression> (one expression per line; several CALC lines run in parallel). Supports + - * / % (modulo) ^ (power), ! (factorial), parentheses, sqrt cbrt abs round floor ceil sign, min max pow root(x,n) atan2, sin cos tan asin acos atan sinh cosh tanh (radians), log ln log2 log10 exp, constants pi e tau phi, scientific notation (1.2e9) and implicit multiplication (2pi, 3(4+1)). Use it for ANY arithmetic beyond trivial single-digit sums and ALWAYS when precision matters.');
     if (has('skill_creator')) lines.push('CREATE A SKILL - when the user asks you to create/define/save a new skill (a reusable behavior, persona or workflow), output a block:\nMAKESKILL: <skill name>\nDESC: <one line describing what it does>\n<the skill instructions - exact directives you should follow whenever this skill applies>\n/MAKESKILL\nIt is saved instantly and appears in Settings > Skills with its own on/off toggle.');
     lines.push('STYLE: In answers and files you may freely use emojis, markdown tables (| A | B |) to compare or contrast things, **bold**, headings (#, ##), and <font face=\"Georgia\" color=\"#c026d3\" size=\"4\">font spans</font> for different fonts and colors. Do NOT wrap markdown tables or FILE blocks inside code fences - output them as plain text.');
     if (has('web_browse')) lines.push('BROWSE: <url> - browse a page: quick content summary plus the links it contains for further browsing.');
@@ -11658,6 +11672,192 @@ How you work:
 5. When you have everything (or nothing needed searching), output your complete final answer for the user starting with:
 ANSWER: 
 One decision block per turn. After your skill lines you will receive the results and another turn.${_sahuCustomSkillsPrompt()}`;
+}
+
+// =====================================================================
+// v6.7: MCP TOOLS - keyless, instant, run 100% locally in the page.
+//   DATE: <optional IANA tz> -> sahuMcpDate(tz)  : real current date/time
+//   CALC: <expression>       -> sahuSafeCalc(s)  : exact math (NO eval)
+// The agent loop extracts the markers and feeds the results back like
+// every other skill output.
+// =====================================================================
+
+function _sahuFmtNum(x) {
+    if (typeof x !== 'number' || isNaN(x)) return String(x);
+    if (Number.isInteger(x) && Math.abs(x) < 1e15) return String(x);
+    if (x !== 0 && (Math.abs(x) >= 1e15 || Math.abs(x) < 1e-7)) {
+        return x.toExponential(8).replace(/(\.\d*?)0+e/, '$1e').replace(/\.e/, 'e');
+    }
+    return String(parseFloat(x.toPrecision(12)));
+}
+
+function sahuMcpDate(tzArg) {
+    const now = new Date();
+    const tz = String(tzArg || '').trim();
+    let local = '', tzName;
+    try {
+        if (tz) {
+            const f0 = new Intl.DateTimeFormat('en-US', { timeZone: tz });
+            tzName = f0.resolvedOptions().timeZone || tz;
+        } else {
+            tzName = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local time';
+        }
+        const opts = tz ? { timeZone: tz } : {};
+        const f = new Intl.DateTimeFormat('en-GB', Object.assign({}, opts, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+        const pr = {};
+        f.formatToParts(now).forEach(p2 => { pr[p2.type] = p2.value; });
+        if (pr.hour === '24') pr.hour = '00';
+        local = pr.weekday + ', ' + pr.day + ' ' + pr.month + ' ' + pr.year + ' at ' + pr.hour + ':' + pr.minute + ':' + pr.second;
+    } catch (e) {
+        return { ok: false, line: 'invalid timezone', feedback: '[DATE] "' + tz + '" is not a valid IANA timezone. Examples: UTC, Asia/Kolkata, America/New_York, Europe/London. Use a bare DATE: line (no argument) for the user\'s local time.' };
+    }
+    const utc = now.toISOString().replace('T', ' ').replace(/\..*$/, '').trim() + ' UTC';
+    const unix = Math.floor(now.getTime() / 1000);
+    const line = local + ' (' + tzName + ')';
+    const feedback = '[DATE] The REAL current date & time:\nLocal (' + tzName + '): ' + local + '\nUTC: ' + utc + '\nUnix timestamp: ' + unix + '\nThis is authoritative - never claim you cannot know the current date or time.';
+    return { ok: true, line: line, feedback: feedback };
+}
+
+// Safe math expression evaluator: tokenizer + recursive-descent parser.
+// NO eval, NO new Function() - the model can never smuggle code through it.
+function sahuSafeCalc(input) {
+    const _err = (m) => ({ ok: false, error: m });
+    try {
+        let s = String(input || '').trim();
+        if (!s) return _err('empty expression');
+        s = s.replace(/[×✕]/g, '*').replace(/÷/g, '/').replace(/[−–]/g, '-').replace(/[$€£₹]/g, '').replace(/\*\*/g, '^');
+        const _eq = s.match(/^(.+?)\s*=\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*$/);
+        if (_eq) s = _eq[1].trim(); // model appended "= result" - keep the left side
+        s = s.replace(/\s+/g, '');
+        if (!s) return _err('empty expression');
+        const FUNCS = {
+            sqrt: Math.sqrt, cbrt: Math.cbrt, abs: Math.abs, round: Math.round, floor: Math.floor,
+            ceil: Math.ceil, sign: Math.sign, sin: Math.sin, cos: Math.cos, tan: Math.tan,
+            asin: Math.asin, acos: Math.acos, atan: Math.atan, sinh: Math.sinh, cosh: Math.cosh,
+            tanh: Math.tanh, log10: Math.log10, log2: Math.log2, log: Math.log, ln: Math.log,
+            exp: Math.exp, min: Math.min, max: Math.max, pow: Math.pow, atan2: Math.atan2,
+            root: (x, n) => (x < 0 && n % 2 === 1 ? -Math.pow(-x, 1 / n) : Math.pow(x, 1 / n))
+        };
+        const CONSTS = { pi: Math.PI, tau: Math.PI * 2, e: Math.E, phi: (1 + Math.sqrt(5)) / 2 };
+        const toks = [];
+        const re = /(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?|[a-zA-Z_][a-zA-Z_0-9]*|[+\-*/%^()!,]/g;
+        let pos = 0, m;
+        while ((m = re.exec(s)) !== null) {
+            if (m.index !== pos) return _err('invalid character "' + s[pos] + '"');
+            pos = re.lastIndex;
+            if (m[1] !== undefined) toks.push({ t: 'num', v: parseFloat(m[0]) });
+            else if (/^[a-zA-Z_][a-zA-Z_0-9]*$/.test(m[0])) toks.push({ t: 'id', v: m[0].toLowerCase() });
+            else if (m[0] === '(') toks.push({ t: 'lp' });
+            else if (m[0] === ')') toks.push({ t: 'rp' });
+            else if (m[0] === ',') toks.push({ t: 'comma' });
+            else toks.push({ t: 'op', v: m[0] });
+        }
+        if (pos !== s.length) return _err('invalid character "' + s[pos] + '"');
+        if (!toks.length) return _err('no numbers found');
+        let p = 0;
+        const peek = () => toks[p];
+        function parseAdd() {
+            let v = parseMul();
+            while (peek() && peek().t === 'op' && (peek().v === '+' || peek().v === '-')) {
+                const op = toks[p++].v;
+                const r = parseMul();
+                v = op === '+' ? v + r : v - r;
+            }
+            return v;
+        }
+        function parseMul() {
+            let v = parseUnary();
+            for (;;) {
+                const t = peek();
+                if (t && t.t === 'op' && (t.v === '*' || t.v === '/' || t.v === '%')) {
+                    p++;
+                    const r = parseUnary();
+                    if (t.v === '*') v = v * r;
+                    else if (t.v === '/') v = v / r;
+                    else {
+                        if (r === 0) throw new Error('modulo by zero');
+                        v = v % r;
+                    }
+                } else if (t && (t.t === 'num' || t.t === 'id' || t.t === 'lp')) {
+                    const r = parseUnary(); // implicit multiplication: 2pi, 3(4+1)
+                    v = v * r;
+                } else break;
+            }
+            return v;
+        }
+        function parseUnary() {
+            const t = peek();
+            if (t && t.t === 'op' && (t.v === '-' || t.v === '+')) {
+                p++;
+                const v = parseUnary();
+                return t.v === '-' ? -v : v;
+            }
+            return parsePow();
+        }
+        function parsePow() {
+            const base = parsePostfix();
+            const t = peek();
+            if (t && t.t === 'op' && t.v === '^') {
+                p++;
+                return Math.pow(base, parseUnary()); // right-assoc, allows 2^-3
+            }
+            return base;
+        }
+        function parsePostfix() {
+            let v = parsePrimary();
+            for (;;) {
+                const t = peek();
+                if (t && t.t === 'op' && t.v === '!') {
+                    p++;
+                    if (v < 0 || !Number.isInteger(v) || v > 170) throw new Error('factorial needs an integer between 0 and 170 (got ' + v + ')');
+                    let f = 1;
+                    for (let i = 2; i <= v; i++) f *= i;
+                    v = f;
+                } else break;
+            }
+            return v;
+        }
+        function parsePrimary() {
+            const t = toks[p++];
+            if (!t) throw new Error('unexpected end of expression');
+            if (t.t === 'num') return t.v;
+            if (t.t === 'lp') {
+                const v = parseAdd();
+                const c = toks[p++];
+                if (!c || c.t !== 'rp') throw new Error('missing closing parenthesis');
+                return v;
+            }
+            if (t.t === 'id') {
+                if (Object.prototype.hasOwnProperty.call(CONSTS, t.v)) return CONSTS[t.v];
+                if (Object.prototype.hasOwnProperty.call(FUNCS, t.v)) {
+                    const lp = toks[p++];
+                    if (!lp || lp.t !== 'lp') throw new Error(t.v + ' needs parentheses, e.g. ' + t.v + '(4)');
+                    const args = [];
+                    if (peek() && peek().t === 'rp') toks[p++];
+                    else {
+                        for (;;) {
+                            args.push(parseAdd());
+                            const sep = toks[p++];
+                            if (!sep) throw new Error('missing ) after ' + t.v + '(');
+                            if (sep.t === 'rp') break;
+                            if (sep.t !== 'comma') throw new Error('unexpected "' + (sep.v || '') + '" in ' + t.v + '()');
+                            if (args.length >= 8) throw new Error('too many arguments in ' + t.v + '()');
+                        }
+                    }
+                    return FUNCS[t.v].apply(null, args);
+                }
+                throw new Error('unknown name "' + t.v + '" (constants: pi, e, tau, phi)');
+            }
+            throw new Error('unexpected "' + (t.v === undefined ? (t.t === 'lp' ? '(' : t.t === 'rp' ? ')' : t.t === 'comma' ? ',' : '?') : t.v) + '"');
+        }
+        const val = parseAdd();
+        if (p < toks.length) throw new Error('unexpected "' + (toks[p].v === undefined ? toks[p].t : toks[p].v) + '" after the expression');
+        if (typeof val !== 'number' || isNaN(val)) return _err('not a real number (check powers/roots of negatives)');
+        if (!isFinite(val)) return _err('result is too large');
+        return { ok: true, value: val, text: _sahuFmtNum(val) };
+    } catch (e) {
+        return _err(e.message || 'could not evaluate the expression');
+    }
 }
 
 // ---- v5.6: WEB SCRAPING / FETCHING / BROWSING helpers (direct-only) ----
@@ -12446,6 +12646,8 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
     const visitedUrls = new Set();
     const searchedQueries = new Set();
     const v64RunCodes = new Set();   // v6.4: dedupe identical code runs
+    const dateRuns = new Map();      // v6.7: MCP Date dedupe (tz -> result line)
+    const calcCache = new Map();     // v6.7: MCP Calc dedupe (expr -> result)
     const v64SessionFiles = [];      // v6.4: files created mid-loop
     let v64LastPlot = '';            // v6.4: last matplotlib plot (base64)
     let finalAnswer = '';
@@ -12515,12 +12717,17 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 ? [...text.matchAll(/FETCH:\s*(https?:\/\/\S+)/gi)].map(m => m[1].replace(/[)`\]]+$/, '')) : [];
             const browses = skillsOn('web_browse')
                 ? [...text.matchAll(/BROWSE:\s*(https?:\/\/\S+)/gi)].map(m => m[1].replace(/[)`\]]+$/, '')) : [];
+            // v6.7: MCP tools - Current Date + Calculator (keyless, instant)
+            const dates = skillsOn('mcp_date')
+                ? [...text.matchAll(/(^|\n)[\s\-*_>#`]*DATE\s*(?:\[[^\]]*\])?\s*:\s*([^\n]*)/gi)].map(m => (m[2] || '').replace(/^[*\s`]+|[*\s`]+$/g, '').trim()) : [];
+            const calcs = skillsOn('mcp_calc')
+                ? [...text.matchAll(/(^|\n)[\s\-*_>#`]*(?:CALC|MCP_CALC)\s*:\s*([^\n]+)/gi)].map(m => m[2].replace(/^[*\s`]+|[*\s`]+$/g, '').trim()).filter(Boolean) : [];
 
             // v6.4: code interpreter blocks + FILE blocks
             const v64Code = skillsOn('run_code') ? extractRunnableCode(text) : [];
             const v64Files = skillsOn('make_files') ? extractFileBlocks(text) : [];
             const ansMatch = text.match(/ANSWER:\s*([\s\S]+)$/i);
-            const hasTools = queries.length + reads.length + fetches.length + browses.length + v64Code.length + v64Files.length > 0;
+            const hasTools = queries.length + reads.length + fetches.length + browses.length + v64Code.length + v64Files.length + dates.length + calcs.length > 0;
 
             if (!hasTools) {
                 // The agent is done (or never needed to search at all).
@@ -12657,6 +12864,38 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                     return '[FILE] ' + (fb.name || fb.ext) + ' -> FAILED: ' + meta.error + '. Fix the content and emit the FILE block again.';
                 });
             }
+            // v6.7: MCP tools run instantly (no network) - results are fed
+            // back to the model like every other skill output.
+            for (const d of dates) {
+                if (toolRuns >= MAX_TOOL_RUNS) break;
+                const dKey = (d || 'local').toLowerCase();
+                if (dateRuns.has(dKey)) { parts.push('[DATE] You already received this - use the earlier result: ' + dateRuns.get(dKey)); continue; }
+                toolRuns++;
+                const dr = sahuMcpDate(d);
+                if (dr.ok) {
+                    dateRuns.set(dKey, dr.line);
+                    addTrace('<i class="fas fa-calendar-day text-sky-500 mr-1"></i><span class="font-medium">MCP Date:</span> ' + escapeHtml(dr.line));
+                } else {
+                    addTrace('<i class="fas fa-calendar-day text-red-500 mr-1"></i><span class="font-medium">MCP Date:</span> <span class="text-red-500">invalid timezone</span>');
+                }
+                parts.push(dr.feedback);
+            }
+            for (const c of calcs) {
+                if (toolRuns >= MAX_TOOL_RUNS) break;
+                toolRuns++;
+                const cKey = c.replace(/\s+/g, ' ').toLowerCase();
+                if (calcCache.has(cKey)) { parts.push('[CALC] ' + c + ' -> already computed above: ' + calcCache.get(cKey)); continue; }
+                const cr = sahuSafeCalc(c);
+                if (cr.ok) {
+                    calcCache.set(cKey, cr.text);
+                    addTrace('<i class="fas fa-calculator text-orange-500 mr-1"></i><span class="font-medium">MCP Calc:</span> ' + escapeHtml(c) + ' = <b>' + escapeHtml(cr.text) + '</b>');
+                    parts.push('[CALC] ' + c + ' = ' + cr.text + ' (exact result, computed locally by the MCP calculator)');
+                } else {
+                    addTrace('<i class="fas fa-calculator text-red-500 mr-1"></i><span class="font-medium">MCP Calc:</span> <span class="text-red-500">error: ' + escapeHtml(cr.error) + '</span>');
+                    parts.push('[CALC] ' + c + ' -> ERROR: ' + cr.error + '. Supported: + - * / % ^ ! parentheses, sqrt cbrt abs round floor ceil sign, min max pow root(x,n) atan2, sin cos tan asin acos atan sinh cosh tanh (radians), log ln log2 log10 exp, constants pi e tau phi, 1.2e9. Rewrite the expression or move on.');
+                }
+            }
+
             toolRuns += pageTasks.length;
             const pageOuts = await Promise.all(pageTasks.map(t => t().catch(e => {
                 if (e && (e.name === 'AbortError' || /abort|stopped/i.test(e.message || ''))) throw e;
@@ -12676,7 +12915,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
 
             convo.push({
                 role: 'user',
-                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries and/or OTHER engines - fan out WIDER if results were empty or weak, READ, FETCH or BROWSE several pages in parallel) - you may redo this as many times as you need.`
+                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries and/or OTHER engines - fan out WIDER if results were empty or weak, READ, FETCH or BROWSE several pages in parallel, or the MCP DATE/CALC tools) - you may redo this as many times as you need.`
             });
         }
 
@@ -12712,7 +12951,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             // used. No sources panel, no grid, no duplicated response.
             // v6.3: RESTORED the collapsible Sources panel in SahuAI (chat)
             // mode - the SAME panel as history, replacing the plain list.
-            const _chatSrcs = collected.slice(0, 150);
+            const _chatSrcs = collected; // v6.7: NO cap - show every source the agent gathered
             const _chatEngs = [...new Set(_chatSrcs.map(s => s.source || 'web'))];
             const _chatItems = _chatSrcs.map((s) =>
                 `<li class="text-xs mb-1"><a href="${s.link}" target="_blank" class="text-blue-500 hover:underline">${escapeHtml(s.title || s.link || 'source')}</a>${s.source ? ` <span class="text-[10px] text-[var(--text-secondary)]">(${escapeHtml(s.source)})</span>` : ''}</li>`).join('');
@@ -12735,7 +12974,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             const _enginesUsed = [...new Set(collected.map(s => s.source || 'web'))];
             displayHtml = `<div class="text-xs text-[var(--text-secondary)] mb-2">Agent searched ${searchedQueries.size} quer${searchedQueries.size === 1 ? 'y' : 'ies'} · ${collected.length} source${collected.length === 1 ? '' : 's'} · engines: ${escapeHtml(_enginesUsed.join(', '))}</div>` +
                 _sahuSourcesPanelHtml(collected, true);
-            savedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
+            savedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + String(s.snippet).slice(0, 300) : ''}`).join('\n');
         } else if (searchedQueries.size > 0) {
             // v5.8: the agent DID search but nothing usable was retrieved.
             // Search mode must never dump full model content - show the
@@ -12763,7 +13002,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
         // the trace (every search, scrape, fetch, browse + think step) so
         // history keeps them all. Alias-safe push (no double-append).
         const _traceElSave = document.getElementById(`trace-${divId}`);
-        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: collected.slice(0, 150), files: _v64AllFiles, agentTrace: _traceElSave ? _traceElSave.innerHTML : '', timestamp: Date.now() };
+        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: _sahuSrcsForStore(collected), files: _v64AllFiles, agentTrace: _traceElSave ? _traceElSave.innerHTML : '', timestamp: Date.now() };
         state.messages.push(assistMsgObj);
         const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
         if (currentChat && currentChat.messages !== state.messages) currentChat.messages.push(assistMsgObj);
@@ -12794,10 +13033,10 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 </li>`).join('');
             const _rEngs = [...new Set(collected.map(s => s.source || 'web'))];
             if (contentEl) contentEl.innerHTML = `<div class="text-xs text-[var(--text-secondary)] mb-2">${aborted ? 'Stopped' : 'The agent hit a provider error before writing an answer'} - showing the ${collected.length} source${collected.length === 1 ? '' : 's'} it gathered:</div>` + _sahuSourcesPanelHtml(collected, true);
-            const rescuedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
+            const rescuedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + String(s.snippet).slice(0, 300) : ''}`).join('\n');
             window.lastAnswer = rescuedContent;
             const _rescueTraceEl = document.getElementById(`trace-${divId}`);
-            const rescueMsg = { role: 'assistant', content: rescuedContent, thinking: '', sources: collected.slice(0, 150), agentTrace: _rescueTraceEl ? _rescueTraceEl.innerHTML : '', timestamp: Date.now() };
+            const rescueMsg = { role: 'assistant', content: rescuedContent, thinking: '', sources: _sahuSrcsForStore(collected), agentTrace: _rescueTraceEl ? _rescueTraceEl.innerHTML : '', timestamp: Date.now() };
             state.messages.push(rescueMsg);
             const rescueChat = state.chatHistory.find(c => c.id === state.currentChatId);
             if (rescueChat && rescueChat.messages !== state.messages) rescueChat.messages.push(rescueMsg);
@@ -12963,19 +13202,31 @@ async function addFetchedModels(providerKey, resultElId) {
 window.fetchProviderModelsUI = fetchProviderModelsUI;
 window.addFetchedModels = addFetchedModels;
 
+// ---- v6.7: persist EVERY source (no count cap). Only the snippet text is
+// lightly trimmed to protect the localStorage quota - every source the
+// agent gathered is kept and shown in the panel.
+function _sahuSrcsForStore(list) {
+    return (Array.isArray(list) ? list : []).map(s => ({
+        title: String(s.title || '').slice(0, 200),
+        link: String(s.link || '').slice(0, 600),
+        source: s.source || 'web',
+        snippet: String(s.snippet || '').slice(0, 220)
+    }));
+}
+
 // ---- v6.6: v5.5-style SOURCES PANEL (favicon card grid) ----
 function _safeHost(u) {
     try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
 }
 
 function _sahuSourcesPanelHtml(srcs, open, label) {
-    const list = (Array.isArray(srcs) ? srcs : []).slice(0, 150);
+    const list = (Array.isArray(srcs) ? srcs : []); // v6.7: NO cap - every gathered source is shown
     if (!list.length) return '';
     const _engs = [...new Set(list.map(s => s.source || 'web'))];
     const cards = list.map((s, i) => {
         const host = _safeHost(s.link || '');
         return '<a href="' + escapeHtml(s.link || '') + '" target="_blank" rel="noopener" class="sahu-src-card">' +
-            '<img src="https://www.google.com/s2/favicons?domain=' + escapeHtml(host) + '" class="sahu-src-fav" onerror="this.style.display=\'none\'">' +
+            '<img src="https://www.google.com/s2/favicons?domain=' + escapeHtml(host) + '" class="sahu-src-fav" loading="lazy" onerror="this.style.display=\'none\'">' +
             '<span class="sahu-src-num">' + (i + 1) + '</span>' +
             '<span class="sahu-src-title">' + escapeHtml(s.title || s.link || 'source') + '</span>' +
             '<span class="sahu-src-host">' + escapeHtml(host) + (s.source ? ' · ' + escapeHtml(s.source) : '') + '</span>' +
@@ -13197,7 +13448,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v6.6 Initializing...');
+    console.log('🚀 SahuAI Agent v6.7 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -13240,8 +13491,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v6.6 Ready');
-    showToast('SahuAI Agent v6.6 Loaded');
+    console.log('✅ SahuAI Agent v6.7 Ready');
+    showToast('SahuAI Agent v6.7 Loaded');
 }
 
 // ============================================
@@ -13358,7 +13609,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v6.6 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v6.7 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

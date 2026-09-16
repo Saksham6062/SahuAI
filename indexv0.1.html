@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v6.4 - Official Saksham Intelligence AI Models Chat - 57+ models, 15+ providers, consensus-powered AI">
+    <meta name="description" content="SahuAI Agent v6.5 - Official Saksham Intelligence AI Models Chat - 57+ models, 15+ providers, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v6.4 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v6.5 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v6.4</span>
+                        <span>SahuAI Agent v6.5</span>
                     </div>
                 </div>
                 
@@ -5760,7 +5760,7 @@ const state = {
     },
     
     // v5.5: Agent skills - abilities the loop can use, toggled in Settings > Skills
-    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files'],
+    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview'],
     
     // Response Style
     responseStyle: 'normal'
@@ -6403,7 +6403,7 @@ function loadState() {
         // v5.6: skills must ALWAYS default to all-on. Older saved states lack
         // the key entirely, which silently disabled every agentic skill.
         if (!Array.isArray(state.enabledSkills) || state.enabledSkills.length === 0) {
-            state.enabledSkills = ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files'];
+            state.enabledSkills = ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview'];
         }
         // v6.4: one-time migration - the two new skills join any saved list
         if (!state._v64Skills) {
@@ -6412,6 +6412,14 @@ function loadState() {
             _v64set.add('make_files');
             state.enabledSkills = (typeof SAHU_SKILLS !== 'undefined' ? SAHU_SKILLS.map(s => s.id) : ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files']).filter(id => _v64set.has(id));
             state._v64Skills = true;
+        }
+
+        // v6.5: one-time migration - Live Preview skill joins any saved list
+        if (!state._v65Skills) {
+            const _v65set = new Set(state.enabledSkills || []);
+            _v65set.add('live_preview');
+            state.enabledSkills = (typeof SAHU_SKILLS !== 'undefined' ? SAHU_SKILLS.map(s => s.id) : []).filter(id => _v65set.has(id));
+            state._v65Skills = true;
         }
         
         const history = localStorage.getItem('sahu_chat_history');
@@ -6534,7 +6542,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v6.4</span>
+                        <span>v6.5</span>
                     </div>
                 </div>
             </div>
@@ -9655,15 +9663,25 @@ function formatMarkdown(text, sources = null) {
             `;
         }
         
+        // v6.5: live preview (html/react/jsx/tsx) - the Preview button opens
+        // the sandboxed live preview window (console, refresh, open-in-tab).
+        const _pvLang = ({ html: 'html', react: 'react', jsx: 'react', tsx: 'react' })[String(lang).toLowerCase()];
+        if (_pvLang) {
+            window.__sahuPvReg = window.__sahuPvReg || {};
+            window.__sahuPvReg[id] = { kind: _pvLang, code: code, title: '' };
+            actions += `
+                <button onclick="sahuOpenPreview('${id}')" class="artifact-action">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+            `;
+        }
+        
         // For HTML code blocks and task mode: add canvas + inline preview
         const isHtmlBlock = lang === 'html' || ((state.mode === 'task' || state.mode === 'artifacts' || state.mode === 'appdev') && code.trim().startsWith('<'));
         if (isHtmlBlock) {
             actions += `
                 <button onclick="openArtifact(document.getElementById('${id}').innerText, 'html')" class="artifact-action">
                     <i class="fas fa-desktop"></i> Open Canvas
-                </button>
-                <button onclick="toggleInlinePreview('${previewId}')" class="artifact-action">
-                    <i class="fas fa-eye"></i> Preview
                 </button>
             `;
         } else if (state.mode === 'task' || state.mode === 'artifacts' || state.mode === 'appdev') {
@@ -11402,6 +11420,8 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
         lastSavedContent = r.content;
         // v6.4: generate files the model delivered (standard mode)
         attachV64Final('anscontent-' + r.idx, r.content, assistMsgObj);
+        // v6.5: auto-open the live preview if the answer carries PREVIEW:
+        sahuMaybeAutoPreview(r.content);
     });
     persistChatHistory();
     window.lastAnswer = lastSavedContent;
@@ -11571,6 +11591,7 @@ const SAHU_SKILLS = [
     { id: 'web_fetch',  name: 'Web Fetching', icon: 'fa-download', color: 'green',  desc: 'Fetches the raw content of any URL (page text, markdown or JSON).' },
     { id: 'run_code', name: 'Code Interpreter', icon: 'fa-terminal', color: 'amber', desc: 'Gives the model a real sandboxed code interpreter: Python 3 (Pyodide) and JavaScript with npm packages (esm.sh). It can run code, see the output and iterate.' },
     { id: 'make_files', name: 'File Creation', icon: 'fa-file-export', color: 'rose', desc: 'The model can create downloadable files: pdf, pptx, xlsx, docx, md, txt, csv and json - with fonts, tables and emojis.' },
+    { id: 'live_preview', name: 'Live Preview', icon: 'fa-bolt', color: 'emerald', desc: 'HTML and React apps the model writes open in a real live preview window - sandboxed, with console output, phone/desktop width, refresh and open-in-tab.' },
     { id: 'web_browse', name: 'Web Browsing', icon: 'fa-compass',  color: 'cyan',   desc: 'Browses a page like a person: skims the content and picks up links to follow next.' }
 ];
 
@@ -11582,6 +11603,7 @@ function buildSearchLoopPrompt() {
     if (has('web_fetch')) lines.push('FETCH: <url> - fetch the raw content of a URL (useful for articles, APIs and files).');
     if (has('run_code')) lines.push('RUN CODE - you have a REAL sandboxed code interpreter. Output a fenced code block with language runpython (Python 3: print() to show output, top-level await works, numpy/pandas/matplotlib auto-load on import, pure-Python packages via import micropip; await micropip.install(\"pkg\"); the last matplotlib figure is auto-captured and shown to the user) or runjs (JavaScript: console.log() to show output, import npm packages from https://esm.sh/<package> e.g. import _ from \"https://esm.sh/lodash\", top-level await works). The code runs in a sandbox, the FULL output comes back to you, and you can run more code in your next turns to iterate, verify or fix errors.');
     if (has('make_files')) lines.push('CREATE FILES - deliver downloadable files with a FILE block (emit them in your final ANSWER - blocks there are turned into download cards for the user):\nFILE[ext]: filename.ext\n<content>\n/FILE\nFormats + content rules: txt/md = raw text/markdown. csv = raw CSV. json = raw JSON. xlsx = rows with cells separated by | (first row = headers; start a new sheet with a ## SheetName line). docx/pdf = markdown-ish: # H1, ## H2, - bullets, 1. numbered, > quote, **bold**, tables as | a | b | rows, optional first line FONT: Georgia (pdf built-in fonts only: helvetica, times, courier; emojis are NOT supported in pdf and get stripped). pptx = slides separated by --- lines; first line of a slide = title, then - bullets or | a | b | tables, optional first line FONT: Arial. If a file fails, fix the content and emit the FILE block again.');
+    if (has('live_preview')) lines.push('LIVE PREVIEW - when the user asks for an app, website, page, UI, game or anything visual/interactive, write it as ONE complete single-file app in a fenced code block with language html (plain HTML/CSS/JS, CDN links allowed) or react (React 18 + JSX, CDN libraries and Tailwind are available; ALWAYS end with ReactDOM.createRoot(document.getElementById("root")).render(<App />)), and put the line PREVIEW: <short title> on the line immediately BEFORE the fence. The user gets the app opened in a live preview window automatically (they can also click Preview on any html/react block). Everything must live in that single file - no local files or imports.');
     lines.push('STYLE: In answers and files you may freely use emojis, markdown tables (| A | B |) to compare or contrast things, **bold**, headings (#, ##), and <font face=\"Georgia\" color=\"#c026d3\" size=\"4\">font spans</font> for different fonts and colors. Do NOT wrap markdown tables or FILE blocks inside code fences - output them as plain text.');
     if (has('web_browse')) lines.push('BROWSE: <url> - browse a page: quick content summary plus the links it contains for further browsing.');
     // v6.2: the engine menu is built DYNAMICALLY from the user's ENABLED
@@ -11758,6 +11780,7 @@ function buildV64StandardHint() {
     const parts = [];
     if (on.includes('run_code')) parts.push('runnable code blocks: a fenced block with language runpython for Python 3 (use print() to show output; numpy/pandas/matplotlib work; top-level await works) or runjs for JavaScript (use console.log(); import npm packages from https://esm.sh/<package>; top-level await works). The user gets a Run button for each block.');
     if (on.includes('make_files')) parts.push('downloadable files via a FILE block: FILE[ext]: filename.ext on one line, the raw content on the following lines, closed by a line with exactly /FILE. Formats: txt, md, csv, json; xlsx = rows with cells separated by | (first row = headers; start a new sheet with a ## SheetName line); docx and pdf = markdown-ish content (# H1, ## H2, - bullets, > quote, **bold**, | a | b | tables, optional first line FONT: Georgia); pptx = slides separated by a --- line (first line of a slide = title, then - bullets or | a | b | table).');
+    if (on.includes('live_preview')) parts.push('a live app preview: when the user asks for an app/website/UI/game/anything visual, output ONE complete single-file app in a fenced code block with language html (plain HTML/CSS/JS) or react (React 18 + JSX; ALWAYS end with ReactDOM.createRoot(document.getElementById("root")).render(<App />)), with the line PREVIEW: <short title> on the line immediately before the fence - it opens in a live preview window automatically. Keep everything in that single file (no local imports).');
     if (!parts.length) return '';
     return '\n\n[CAPABILITIES] You can output ' + parts.join(' And you can output ') + '. In your answer, freely use emojis, markdown tables (| A | B |) to compare or contrast things, **bold**, headings (#, ##) and font spans like <font face="Georgia" color="#c026d3" size="4">colored text</font> to make the answer clearer and richer.';
 }
@@ -12709,6 +12732,9 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
         }
         if (_v64Final.html || _v64PlotHtml) displayHtml += '<div class="sahu-files-row">' + _v64PlotHtml + _v64Final.html + '</div>';
 
+        // v6.5: auto-open the live preview if the answer carries PREVIEW:
+        sahuMaybeAutoPreview(finalAnswer);
+
         window.lastAnswer = savedContent;
 
         const contentEl = document.getElementById(`content-${divId}`);
@@ -12914,7 +12940,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v6.4 Initializing...');
+    console.log('🚀 SahuAI Agent v6.5 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -12957,8 +12983,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v6.4 Ready');
-    showToast('SahuAI Agent v6.4 Loaded');
+    console.log('✅ SahuAI Agent v6.5 Ready');
+    showToast('SahuAI Agent v6.5 Loaded');
 }
 
 // ============================================
@@ -13075,7 +13101,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v6.4 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v6.5 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of
@@ -13279,5 +13305,275 @@ window.updateToolsNavStyleLabel = updateToolsNavStyleLabel;
 // ============================================      
     </script>
 
+
+<script>
+// ============================================
+// v6.5: LIVE PREVIEW ENGINE (HTML + React/JSX)
+// - Preview button on html/react/jsx/tsx code blocks
+// - Sandboxed iframe modal with console capture,
+//   phone/desktop width, refresh, open-in-tab
+// - PREVIEW: <title> marker auto-opens the window
+// - APK (SahuAIApp) download bridge for file cards
+// ============================================
+(function () {
+    'use strict';
+    if (window.__sahuV65) return;
+    window.__sahuV65 = true;
+
+    // ---- styles ------------------------------------------------------
+    function ensureStyles() {
+        if (document.getElementById('sahu-v65-styles')) return;
+        const st = document.createElement('style');
+        st.id = 'sahu-v65-styles';
+        st.textContent = [
+            '#sahuPvModal{position:fixed;inset:0;z-index:10000;display:none}',
+            '#sahuPvModal.show{display:block}',
+            '.sahupv-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(3px)}',
+            '.sahupv-window{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(96vw,1200px);height:min(92vh,900px);background:var(--bg-secondary,#111827);border:1px solid var(--border-color,#374151);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.55)}',
+            '.sahupv-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border-color,#374151);background:var(--bg-tertiary,#1f2937);gap:8px}',
+            '.sahupv-title{font-size:13px;font-weight:600;display:flex;gap:8px;align-items:center;color:var(--text-primary,#f9fafb);min-width:0}',
+            '.sahupv-title-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw}',
+            '.sahupv-chip{font-size:10px;padding:2px 8px;border-radius:999px;background:var(--accent,#6366f1);color:#fff;flex-shrink:0}',
+            '.sahupv-tools{display:flex;gap:6px;flex-shrink:0}',
+            '.sahupv-tools button{position:relative;background:transparent;border:1px solid var(--border-color,#374151);color:var(--text-secondary,#9ca3af);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:12px}',
+            '.sahupv-tools button:hover{color:var(--text-primary,#fff);border-color:var(--accent,#6366f1)}',
+            '.sahupv-badge{position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;font-size:9px;min-width:15px;height:15px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;padding:0 3px}',
+            '.sahupv-body{flex:1;display:flex;justify-content:center;background:#0b0f19;overflow:auto;min-height:0}',
+            '.sahupv-frame{width:100%;height:100%;border:0;background:#fff;transition:max-width .25s ease}',
+            '.sahupv-frame.phone{max-width:414px}',
+            '.sahupv-console{height:170px;border-top:1px solid var(--border-color,#374151);background:#0b1020;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;display:flex;flex-direction:column;flex-shrink:0}',
+            '.sahupv-console-head{padding:4px 10px;font-size:11px;color:#94a3b8;border-bottom:1px solid #1f2937;display:flex;justify-content:space-between;align-items:center}',
+            '.sahupv-console-head button{background:none;border:none;color:#60a5fa;cursor:pointer;font-size:11px}',
+            '.sahupv-console-lines{flex:1;overflow-y:auto;padding:6px 10px;white-space:pre-wrap;word-break:break-word}',
+            '.sahupv-line{padding:1px 0;border-bottom:1px dashed rgba(148,163,184,.08)}',
+            '.sahupv-error{color:#fca5a5}.sahupv-warn{color:#fcd34d}.sahupv-info{color:#7dd3fc}.sahupv-log{color:#d1fae5}'
+        ].join('\n');
+        document.head.appendChild(st);
+    }
+
+    // ---- console bridge injected INTO the preview iframe --------------
+    const BRIDGE = '<script>(function(){var send=function(l,a){try{parent.postMessage({__sahupv:1,level:l,args:a},"*")}catch(e){}};' +
+        '["log","info","warn","error"].forEach(function(k){var o=console[k]?console[k].bind(console):function(){};console[k]=function(){var a=[].slice.call(arguments).map(function(x){try{return (typeof x==="object"&&x!==null)?JSON.stringify(x):String(x)}catch(e){return String(x)}});send(k,a);o.apply(null,arguments)}});' +
+        'window.addEventListener("error",function(e){send("error",[String(e.message||"script error")+" (line "+(e.lineno||"?")+")"])});' +
+        'window.addEventListener("unhandledrejection",function(e){var r=e&&e.reason;send("error",["Unhandled rejection: "+String((r&&r.message)||r)])});' +
+        '})();<\/script>';
+
+    const BASE_STYLE = '<style>html,body{margin:0;padding:0}body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:#fff;color:#111827;min-height:100vh}#root{min-height:100vh}</style>';
+    const VIEWPORT = '<meta name="viewport" content="width=device-width,initial-scale=1">';
+
+    const REACT_UMD_SCRIPTS =
+        '<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"><\/script>\n' +
+        '<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"><\/script>\n' +
+        '<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"><\/script>\n' +
+        '<script src="https://cdn.tailwindcss.com"><\/script>';
+
+    const REACT_ESM_HEAD =
+        '<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"><\/script>\n' +
+        '<script src="https://cdn.tailwindcss.com"><\/script>\n' +
+        '<script type="importmap">{"imports":{"react":"https://esm.sh/react@18.3.1","react-dom":"https://esm.sh/react-dom@18.3.1","react-dom/client":"https://esm.sh/react-dom@18.3.1/client","react/jsx-runtime":"https://esm.sh/react@18.3.1/jsx-runtime"}}<\/script>';
+
+    const UMD_FALLBACK =
+        '<script>\nsetTimeout(function(){try{var r=document.getElementById("root");if(r&&!r.firstChild){var C=(typeof App!=="undefined")?App:(typeof window.App!=="undefined"?window.App:null);if(C){ReactDOM.createRoot(r).render(React.createElement(C));}else{r.innerHTML="<div style=\\"padding:24px;color:#6b7280;font:14px system-ui\\">No component rendered. Define <b>App</b> and call <b>ReactDOM.createRoot(document.getElementById(&quot;root&quot;)).render(&lt;App /&gt;)</b>.</div>";}}}catch(e){}},900);\n<\/script>';
+
+    function buildReactDoc(code) {
+        const c = String(code || '');
+        const isEsm = /(^|\n)\s*import\s+[\s\S]{0,300}?from\s*['"]/.test(c) ||
+            /(^|\n)\s*import\s*['"]/.test(c) ||
+            /(^|\n)\s*export\s+(default|const|function|class)\b/.test(c);
+        if (isEsm) {
+            return '<!DOCTYPE html><html><head><meta charset="utf-8">' + VIEWPORT + BRIDGE + BASE_STYLE + REACT_ESM_HEAD +
+                '</head><body><div id="root"></div>\n' +
+                '<script type="text/babel" data-type="module" data-presets="react">\n' + c + '\n<\/script>\n</body></html>';
+        }
+        return '<!DOCTYPE html><html><head><meta charset="utf-8">' + VIEWPORT + BRIDGE + BASE_STYLE + REACT_UMD_SCRIPTS +
+            '</head><body><div id="root"></div>\n' +
+            '<script type="text/babel" data-presets="react">\n' + c + '\n<\/script>\n' + UMD_FALLBACK + '</body></html>';
+    }
+
+    function buildHtmlDoc(code) {
+        let c = String(code || '');
+        if (!/<html[\s>]/i.test(c)) {
+            if (/<body[\s>]/i.test(c)) {
+                if (/<head[^>]*>/i.test(c)) c = c.replace(/<head[^>]*>/i, function (m) { return m + BRIDGE; });
+                else c = c.replace(/<body[^>]*>/i, function (m) { return BRIDGE + m; });
+            } else {
+                c = '<!DOCTYPE html><html><head><meta charset="utf-8">' + VIEWPORT + BRIDGE +
+                    '<style>body{margin:0;font-family:system-ui,sans-serif}</style></head><body>' + c + '</body></html>';
+            }
+        } else if (/<head[^>]*>/i.test(c)) {
+            c = c.replace(/<head[^>]*>/i, function (m) { return m + BRIDGE; });
+        } else {
+            c = c.replace(/<html[^>]*>/i, function (m) { return m + BRIDGE; });
+        }
+        return c;
+    }
+
+    // ---- preview modal -------------------------------------------------
+    let _pvState = { doc: '', kind: 'html', title: 'Live Preview' };
+    let _pvCount = 0;
+    window.__sahuPvReg = window.__sahuPvReg || {};
+
+    function esc(s) { try { return escapeHtml(String(s)); } catch (e) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); } }
+
+    function ensureModal() {
+        if (document.getElementById('sahuPvModal')) return;
+        ensureStyles();
+        const wrap = document.createElement('div');
+        wrap.id = 'sahuPvModal';
+        wrap.innerHTML =
+            '<div class="sahupv-backdrop" onclick="sahuClosePreview()"></div>' +
+            '<div class="sahupv-window">' +
+                '<div class="sahupv-head">' +
+                    '<span class="sahupv-title"><i class="fas fa-bolt"></i><span class="sahupv-title-text" id="sahuPvTitle">Live Preview</span><span id="sahuPvLang" class="sahupv-chip">HTML</span></span>' +
+                    '<div class="sahupv-tools">' +
+                        '<button onclick="sahuPvRefresh()" title="Reload"><i class="fas fa-rotate-right"></i></button>' +
+                        '<button onclick="sahuPvToggleWidth()" title="Phone / desktop width"><i class="fas fa-mobile-alt"></i></button>' +
+                        '<button onclick="sahuPvOpenTab()" title="Open in new tab"><i class="fas fa-external-link-alt"></i></button>' +
+                        '<button onclick="sahuTogglePvConsole()" title="Console" id="sahuPvConBtn"><i class="fas fa-terminal"></i><span id="sahuPvConCount" class="sahupv-badge" style="display:none">0</span></button>' +
+                        '<button onclick="sahuClosePreview()" title="Close"><i class="fas fa-times"></i></button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="sahupv-body"><iframe id="sahuPvFrame" class="sahupv-frame" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe></div>' +
+                '<div class="sahupv-console" id="sahuPvConsole" style="display:none">' +
+                    '<div class="sahupv-console-head"><span>Console</span><button onclick="sahuPvClearConsole()">clear</button></div>' +
+                    '<div class="sahupv-console-lines" id="sahuPvLines"></div>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(wrap);
+    }
+
+    function openWith(kind, code, title) {
+        _pvState = {
+            doc: kind === 'react' ? buildReactDoc(code) : buildHtmlDoc(code),
+            kind: kind,
+            title: (title || 'Live Preview').slice(0, 80)
+        };
+        ensureModal();
+        const f = document.getElementById('sahuPvFrame');
+        f.classList.remove('phone');
+        document.getElementById('sahuPvLang').textContent = kind === 'react' ? 'REACT' : 'HTML';
+        document.getElementById('sahuPvTitle').textContent = _pvState.title;
+        document.getElementById('sahuPvLines').innerHTML = '';
+        _pvCount = 0; updateConBadge();
+        f.srcdoc = _pvState.doc;
+        document.getElementById('sahuPvModal').classList.add('show');
+    }
+
+    window.sahuOpenPreview = function (regId) {
+        const e = window.__sahuPvReg[regId];
+        if (!e) { try { showToast('Preview source not found', 'error'); } catch (er) {} return; }
+        openWith(e.kind, e.code, e.title);
+    };
+    window.sahuOpenPreviewCode = openWith;
+    window.sahuClosePreview = function () {
+        const m = document.getElementById('sahuPvModal');
+        if (m) m.classList.remove('show');
+        const f = document.getElementById('sahuPvFrame');
+        if (f) f.srcdoc = '<!DOCTYPE html><html><body></body></html>';
+    };
+    window.sahuPvRefresh = function () {
+        const f = document.getElementById('sahuPvFrame');
+        if (f) { document.getElementById('sahuPvLines').innerHTML = ''; _pvCount = 0; updateConBadge(); f.srcdoc = _pvState.doc; }
+    };
+    window.sahuPvToggleWidth = function () {
+        const f = document.getElementById('sahuPvFrame');
+        if (f) f.classList.toggle('phone');
+    };
+    window.sahuPvOpenTab = function () {
+        const inner = encodeURIComponent(_pvState.doc);
+        const tab = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(_pvState.title) + '</title>' +
+            '<style>html,body{margin:0;padding:0;height:100%}iframe{border:0;width:100%;height:100%;display:block}</style></head><body>' +
+            '<iframe id="f" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>' +
+            '<script>document.getElementById("f").srcdoc=decodeURIComponent("' + inner + '");<\/script></body></html>';
+        const url = URL.createObjectURL(new Blob([tab], { type: 'text/html' }));
+        window.open(url, '_blank');
+    };
+    window.sahuTogglePvConsole = function () {
+        const c = document.getElementById('sahuPvConsole');
+        if (c) c.style.display = (c.style.display === 'none' || !c.style.display) ? 'flex' : 'none';
+    };
+    window.sahuPvClearConsole = function () {
+        _pvCount = 0; updateConBadge();
+        const l = document.getElementById('sahuPvLines');
+        if (l) l.innerHTML = '';
+    };
+
+    function updateConBadge() {
+        const b = document.getElementById('sahuPvConCount');
+        if (b) { b.textContent = _pvCount > 99 ? '99+' : String(_pvCount); b.style.display = _pvCount ? 'inline-flex' : 'none'; }
+    }
+
+    window.addEventListener('message', function (ev) {
+        const d = ev.data;
+        if (!d || d.__sahupv !== 1) return;
+        _pvCount++;
+        updateConBadge();
+        if (d.level === 'error') {
+            const c = document.getElementById('sahuPvConsole');
+            if (c && c.style.display !== 'flex') c.style.display = 'flex';
+        }
+        const lines = document.getElementById('sahuPvLines');
+        if (lines) {
+            const row = document.createElement('div');
+            row.className = 'sahupv-line sahupv-' + (d.level || 'log');
+            const txt = (d.args || []).join(' ');
+            row.textContent = (d.level === 'error' ? '\u2716 ' : d.level === 'warn' ? '\u26a0 ' : '\u203a ') + txt;
+            lines.appendChild(row);
+            lines.scrollTop = lines.scrollHeight;
+        }
+    });
+
+    // ---- auto-preview: PREVIEW: marker in a finished answer -------------
+    const PV_RE = /PREVIEW\s*:[^\n]*\n+```(html|react|jsx|tsx)[^\n]*\n([\s\S]*?)```/i;
+    function skillsHas(id) { try { return (typeof state !== 'undefined' && (state.enabledSkills || []).includes(id)) || false; } catch (e) { return true; } }
+    window.sahuMaybeAutoPreview = function (text) {
+        try {
+            if (!text || !skillsHas('live_preview')) return false;
+            const m = String(text).match(PV_RE);
+            if (!m) return false;
+            const kind = m[1].toLowerCase() === 'html' ? 'html' : 'react';
+            const code = m[2] || '';
+            if (!code.trim()) return false;
+            const tm = String(text).match(/PREVIEW\s*:\s*([^\n`]+)/i);
+            const title = tm ? tm[1].trim().replace(/[*_`#]/g, '').slice(0, 60) : '';
+            setTimeout(function () { try { openWith(kind, code, title); } catch (e) {} }, 800);
+            return true;
+        } catch (e) { return false; }
+    };
+
+    // ---- APK bridge: blob/data downloads -> native file saver -----------
+    function isApk() { return navigator.userAgent.indexOf('SahuAIApp/') > -1; }
+    function initApkBridge() {
+        if (!isApk()) return;
+        document.addEventListener('click', function (ev) {
+            try {
+                const a = ev.target && ev.target.closest ? ev.target.closest('a[download]') : null;
+                if (!a) return;
+                const href = a.getAttribute('href') || '';
+                if (href.indexOf('blob:') !== 0 && href.indexOf('data:') !== 0) return;
+                if (!window.SahuAIFile || !window.SahuAIFile.save) return;
+                ev.preventDefault();
+                fetch(href).then(function (r) { return r.blob(); }).then(function (b) {
+                    const fr = new FileReader();
+                    fr.onload = function () {
+                        try { window.SahuAIFile.save(a.getAttribute('download') || 'sahuai-file', String(fr.result).split(',').pop()); } catch (e) {}
+                    };
+                    fr.readAsDataURL(b);
+                }).catch(function () {});
+            } catch (e) {}
+        }, true);
+    }
+
+    // ---- init -----------------------------------------------------------
+    if (typeof document !== 'undefined' && document.body) {
+        ensureStyles();
+        initApkBridge();
+    }
+
+    // test hooks (node harness sets a fake window)
+    window.__v65Test = { buildReactDoc: buildReactDoc, buildHtmlDoc: buildHtmlDoc, PV_RE: PV_RE, openWith: openWith };
+})();
+
+</script>
 
 </body></html>

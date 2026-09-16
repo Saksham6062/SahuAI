@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v6.7 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, consensus-powered AI, live app previews">
+    <meta name="description" content="SahuAI Agent v6.8 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v6.7 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v6.8 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v6.7</span>
+                        <span>SahuAI Agent v6.8</span>
                     </div>
                 </div>
                 
@@ -6620,7 +6620,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v6.7</span>
+                        <span>v6.8</span>
                     </div>
                 </div>
             </div>
@@ -9833,7 +9833,21 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     
     // Build system prompt
     let sysPrompt = `User Info: ${state.customInstructions.user}\nResponse Style: ${state.customInstructions.resp}`;
-    sysPrompt += `\nIDENTITY INSTRUCTION: You are ${modelHumanName}. If asked about your identity, state your original name (${modelHumanName}) and your original creator company. Then, ALWAYS add 'Hosted by Saksham Intelligence'. Do not claim to be created by Saksham Intelligence, only hosted by them.`;
+    // v6.8: REAL current date & time injected into EVERY model call (all
+    // providers, all modes). User report: models like MiniMax did not know
+    // today's date and searched "2024 latest news" although the real date is
+    // September 2026. Computed live at call time - no model can miss it.
+    try {
+        const _sahuNow = new Date();
+        const _sahuTz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'local';
+        const _sahuDateStr = _sahuNow.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const _sahuTimeStr = _sahuNow.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        sysPrompt += `\nCURRENT DATE & TIME (REAL - computed the moment this request was sent; ALWAYS trust this over your training data): ${_sahuDateStr}, ${_sahuTimeStr} (${_sahuTz}). UTC: ${_sahuNow.toUTCString()}. The current year is ${_sahuNow.getFullYear()}. Your knowledge cutoff is in the past: when searching for news, releases, prices or events, target the CURRENT year (${_sahuNow.getFullYear()}) unless the user explicitly asks for a different period.`;
+    } catch (e) {}
+    // v6.8: the old per-model IDENTITY INSTRUCTION ("You are MODEL_NAME ...
+    // original creator company ... Hosted by Saksham Intelligence") was
+    // REMOVED per user request - models are no longer given any forced
+    // identity or creator script and answer identity questions naturally.
     
     // Response style injection
     const styleInstructions = {
@@ -11331,6 +11345,25 @@ async function sendMessage() {
     }
 }
 
+// v6.8: FULL CONVERSATION MEMORY - every prior message of THIS chat is now
+// sent to the model. Previously EVERY call was single-turn (only the current
+// message was sent), which is why models could not "memorise previous
+// responses, results, user request" even with 1M-10M context windows.
+// The last entry of state.messages is the just-pushed user message and
+// fullPrompt already carries it, so it is excluded to avoid duplication.
+// Safety trims: last 400 messages, 60,000 chars per message - far beyond any
+// realistic chat, so memory is effectively unlimited for the user.
+function _sahuHistoryForModel() {
+    try {
+        const msgs = Array.isArray(state.messages) ? state.messages : [];
+        const prior = msgs.slice(0, Math.max(0, msgs.length - 1)).slice(-400);
+        return prior.map(m => ({
+            role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
+            content: String(m.content || '').slice(0, 60000)
+        })).filter(m => m.content && m.content.trim());
+    } catch (e) { return []; }
+}
+
 /**
  * Run standard multi-model aggregation
  * @param {string} fullPrompt - Full prompt with context
@@ -11387,8 +11420,9 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
                         el.textContent += chunk;
                     }
                 };
+                // v6.8: history prepended - the model remembers the whole chat
                 let res = await callModelWithFallback(model.provider, model.modelId,
-                    [{ role: 'user', content: fullPrompt }], 0, onTokenUpdate);
+                    _sahuHistoryForModel().concat([{ role: 'user', content: fullPrompt }]), 0, onTokenUpdate);
                 if (state.currentChatId !== chatId) return;
                 modelResponses.push(res);
             } catch (e) {
@@ -11513,8 +11547,9 @@ async function runSingleModelMode(fullPrompt, container, chatId) {
             if (st) st.textContent = thinking ? "Thinking..." : "Generating...";
         };
         
+        // v6.8: history prepended - the model remembers the whole chat
         const res = await callModelWithFallback(model.provider, model.modelId,
-            [{ role: 'user', content: fullPrompt }], 0, onToken);
+            _sahuHistoryForModel().concat([{ role: 'user', content: fullPrompt }]), 0, onToken);
         
         if (state.currentChatId !== chatId) return;
         
@@ -12655,7 +12690,10 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
     let turn = 0;
 
     try {
-        let convo = [{ role: 'user', content: fullPrompt + buildSearchLoopPrompt() }];
+        // v6.8: FULL conversation memory - the agent now sees every previous
+        // message of this chat. Previously it saw ONLY the current request,
+        // which is why models "forgot" earlier responses/results/request.
+        let convo = _sahuHistoryForModel().concat([{ role: 'user', content: fullPrompt + buildSearchLoopPrompt() }]);
         const MAX_TURNS = 14;      // agent turns (rethinks) - the loop may
         const MAX_TOOL_RUNS = 60;  // v6.1: raised headroom now that per-turn caps are gone
         const skillsOn = (id) => (state.enabledSkills || []).includes(id);
@@ -12773,7 +12811,8 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 found.forEach(r => { const k = (r && r.source) || 'web'; byEngine[k] = (byEngine[k] || 0) + 1; });
                 const engSummary = Object.keys(byEngine).map(k => k + ' ' + byEngine[k]).join(', ');
                 addTrace(`<span class="ml-4">${found.length} result${found.length === 1 ? '' : 's'}${engSummary ? ' - ' + escapeHtml(engSummary) : ''}</span>`);
-                const list = found.slice(0, 10).map((s, i) => `${i + 1}. [${s.source || 'web'}] ${s.title} (${s.link})${s.snippet ? '\n   ' + s.snippet : ''}`).join('\n');
+                // v6.8: the model now sees up to 20 results per query (was 10) so it can actually use the sources it gathered.
+                const list = found.slice(0, 20).map((s, i) => `${i + 1}. [${s.source || 'web'}] ${s.title} (${s.link})${s.snippet ? '\n   ' + s.snippet : ''}`).join('\n');
                 return `[SEARCH${engTag}] "${q.query}" -> ${found.length} results${engSummary ? ' (' + engSummary + ')' : ''}\n${list || 'No results (the key may be disabled or returned nothing). NEXT ROUND: try a DIFFERENT enabled key (single engine or category) on its OWN separate SEARCH[key] line, reword the query, or READ/FETCH a known good URL.'}`;
             }));
             parts.push(...outs);
@@ -12915,7 +12954,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
 
             convo.push({
                 role: 'user',
-                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries and/or OTHER engines - fan out WIDER if results were empty or weak, READ, FETCH or BROWSE several pages in parallel, or the MCP DATE/CALC tools) - you may redo this as many times as you need.`
+                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nORIGINAL USER REQUEST (pinned reminder - stay exactly on this request, do NOT drift to other topics, models, companies or products the user never asked about): ${fullPrompt}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries and/or OTHER engines - fan out WIDER if results were empty or weak, READ, FETCH or BROWSE several pages in parallel, or the MCP DATE/CALC tools) - you may redo this as many times as you need.`
             });
         }
 
@@ -13220,7 +13259,11 @@ function _safeHost(u) {
 }
 
 function _sahuSourcesPanelHtml(srcs, open, label) {
-    const list = (Array.isArray(srcs) ? srcs : []); // v6.7: NO cap - every gathered source is shown
+    // v6.8: explicit user-set panel cap of 10000 (user directive: "set limit
+    // 10000 only for source panels to show results"). Every gathered source
+    // up to 10000 is displayed - the previous 943-searched/500-shown gap was
+    // link deduplication across queries, not a hidden cap.
+    const list = (Array.isArray(srcs) ? srcs : []).slice(0, 10000);
     if (!list.length) return '';
     const _engs = [...new Set(list.map(s => s.source || 'web'))];
     const cards = list.map((s, i) => {
@@ -13448,7 +13491,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v6.7 Initializing...');
+    console.log('🚀 SahuAI Agent v6.8 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -13491,8 +13534,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v6.7 Ready');
-    showToast('SahuAI Agent v6.7 Loaded');
+    console.log('✅ SahuAI Agent v6.8 Ready');
+    showToast('SahuAI Agent v6.8 Loaded');
 }
 
 // ============================================
@@ -13609,7 +13652,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v6.7 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v6.8 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

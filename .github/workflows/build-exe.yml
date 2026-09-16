@@ -78,7 +78,7 @@ jobs:
             wc.setWindowOpenHandler(function (o) { shell.openExternal(o.url); return { action: 'deny' }; });
           });
           EOF
-          npm install --no-audit --no-fund electron@28.3.11 electron-builder@24.13.3
+          npm install --no-audit --no-fund electron@28.3.3 electron-builder@24.13.3
           npx electron-builder --win portable --x64 --publish never
           cp dist/SahuAI.exe "$GITHUB_WORKSPACE/SahuAI.exe"
           ls -la "$GITHUB_WORKSPACE/SahuAI.exe"

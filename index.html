@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v6 - Official Saksham Intelligence AI Models Chat - 57+ models, 15+ providers, consensus-powered AI">
+    <meta name="description" content="SahuAI Agent v6.2 - Official Saksham Intelligence AI Models Chat - 57+ models, 15+ providers, consensus-powered AI">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v6 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v6.2 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v6</span>
+                        <span>SahuAI Agent v6.2</span>
                     </div>
                 </div>
                 
@@ -6521,7 +6521,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v6</span>
+                        <span>v6.2</span>
                     </div>
                 </div>
             </div>
@@ -8579,9 +8579,10 @@ function fallbackBrowserSTT() {
 async function searchWeb(query, enginesOverride) {
     // v5.5: fixed per-engine caps removed - every engine returns as many
     // results as the source provides for the query.
-    // v5.8: enginesOverride = optional array of engine keys requested by the
-    // agentic model (SEARCH[engine1, engine2]: query) - the model decides
-    // which and how many engines to run, and they all run in parallel.
+    // v5.8/v6.2: enginesOverride = array of engine keys requested by the
+    // agentic model - ONE engine per separate SEARCH command (v5.4 style).
+    // The model picks each engine; named-but-disabled engines never run
+    // and there is NO hardcoded default engine fallback.
     let limit = 100; // v6.1: artificial 30-cap removed - APIs clamp to their own maxima
 
     const encodedQuery = encodeURIComponent(query);
@@ -8900,22 +8901,24 @@ async function searchWeb(query, enginesOverride) {
         return k;
     };
     const _validEngine = (k) => !!SEARCH_ENGINES_CONFIG[k] || !!(state.customSearchEngines || []).find(e => e.id === k);
-    // v6.1: ENFORCE the user's engine toggles - the model may not use an
-    // engine the user disabled in Settings > Search Engines. An empty
-    // activeSearchEngines means "all enabled" (the select-all state).
+    // v6.2: ENFORCE the user's engine toggles - the model may not use an
+    // engine the user disabled in Settings > Search Engines. NO DEFAULT
+    // ENGINES exist anymore: if the model names engines and NONE of them
+    // is enabled/valid, we run NONE - never a fallback default set
+    // (the hardcoded 9-engine default list is REMOVED in v6.2).
     const _allEngKeys = Object.keys(SEARCH_ENGINES_CONFIG).concat((state.customSearchEngines || []).map(e => e.id));
     const _noneEnabled = (state.activeSearchEngines || []).includes('__none__');
     const _rawEnabled = (state.activeSearchEngines || []).filter(k => k !== '__none__');
     const _enabledEng = new Set(_noneEnabled ? [] : (_rawEnabled.length > 0 ? _rawEnabled : _allEngKeys).map(k => String(k).trim().toLowerCase()));
-    let activeEngines = null;
+    let activeEngines;
     if (Array.isArray(enginesOverride) && enginesOverride.length > 0) {
-        const req = [...new Set(enginesOverride.map(_normEng).filter(k => _validEngine(k) && _enabledEng.has(k)))];
-        if (req.length > 0) activeEngines = req;
-    }
-    if (!activeEngines) {
-        activeEngines = state.activeSearchEngines.length > 0
-            ? state.activeSearchEngines
-            : ['duckduckgo', 'duckduckgo_instant', 'wikipedia', 'wikidata', 'reddit', 'github_api', 'stackexchange', 'hackernews', 'crossref'];
+        // v6.2: ONLY the engines the model named (normalized + filtered to
+        // the enabled set). All named engines disabled/unknown -> zero runs.
+        activeEngines = [...new Set(enginesOverride.map(_normEng).filter(k => _validEngine(k) && _enabledEng.has(k)))];
+    } else {
+        // v6.2: no-override callers run exactly the user's enabled set:
+        // '__none__' = none; empty list = all (fresh-profile select-all).
+        activeEngines = _noneEnabled ? [] : (_rawEnabled.length > 0 ? _rawEnabled : _allEngKeys);
     }
 
     activeEngines.forEach(key => {
@@ -11521,29 +11524,50 @@ const SAHU_SKILLS = [
 function buildSearchLoopPrompt() {
     const has = (id) => (state.enabledSkills || []).includes(id);
     const lines = [];
-    if (has('web_search')) lines.push('SEARCH: <query> - search the web. Plain SEARCH (no brackets) runs the DDG TRIPLE (DuckDuckGo Lite + Instant API + SearXNG) plus the other enabled engines.\nSEARCH[engine1, engine2, ...]: <query> - YOU choose which engines to run for this query; list as many as you want. Several SEARCH lines in one turn all run IN PARALLEL.');
+    if (has('web_search')) lines.push('SEARCH[engine]: <query> - run ONE search on ONE engine; YOU choose which engine fits the query. To use several engines, output several SEPARATE SEARCH lines (ONE engine per line) - they all run IN PARALLEL. There are NO default engines: a bare SEARCH line without [engine] is NOT executed, and engines outside your enabled menu NEVER run.');
     if (has('web_scrape')) lines.push('READ: <url> - scrape a page and read its full text (use on a promising result to dig deeper).');
     if (has('web_fetch')) lines.push('FETCH: <url> - fetch the raw content of a URL (useful for articles, APIs and files).');
     if (has('web_browse')) lines.push('BROWSE: <url> - browse a page: quick content summary plus the links it contains for further browsing.');
+    // v6.2: the engine menu is built DYNAMICALLY from the user's ENABLED
+    // engines only - no engine is a default; the model only sees what can
+    // actually run, and custom engines are included when enabled.
+    let engineMenu = '';
+    if (has('web_search')) {
+        const _allKeys = Object.keys(SEARCH_ENGINES_CONFIG).concat((state.customSearchEngines || []).map(e => e.id));
+        const _noneEn = (state.activeSearchEngines || []).includes('__none__');
+        const _rawEn = (state.activeSearchEngines || []).filter(k => k !== '__none__');
+        const _on = new Set(_noneEn ? [] : (_rawEn.length > 0 ? _rawEn : _allKeys));
+        const _cats = [
+            ['General web', ['duckduckgo', 'duckduckgo_lite', 'duckduckgo_instant', 'google', 'bing', 'brave', 'startpage', 'yandex', 'qwant', 'baidu', 'yahoo']],
+            ['Facts/encyclopedia', ['wikipedia', 'wikidata', 'grokipedia']],
+            ['Community/discussions', ['reddit', 'hackernews']],
+            ['Code/packages', ['stackexchange', 'github_api', 'npm']],
+            ['Science/papers', ['crossref', 'openalex', 'arxiv']],
+            ['Culture/media', ['openlibrary', 'archive', 'musicbrainz', 'dictionary']],
+            ['Site-focused', ['youtube', 'twitter', 'ernie', 'facebook', 'instagram', 'linkedin', 'github']]
+        ];
+        const _menuLines = _cats.map(([cat, keys]) => {
+            const ks = keys.filter(k => _on.has(k));
+            return ks.length ? '- ' + cat + ': ' + ks.join(', ') : '';
+        }).filter(Boolean);
+        (state.customSearchEngines || []).forEach(e => { if (e && e.id && _on.has(e.id)) _menuLines.push('- Custom: ' + e.id); });
+        engineMenu = _menuLines.length
+            ? 'Engine menu (the ONLY enabled engine keys) - pick ONE key per SEARCH line, ONE engine per separate line:\n' + _menuLines.join('\n')
+            : 'No search engines are enabled in Settings right now: do NOT output SEARCH lines - answer directly.';
+    }
     return `\n\nAGENTIC WEB LOOP:
-You are an autonomous research agent running inside the user's app. YOU decide everything - including WHICH search engines to use and HOW MANY to run in parallel.
+You are an autonomous research agent running inside the user's app. YOU decide everything - including WHICH search engine each query uses and HOW MANY searches to run in parallel. There are NO default engines: for every search YOU name ONE engine.
 ${lines.length ? 'Your skills - output a line in EXACTLY this format to use one:\n' + lines.join('\n') : 'You have no web skills available this session.'}
-Engine menu (keys for SEARCH[...]):
-- General web: duckduckgo (the DEFAULT - a TRIPLE engine: Lite HTML + Instant API + SearXNG, most reliable general-web source), duckduckgo_instant
-- Facts/encyclopedia: wikipedia, wikidata, grokipedia
-- Community/discussions: reddit, hackernews
-- Code/packages: stackexchange, github_api, npm
-- Science/papers: crossref, openalex, arxiv
-- Culture/media: openlibrary (books), archive (Internet Archive), musicbrainz (music), dictionary (definitions)
-- Site-focused: youtube, twitter, google, bing, brave, startpage, yandex, qwant, baidu, yahoo, ernie, facebook, instagram, linkedin
+${engineMenu}
 How you work:
 1. THINK about the request first. Decide whether it needs web information at all - if not, go straight to the final answer.
-2. If it does: pick 2-5 engines that fit the question and launch SEVERAL SEARCHES IN PARALLEL in one turn, e.g.:
-   SEARCH[duckduckgo, wikipedia]: main query
-   SEARCH[reddit, hackernews]: community opinions query
+2. If it does: pick the engines that fit the question and launch one SEPARATE SEARCH line PER ENGINE, all in one turn, e.g.:
+   SEARCH[duckduckgo]: main query
+   SEARCH[wikipedia]: main query
+   SEARCH[reddit]: community opinions query
    (code -> stackexchange/github_api/npm, science -> arxiv/crossref/openalex, facts -> wikipedia/wikidata, news -> duckduckgo/hackernews, opinions -> reddit)
-3. After every round of results: RETHINK. Are the results relevant and complete? If a round returned 0 results or weak/off-topic results, the NEXT round must fan out WIDER: 4-6 SEARCH lines covering MORE engines (mix general + specialized) with reworded queries. You may also READ/FETCH/BROWSE several URLs in one turn - they run in parallel too. Never repeat the identical query+engine pair.
-4. Never stop after a single round - widen coverage until you are satisfied. You can call as many search engines as you want.
+3. After every round of results: RETHINK. Are the results relevant and complete? If a round returned 0 results or weak/off-topic results, the NEXT round must fan out WIDER: 4-6 separate SEARCH[engine] lines (ONE engine per line, mix general + specialized) with reworded queries. You may also READ/FETCH/BROWSE several URLs in one turn - they run in parallel too. Never repeat the identical query+engine pair.
+4. Never stop after a single round - widen coverage until you are satisfied. You can run as many separate engine searches as you want.
 5. When you have everything (or nothing needed searching), output your complete final answer for the user starting with:
 ANSWER: 
 One decision block per turn. After your skill lines you will receive the results and another turn.`;
@@ -11714,16 +11738,22 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             }
             if (liveThink) liveThink.textContent = '';
 
-            // v6.1: the model may group engines as SEARCH[a, b]: q OR as
-            // Search (a, b): q - BOTH parse now (the parenthesized form was
-            // silently dropped before). NO per-turn cap: the model runs as
-            // many parallel searches as it wants (MAX_TOOL_RUNS is the only
-            // global budget).
+            // v6.2: SEPARATE per-engine searches (v5.4 style, no engine
+            // groups). Each SEARCH command carries exactly ONE engine. A
+            // legacy grouped line (SEARCH[a, b]: q / Search (a, b): q) is
+            // split into SEPARATE single-engine searches. A bare SEARCH:
+            // line names no engine -> it is NOT run (no default engines).
+            // NO per-turn cap: the model runs as many parallel searches as
+            // it wants (MAX_TOOL_RUNS is the only global budget).
             const queries = skillsOn('web_search')
-                ? [...text.matchAll(/SEARCH(?:\s*\[([^\]]*)\]|\s*\(([^)]*)\))?:\s*([^\n]+)/gi)].map(m => ({
-                    engines: ((m[1] || m[2] || '')).split(/[,;|]+/).map(s => s.trim()).filter(Boolean),
-                    query: m[3].replace(/[*`]/g, '').trim()
-                })).filter(q => q.query) : [];
+                ? [...text.matchAll(/SEARCH(?:\s*\[([^\]]*)\]|\s*\(([^)]*)\))?:\s*([^\n]+)/gi)].flatMap(m => {
+                    const _q = m[3].replace(/[*`]/g, '').trim();
+                    if (!_q) return [];
+                    const _engs = ((m[1] || m[2] || '')).split(/[,;|]+/).map(s => s.trim()).filter(Boolean);
+                    return _engs.length > 1
+                        ? _engs.map(e => ({ engines: [e], query: _q }))
+                        : [{ engines: _engs, query: _q }];
+                }) : [];
             const reads = skillsOn('web_scrape')
                 ? [...text.matchAll(/READ:\s*(https?:\/\/\S+)/gi)].map(m => m[1].replace(/[)`\]]+$/, '')) : [];
             const fetches = skillsOn('web_fetch')
@@ -11747,6 +11777,12 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             const runnable = [];
             for (const q of queries) {
                 if (toolRuns >= MAX_TOOL_RUNS) break;
+                // v6.2: NO default engines - a bare SEARCH line (no engine
+                // named) runs NOTHING and gets an explicit correction.
+                if (!q.engines.length) {
+                    parts.push(`[SEARCH] "${q.query}" -> NOT RUN: you named no engine. There are NO default engines. Run ONE engine per separate line: SEARCH[engine]: <query> (pick engines from the enabled menu).`);
+                    continue;
+                }
                 // NEVER run the same query+engine pair twice.
                 const qKey = (q.engines.length ? '[' + q.engines.join(',').toLowerCase() + '] ' : '') + q.query.toLowerCase().replace(/\s+/g, ' ').trim();
                 if (searchedQueries.has(qKey)) {
@@ -11773,7 +11809,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 const engSummary = Object.keys(byEngine).map(k => k + ' ' + byEngine[k]).join(', ');
                 addTrace(`<span class="ml-4">${found.length} result${found.length === 1 ? '' : 's'}${engSummary ? ' - ' + escapeHtml(engSummary) : ''}</span>`);
                 const list = found.slice(0, 10).map((s, i) => `${i + 1}. [${s.source || 'web'}] ${s.title} (${s.link})${s.snippet ? '\n   ' + s.snippet : ''}`).join('\n');
-                return `[SEARCH${engTag}] "${q.query}" -> ${found.length} results${engSummary ? ' (' + engSummary + ')' : ''}\n${list || 'No results found. NEXT ROUND: list MORE engines in SEARCH[...] (4-6 engines), reword the query, or READ/FETCH a known good URL.'}`;
+                return `[SEARCH${engTag}] "${q.query}" -> ${found.length} results${engSummary ? ' (' + engSummary + ')' : ''}\n${list || 'No results (the engine may be disabled or returned nothing). NEXT ROUND: try a DIFFERENT enabled engine on its OWN separate SEARCH[engine] line, reword the query, or READ/FETCH a known good URL.'}`;
             }));
             parts.push(...outs);
 
@@ -12091,7 +12127,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v6 Initializing...');
+    console.log('🚀 SahuAI Agent v6.2 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -12133,8 +12169,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v6 Ready');
-    showToast('SahuAI Agent v6 Loaded');
+    console.log('✅ SahuAI Agent v6.2 Ready');
+    showToast('SahuAI Agent v6.2 Loaded');
 }
 
 // ============================================
@@ -12251,7 +12287,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v6 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v6.2 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

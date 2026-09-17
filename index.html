@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v7.1 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, 2-10 agent swarm, MP Board examiner, consensus-powered AI, live app previews">
+    <meta name="description" content="SahuAI Agent v7.2 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v7.1 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v7.2 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v7.1</span>
+                        <span>SahuAI Agent v7.2</span>
                     </div>
                 </div>
                 
@@ -5738,7 +5738,7 @@ const state = {
     },
     
     // v5.5: Agent skills - abilities the loop can use, toggled in Settings > Skills
-    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview', 'mcp_date', 'mcp_calc'],
+    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview', 'mcp_date', 'mcp_calc', 'agent_swarm'],
     
     // Response Style + Persona (v7.0: persona lives inside Choose style)
     responseStyle: 'normal',
@@ -6478,6 +6478,15 @@ function loadState() {
             state.enabledSkills = (typeof SAHU_SKILLS !== 'undefined' ? SAHU_SKILLS.map(s => s.id) : []).filter(id => _v67set.has(id));
             state._v67Skills = true;
         }
+
+        // v7.2: one-time migration - Agent Swarm (the model's multi-agent
+        // tool) joins any saved list so existing users get it switched on.
+        if (!state._v72Skills) {
+            const _v72set = new Set(state.enabledSkills || []);
+            _v72set.add('agent_swarm');
+            state.enabledSkills = (typeof SAHU_SKILLS !== 'undefined' ? SAHU_SKILLS.map(s => s.id) : []).filter(id => _v72set.has(id));
+            state._v72Skills = true;
+        }
         
         const history = localStorage.getItem('sahu_chat_history');
         if (history) {
@@ -6599,7 +6608,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v7.1</span>
+                        <span>v7.2</span>
                     </div>
                 </div>
             </div>
@@ -10074,6 +10083,15 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
             requestBody.reasoning = { enabled: true, effort: _effort[_budget] || 'medium' };
         }
     }
+    // v7.2: OpenRouter WEB SEARCH - the official OpenRouter web plugin
+    // injects fresh web results (up to 5, with link citations) into ANY
+    // OpenRouter model before it answers. Gated by the app's Web Search
+    // skill switch, so users stay in control. Responses keep the standard
+    // OpenAI-compatible response format and are parsed like every other
+    // OpenAI-style endpoint.
+    if (providerKey === 'openrouter' && (state.enabledSkills || []).includes('web_search')) {
+        requestBody.plugins = [{ id: 'web', max_results: 5 }];
+    }
     if (providerKey === 'gemini') {
         requestBody.reasoning_effort = _budget === 'off' ? 'none' : (_effort[_budget] || 'medium');
     }
@@ -11856,6 +11874,7 @@ const SAHU_SKILLS = [
     { id: 'skill_creator', name: 'Skill Creator', icon: 'fa-wand-magic-sparkles', color: 'violet', desc: 'Ask the model to create a new skill (MAKESKILL block) - it is saved with its own on/off toggle in Settings > Skills and taught to every model.' },
     { id: 'mcp_date', name: 'MCP: Current Date & Time', icon: 'fa-calendar-day', color: 'sky', desc: 'MCP tool - gives the model the REAL current date & time on demand (local + UTC, weekday, timezone, Unix stamp). Time-sensitive answers are always correct - no more guessed dates.' },
     { id: 'mcp_calc', name: 'MCP: Calculator', icon: 'fa-calculator', color: 'orange', desc: 'MCP tool - an exact math engine the model can call: arithmetic, powers, roots, trig, logs, factorials, constants (pi, e). It computes instead of guessing.' },
+    { id: 'agent_swarm', name: 'Agent Swarm', icon: 'fa-users', color: 'violet', desc: 'MCP tool - the model can spawn 2-10 parallel worker agents (NEVER exactly 1) AS MANY TIMES as it wants during a task: each spawn is one fenced sahu_agents block, workers run at the same time (each may request one web search), and every report comes back merged. Built for big research, multi-part jobs and large comparisons.' },
     { id: 'web_browse', name: 'Web Browsing', icon: 'fa-compass',  color: 'cyan',   desc: 'Browses a page like a person: skims the content and picks up links to follow next.' }
 ];
 
@@ -11870,6 +11889,7 @@ function buildSearchLoopPrompt() {
     if (has('live_preview')) lines.push('LIVE PREVIEW - when the user asks for an app, website, page, UI, game or anything visual/interactive, write it as ONE complete single-file app in a fenced code block with language html (plain HTML/CSS/JS, CDN links allowed) or react (React 18 + JSX, CDN libraries and Tailwind are available; ALWAYS end with ReactDOM.createRoot(document.getElementById("root")).render(<App />)), and put the line PREVIEW: <short title> on the line immediately BEFORE the fence. The user gets the app opened in a live preview window automatically (they can also click Preview on any html/react block). Everything must live in that single file - no local files or imports.');
     if (has('mcp_date')) lines.push('MCP DATE TOOL - get the REAL current date/time: output a line DATE: (bare, for the user\'s local time) or DATE: <IANA timezone> (e.g. DATE: UTC, DATE: Asia/Kolkata, DATE: America/New_York). You receive the local date-time, UTC date-time, weekday and a Unix timestamp. Use it EVERY time an answer depends on today\'s date, the weekday, clocks, ages, deadlines or "days until/between" questions (then compute differences with CALC). NEVER guess or hardcode the current date.');
     if (has('mcp_calc')) lines.push('MCP CALCULATOR - exact math: output a line CALC: <expression> (one expression per line; several CALC lines run in parallel). Supports + - * / % (modulo) ^ (power), ! (factorial), parentheses, sqrt cbrt abs round floor ceil sign, min max pow root(x,n) atan2, sin cos tan asin acos atan sinh cosh tanh (radians), log ln log2 log10 exp, constants pi e tau phi, scientific notation (1.2e9) and implicit multiplication (2pi, 3(4+1)). Use it for ANY arithmetic beyond trivial single-digit sums and ALWAYS when precision matters.');
+    if (has('agent_swarm')) lines.push('AGENT SWARM - spawn parallel worker agents ANY time, AS MANY ROUNDS as you want (NO limit on how many times you may spawn): output ONE fenced block:\n```sahu_agents\n{"plan":"one line","tasks":[{"id":"w1","objective":"self-contained sub-task","output_format":"shape of the report","boundaries":"what NOT to overlap with siblings"},{"id":"w2","objective":"..."}]}\n```\nRules: 2-10 tasks per spawn, NEVER exactly 1 (a single sub-task means YOU do it yourself); each task independent, self-contained, non-overlapping; prefer 2-5, up to 10 for very large jobs. Workers answer from their own knowledge and may each request ONE web search (NEED_SEARCH). Their full reports come back next turn as [AGENTS] feedback. Spawn ANOTHER swarm in a later turn whenever it helps: split remaining work deeper, verify conflicting claims, cover new angles. Simple requests: spawn nothing.');
     if (has('skill_creator')) lines.push('CREATE A SKILL - when the user asks you to create/define/save a new skill (a reusable behavior, persona or workflow), output a block:\nMAKESKILL: <skill name>\nDESC: <one line describing what it does>\n<the skill instructions - exact directives you should follow whenever this skill applies>\n/MAKESKILL\nIt is saved instantly and appears in Settings > Skills with its own on/off toggle.');
     lines.push('STYLE: In answers and files you may freely use emojis, markdown tables (| A | B |) to compare or contrast things, **bold**, headings (#, ##), and <font face=\"Georgia\" color=\"#c026d3\" size=\"4\">font spans</font> for different fonts and colors. Do NOT wrap markdown tables or FILE blocks inside code fences - output them as plain text.');
     if (has('web_browse')) lines.push('BROWSE: <url> - browse a page: quick content summary plus the links it contains for further browsing.');
@@ -12975,12 +12995,18 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 ? [...text.matchAll(/(^|\n)[\s\-*_>#`]*DATE\s*(?:\[[^\]]*\])?\s*:\s*([^\n]*)/gi)].map(m => (m[2] || '').replace(/^[*\s`]+|[*\s`]+$/g, '').trim()) : [];
             const calcs = skillsOn('mcp_calc')
                 ? [...text.matchAll(/(^|\n)[\s\-*_>#`]*(?:CALC|MCP_CALC)\s*:\s*([^\n]+)/gi)].map(m => m[2].replace(/^[*\s`]+|[*\s`]+$/g, '').trim()).filter(Boolean) : [];
+            // v7.2: AGENT SWARM as a loop skill - the model can spawn 2-10
+            // parallel workers at ANY point of the loop, AS MANY TIMES as it
+            // wants. Each spawn is one fenced sahu_agents block; every block
+            // found this turn runs and its reports feed back next turn.
+            const swarmBlocks = skillsOn('agent_swarm') && !window._sahuSwarmActive
+                ? [...text.matchAll(/```(?:sahu_agents|sahu-agents)[ \t]*\r?\n[\s\S]*?```/gi)].map(m => m[0]) : [];
 
             // v6.4: code interpreter blocks + FILE blocks
             const v64Code = skillsOn('run_code') ? extractRunnableCode(text) : [];
             const v64Files = skillsOn('make_files') ? extractFileBlocks(text) : [];
             const ansMatch = text.match(/ANSWER:\s*([\s\S]+)$/i);
-            const hasTools = queries.length + reads.length + fetches.length + browses.length + v64Code.length + v64Files.length + dates.length + calcs.length > 0;
+            const hasTools = queries.length + reads.length + fetches.length + browses.length + v64Code.length + v64Files.length + dates.length + calcs.length + swarmBlocks.length > 0;
 
             if (!hasTools) {
                 // The agent is done (or never needed to search at all).
@@ -13167,9 +13193,32 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             const fileOuts = await Promise.all(fileTasks.map(t => t().catch(() => '[FILE] file creation crashed - fix the block or move on.')));
             parts.push(...fileOuts);
 
+            // v7.2: run any agent swarms this turn (2-10 parallel workers per
+            // spawn; the model may spawn as many rounds as it wants).
+            for (const _swBlk of swarmBlocks) {
+                if (toolRuns >= MAX_TOOL_RUNS) { parts.push('[AGENTS] Tool budget reached - spawn no more swarms; write your final ANSWER now.'); break; }
+                const _swParsed = _sahuParseAgentSwarm(_swBlk);
+                const _swN = _swParsed && Array.isArray(_swParsed.tasks) ? Math.min(_swParsed.tasks.length, 10) : 0;
+                if (_swN < 2) {
+                    parts.push('[AGENTS] Spawn rejected: ' + (_swN === 1 ? 'ONE agent is pointless - a single sub-task means YOU do it yourself. Either spawn 2-10 INDEPENDENT tasks or do the work directly.' : 'no valid tasks found. Follow the sahu_agents JSON shape exactly.'));
+                    continue;
+                }
+                toolRuns += _swN;
+                setBusy('Agent Swarm: spawning ' + _swN + ' workers...');
+                let _swRes = { handled: false };
+                try {
+                    _swRes = await _sahuRunAgentSwarm(_swBlk, { chatId: chatId, model: model, fullPrompt: fullPrompt, addTrace: addTrace, workerSources: [] });
+                } catch (e) { _swRes = { handled: false }; }
+                if (_swRes && _swRes.handled && _swRes.answer) {
+                    parts.push('[AGENTS] Swarm round complete (' + _swN + ' workers ran in parallel, findings merged). Their synthesized findings:\n' + _swRes.answer + '\nYou may spawn ANOTHER swarm with a different/deeper split, keep using other skills, or - if this is enough - write your final answer starting with ANSWER:');
+                } else {
+                    parts.push('[AGENTS] The swarm could not run this time (worker or synthesis failure). Continue with other skills or write your final answer.');
+                }
+            }
+
             convo.push({
                 role: 'user',
-                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nORIGINAL USER REQUEST (pinned reminder - stay exactly on this request, do NOT drift to other topics, models, companies or products the user never asked about): ${fullPrompt}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries and/or OTHER engines - fan out WIDER if results were empty or weak, READ, FETCH or BROWSE several pages in parallel, or the MCP DATE/CALC tools) - you may redo this as many times as you need.`
+                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nORIGINAL USER REQUEST (pinned reminder - stay exactly on this request, do NOT drift to other topics, models, companies or products the user never asked about): ${fullPrompt}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries and/or OTHER engines - fan out WIDER if results were empty or weak, READ, FETCH or BROWSE several pages in parallel, the MCP DATE/CALC tools, or spawn another AGENT SWARM to split the remaining work across parallel workers) - you may redo this as many times as you need.`
             });
         }
 
@@ -13850,7 +13899,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v7.1 Initializing...');
+    console.log('🚀 SahuAI Agent v7.2 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -13893,8 +13942,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v7.1 Ready');
-    showToast('SahuAI Agent v7.1 Loaded');
+    console.log('✅ SahuAI Agent v7.2 Ready');
+    showToast('SahuAI Agent v7.2 Loaded');
 }
 
 // ============================================
@@ -14011,7 +14060,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v7.1 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v7.2 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

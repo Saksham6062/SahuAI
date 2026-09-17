@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v7.0 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, consensus-powered AI, live app previews">
+    <meta name="description" content="SahuAI Agent v7.1 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, 2-10 agent swarm, MP Board examiner, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v7.0 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v7.1 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v7.0</span>
+                        <span>SahuAI Agent v7.1</span>
                     </div>
                 </div>
                 
@@ -4386,6 +4386,13 @@
                             <div class="style-option-info">
                                 <div class="style-option-name">Travel Guide</div>
                                 <div class="style-option-desc">Practical insider travel advice</div>
+                            </div>
+                            <div class="style-option-check"></div>
+                        </div>
+                        <div class="style-option-item" data-persona="mp_examiner" onclick="selectPersona('mp_examiner')">
+                            <div class="style-option-info">
+                                <div class="style-option-name">MP Board Examiner</div>
+                                <div class="style-option-desc">MPBSE Class 10 sample papers (real board pattern)</div>
                             </div>
                             <div class="style-option-check"></div>
                         </div>
@@ -6592,7 +6599,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v7.0</span>
+                        <span>v7.1</span>
                     </div>
                 </div>
             </div>
@@ -9674,6 +9681,8 @@ function formatMarkdown(text, sources = null) {
         .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1="#"')
         .replace(/FILE\s*\[\s*[a-z0-9]{1,8}\s*\]\s*:[^\n]*\n[\s\S]*?(?:\n\/FILE(?![a-z])|\nFILE\s*\[|$)/gi, '')
         .replace(/MAKESKILL:[^\n]*\n[\s\S]*?(?:\n\/MAKESKILL(?![a-z])|\nMAKESKILL:|$)/gi, '')
+        // v7.1: hide raw AGENT SWARM directive blocks (the swarm engine consumes them)
+        .replace(/```(?:sahu_agents|sahu-agents)[ \t]*\r?\n[\s\S]*?```/gi, '')
         // v6.5b: hide the raw PREVIEW marker line (the preview auto-opens)
         .replace(/PREVIEW\s*:[^\n]*\n+(?=```(?:html|react|jsx|tsx))/gi, '');
     
@@ -9905,7 +9914,8 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
         teacher: "\nPERSONA: TEACHER. You are a patient, skilled teacher. Break topics into small steps, use analogies and concrete examples, check understanding with a short question at the end, and adapt depth to the user's level.",
         analyst: '\nPERSONA: RESEARCH ANALYST. You are a rigorous research analyst. Structure answers with clear headings, weigh evidence, quantify where possible, present counterarguments and uncertainties explicitly, and separate facts from interpretation.',
         writer: '\nPERSONA: CREATIVE WRITER. You are a talented writer. Craft vivid, engaging prose with strong openings, varied sentence rhythm and purposeful word choice; keep the tone appropriate to the request while staying natural.',
-        travel: '\nPERSONA: TRAVEL GUIDE. You are an experienced local travel guide. Give practical insider advice: concrete places, realistic timings and costs, seasonal caveats, and honest recommendations over tourist traps.'
+        travel: '\nPERSONA: TRAVEL GUIDE. You are an experienced local travel guide. Give practical insider advice: concrete places, realistic timings and costs, seasonal caveats, and honest recommendations over tourist traps.',
+        mp_examiner: "\nPERSONA: MP BOARD CLASS 10 EXAMINER (MPBSE High School). You are a senior MPBSE Class 10 examiner and paper setter with years of board evaluation experience. DEFAULT JOB: generate official-pattern SAMPLE PAPERS (test-like). From the user request read: (a) SUBJECT - Science, Maths, Social Science, English, Hindi, Sanskrit, IT etc.; if missing, ask once briefly and wait; (b) OPTIONAL CHAPTER SCOPE like \"chapter 2 to 7\", \"ch 3, 5\" or \"full syllabus\" - if a range is given, EVERY question must come ONLY from those chapters; full syllabus = spread questions across all chapters by blueprint weightage. PAPER BLUEPRINT (verified from real MPBSE Class 10 Main papers, 2026 Set A): Maximum Marks 75, Time 3 Hours, Total Questions 23, Hindi & English versions - write in the language the user writes in and offer the other version after. Header exactly like the board: 'High School Examination (Main) - <SUBJECT> - Total Questions: 23 | Time: 3 Hours | Maximum Marks: 75'. Structure: Q1-5 = 30 objective questions, each question has parts (i)-(vi) worth 1 mark each (mix MCQs with (a)-(d) options, fill in the blanks, true/false, one-word answers); Q6-17 = 12 very-short questions, 2 marks each, answer in about 30 words; Q18-20 = 3 short-answer questions, 3 marks each, about 75 words; Q21-23 = 3 long-answer questions, 4 marks each, about 120 words; internal choice (OR option) in EVERY question from Q6 to Q23; show marks against each question like [2] [3] [4]. Subject flavor: Science = diagram-based questions + instruction 'Draw neat and clean labelled diagrams wherever required'; Social Science = Q23 must be Map of India (4 marks) with 4 alternate 1-mark objective questions for divyang candidates; Mathematics = mention Standard or Basic per user. Include the General Instructions block (all questions compulsory; internal options in Q6-23; word limits; in case of discrepancy the Hindi version is final). HIGHEST-PROBABILITY RULE: choose questions from topics that repeat most across previous MPBSE board years and core NCERT/MPBSE textbook concepts - PYQ-style numericals, definitions, reasoning and application questions first. AFTER the paper ask: 'Want the answer key with step-wise marking scheme?' If the user submits answers, grade strictly like an MPBSE examiner: step marking, marks per question, total out of 75, one improvement tip. Keep it exam-like: no chat before the header, no explanations between questions."
     };
     if (state.persona && state.persona !== 'none' && _personaInstructions[state.persona]) {
         sysPrompt += _personaInstructions[state.persona];
@@ -9977,6 +9987,10 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
         sysPrompt += "\nMODE: SAHUAI SEARCH (Perplexity Style). Answer concisely but comprehensively based on the provided search results. You MUST cite sources using [1], [2] notation inline with the text where the information is used. Do NOT create a separate reference list at the end, just use inline citations.";
     } else {
         sysPrompt += "\nMODE: STANDARD. Use available search results to answer accurately. Cite sources if used.";
+        // v7.1: AGENT SWARM - the model may spawn 2-10 parallel workers (never 1)
+        if (!window._sahuSwarmActive) {
+            sysPrompt += "\nAGENT SWARM (v7.1, optional parallel workers): for GENUINELY complex, multi-part, parallelizable requests (multi-topic research, large comparisons, 'do X and Y and Z', exhaustive surveys) you may spawn worker agents: reply with 'ANSWER:' followed by EXACTLY one fenced block and NOTHING else:\n```sahu_agents\n{\"plan\":\"one line\",\"tasks\":[{\"id\":\"w1\",\"objective\":\"self-contained sub-task\",\"output_format\":\"how each worker should report\",\"boundaries\":\"what NOT to touch (sibling overlap)\"},{\"id\":\"w2\",\"objective\":\"...\"}]}\n```\nRules: 2-10 tasks, NEVER exactly 1 (one agent adds nothing - a single sub-task means you do it yourself); simple tasks spawn NOTHING; each task independent, self-contained, non-overlapping; prefer 2-5, use up to 10 only for very large jobs. Workers answer from knowledge and may request ONE web search each. The app runs them in parallel and returns every report; you then receive all reports to synthesize into the final answer.";
+        }
     }
     
     // File attachment handling
@@ -13173,6 +13187,16 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
 
         setBusy('');
 
+        // v7.1: AGENT SWARM - the model may have spawned 2-10 parallel workers;
+        // run them now and replace the directive with the synthesized answer.
+        if (/sahu[_-]agents/i.test(finalAnswer)) {
+            try {
+                const _sw = await _sahuRunAgentSwarm(finalAnswer, { chatId: chatId, model: model, fullPrompt: fullPrompt, addTrace: addTrace });
+                if (_sw && _sw.handled) finalAnswer = _sw.answer || finalAnswer;
+                else if (_sw && _sw.cleaned) finalAnswer = _sw.cleaned;
+            } catch (e) {}
+        }
+
         // v6.4: FILE blocks in the final answer become real downloadable files
         try { _sahuExtractMadeSkills(finalAnswer); } catch (e) {}
         const _v64Final = /FILE\s*\[\s*[a-z0-9]{1,8}\s*\]\s*:/i.test(finalAnswer)
@@ -13513,6 +13537,140 @@ function _sahuExtractMadeSkills(text) {
 }
 window._sahuExtractMadeSkills = _sahuExtractMadeSkills;
 
+// ---- v7.1: AGENT SWARM - model-spawned parallel workers (2-10, never 1) ----
+// The orchestrator model ends its reply with a fenced ```sahu_agents JSON
+// block; this engine parses it, runs N workers in parallel (each worker is a
+// full model call that may request ONE web search), then synthesizes the
+// final answer from all reports. User rules: max 10 workers, NEVER 1.
+function _sahuParseAgentSwarm(text) {
+    if (!text || !/```(?:sahu_agents|sahu-agents)/i.test(text)) return null;
+    const m = text.match(/```(?:sahu_agents|sahu-agents)[ \t]*\r?\n([\s\S]*?)```/i);
+    if (!m) return { plan: '', tasks: [], cleaned: text.replace(/```(?:sahu_agents|sahu-agents)[\s\S]*$/i, '').replace(/ANSWER\s*:\s*$/i, '').trim() };
+    let plan = '', rawTasks = [];
+    try {
+        const raw = String(m[1] || '').trim();
+        let obj = null;
+        try { obj = JSON.parse(raw); } catch (e) {
+            const s = raw.indexOf('{'), e2 = raw.lastIndexOf('}');
+            if (s >= 0 && e2 > s) { try { obj = JSON.parse(raw.substring(s, e2 + 1)); } catch (e3) {} }
+        }
+        if (obj && typeof obj === 'object') {
+            plan = String(obj.plan || '').substring(0, 300);
+            if (Array.isArray(obj.tasks)) rawTasks = obj.tasks;
+            else if (Array.isArray(obj)) rawTasks = obj;
+        }
+    } catch (e) {}
+    const tasks = rawTasks.map((t) => (typeof t === 'string' ? { objective: t } : t))
+        .filter((t) => t && String(t.objective || '').trim())
+        .map((t, i) => ({
+            id: (String(t.id || '').replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 12)) || ('w' + (i + 1)),
+            objective: String(t.objective || '').trim().substring(0, 2500),
+            output_format: String(t.output_format || 'Dense factual findings with key numbers and a short conclusion').substring(0, 400),
+            boundaries: String(t.boundaries || '').substring(0, 300)
+        }));
+    const cleaned = text.replace(/```(?:sahu_agents|sahu-agents)[ \t]*\r?\n[\s\S]*?```/i, '').replace(/ANSWER\s*:\s*$/i, '').trim();
+    return { plan: plan, tasks: tasks, cleaned: cleaned };
+}
+
+async function _sahuRunAgentSwarm(text, ctx) {
+    const parsed = _sahuParseAgentSwarm(text);
+    if (!parsed) return { handled: false };
+    const tasks = parsed.tasks;
+    const _normUrl = (u) => { try { const x = new URL(u); x.hash = ''; return (x.hostname + x.pathname).replace(/\/+$/, '').toLowerCase(); } catch (e) { return String(u || '').toLowerCase(); } };
+    // NEVER 1 agent (user rule): 0-1 tasks -> the main model does the work itself.
+    if (tasks.length < 2) {
+        const solo = tasks.length === 1 ? tasks[0].objective : '';
+        const prompt = solo ? ('Answer this request directly yourself (spawning agents was not needed): ' + solo) : (parsed.cleaned || ctx.fullPrompt || 'Answer the user request directly.');
+        setBusy('Working on it directly...');
+        try {
+            const res = await callModelWithFallback(ctx.model.provider, ctx.model.modelId, [{ role: 'user', content: prompt }], 0, null);
+            const out = (res.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').replace(/```(?:sahu_agents|sahu-agents)[\s\S]*?```/gi, '').trim();
+            return { handled: true, answer: out || parsed.cleaned || 'Done.' };
+        } catch (e) {
+            return { handled: true, answer: parsed.cleaned || 'I could not complete this request - please try again.' };
+        } finally { setBusy(''); }
+    }
+    if (tasks.length > 10) tasks.length = 10;
+    const chatId = ctx.chatId;
+    ctx.addTrace('<i class="fas fa-users text-violet-500 mr-1"></i><span class="font-medium">Agent Swarm:</span> ' + tasks.length + ' workers spawned' + (parsed.plan ? ' - ' + escapeHtml(parsed.plan) : ''));
+    setBusy('Agent Swarm: 0/' + tasks.length + ' workers done...');
+    window._sahuSwarmActive = true;
+    const t0 = Date.now();
+    let doneCount = 0;
+    let answer = '';
+    try {
+        const results = await Promise.allSettled(tasks.map(async (t) => {
+            const started = Date.now();
+            const _tag = (s) => '[' + t.id + '] ' + s;
+            ctx.addTrace(_tag('started: ' + escapeHtml(t.objective.substring(0, 90)) + (t.objective.length > 90 ? '...' : '')));
+            try {
+                if (state.currentChatId !== chatId || !state.isProcessing) throw new Error('stopped');
+                const msgs = [{ role: 'user', content: 'You are Worker ' + t.id + ', one of ' + tasks.length + ' parallel specialists spawned by the SahuAI orchestrator.\nOVERALL USER REQUEST (pinned): ' + ctx.fullPrompt + (parsed.plan ? '\nORCHESTRATOR PLAN: ' + parsed.plan : '') + '\n\nYOUR SUB-TASK (do ONLY this; do not overlap siblings):\n' + t.objective + (t.boundaries ? '\nSIBLING BOUNDARIES (do not duplicate): ' + t.boundaries : '') + '\nOUTPUT FORMAT: ' + t.output_format + '\n\nRULES: Today is ' + new Date().toDateString() + '. Answer from your own knowledge. If - and only if - the sub-task critically needs CURRENT web data, reply with EXACTLY one line "NEED_SEARCH: <query>" and nothing else. Never emit SEARCH/READ/ANSWER directives, code blocks or sahu_agents blocks. Be dense, factual, no preamble, no apologies. End with a line "SOURCES: <urls you actually used>" or "SOURCES: none".' }];
+                let res = await Promise.race([
+                    callModelWithFallback(ctx.model.provider, ctx.model.modelId, msgs, 0, null),
+                    new Promise((_, rej) => setTimeout(() => rej(new Error('worker timeout')), 150000))
+                ]);
+                let txt = (res.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+                const needM = txt.match(/^NEED_SEARCH\s*:\s*(.+)$/im);
+                if (needM && txt.length < 400) {
+                    ctx.addTrace(_tag('requested web search: ' + escapeHtml(needM[1].substring(0, 80))));
+                    let hits = [];
+                    try {
+                        if (state.currentChatId !== chatId || !state.isProcessing) throw new Error('stopped');
+                        const sr = await Promise.race([searchWeb(needM[1].substring(0, 300)), new Promise((_, rej) => setTimeout(() => rej(new Error('search timeout')), 45000))]);
+                        const arr = (typeof sr === 'string') ? JSON.parse(sr) : sr;
+                        if (Array.isArray(arr)) hits = arr.slice(0, 8);
+                    } catch (e2) {}
+                    if (hits.length) {
+                        (ctx.workerSources = ctx.workerSources || []).push(...hits);
+                        ctx.addTrace(_tag('+' + hits.length + ' web results'));
+                    }
+                    if (state.currentChatId !== chatId || !state.isProcessing) throw new Error('stopped');
+                    res = await Promise.race([
+                        callModelWithFallback(ctx.model.provider, ctx.model.modelId, msgs.concat([{ role: 'user', content: (hits.length ? ('WEB RESULTS (fresh; cite as [n] only if you use them):\n' + hits.map((h, hi) => '[' + (hi + 1) + '] ' + (h.title || '') + ' - ' + (h.snippet || '').substring(0, 260) + ' (' + (h.link || '') + ')').join('\n')) : 'The web search returned nothing usable.') + '\n\nNEED_SEARCH is no longer available - deliver your final findings now, in the required format.' }]), 0, null),
+                        new Promise((_, rej) => setTimeout(() => rej(new Error('worker timeout')), 150000))
+                    ]);
+                    txt = (res.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+                }
+                doneCount++;
+                setBusy('Agent Swarm: ' + doneCount + '/' + tasks.length + ' workers done...');
+                ctx.addTrace(_tag('done in ' + ((Date.now() - started) / 1000).toFixed(1) + 's (' + txt.length + ' chars)'));
+                return txt;
+            } catch (e) {
+                ctx.addTrace(_tag('<span class="text-red-500">failed: ' + escapeHtml(String((e && e.message) || e)) + '</span>'));
+                return null;
+            }
+        }));
+        if (state.currentChatId !== chatId) return { handled: true, answer: '' };
+        const reports = results.map((r, i) => '[WORKER ' + tasks[i].id + ' - ' + (r.status === 'fulfilled' && r.value ? 'ok' : 'FAILED') + ']\n' + (r.status === 'fulfilled' && r.value ? r.value : '(no report - this part is missing)') + '\n[/WORKER ' + tasks[i].id + ']').join('\n\n');
+        try {
+            const ws = ctx.workerSources || [];
+            if (ws.length) {
+                const prev = Array.isArray(state.lastSources) ? state.lastSources : [];
+                const merged = prev.concat(ws.filter((s) => s && s.link && !prev.some((p) => _normUrl(p.link) === _normUrl(s.link))));
+                state.lastSources = merged;
+                ctx.addTrace('<i class="fas fa-link text-sky-500 mr-1"></i>Swarm sources merged: +' + ws.length + ' (pool ' + merged.length + ')');
+            }
+        } catch (e) {}
+        setBusy('Synthesizing ' + tasks.length + ' worker reports...');
+        if (state.currentChatId === chatId && state.isProcessing) {
+            try {
+                const synth = await callModelWithFallback(ctx.model.provider, ctx.model.modelId, [{ role: 'user', content: 'ORIGINAL USER REQUEST (pinned): ' + ctx.fullPrompt + '\n\nYou spawned ' + tasks.length + ' parallel worker agents. Their reports:\n\n' + reports + '\n\nTASK: Synthesize the FINAL user-facing answer to the ORIGINAL REQUEST: merge all worker reports, remove duplication, resolve contradictions explicitly (say which source is more reliable and why), cover every sub-task, and clearly note any gaps left by failed or missing workers. Keep formatting clean (headings, tables, bullets where useful). Preserve [n] citations where workers used them (they map to the merged sources pool). Write the full answer now - do NOT emit sahu_agents, SEARCH or NEED_SEARCH directives.' }], 0, null);
+                answer = (synth.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').replace(/```(?:sahu_agents|sahu-agents)[\s\S]*?```/gi, '').trim();
+            } catch (e) {}
+        }
+        if (!answer) {
+            answer = (parsed.plan ? ('**Agent Swarm plan:** ' + parsed.plan + '\n\n') : '') + reports.split('\n[/WORKER').map((blk) => blk.replace(/^\[WORKER[^\]]*\]\n/, '')).filter((s) => s.trim() && s.trim() !== '(no report - this part is missing)').join('\n\n');
+        }
+    } finally {
+        window._sahuSwarmActive = false;
+        setBusy('');
+    }
+    ctx.addTrace('<i class="fas fa-check-circle text-green-500 mr-1"></i><span class="font-medium">Agent Swarm:</span> finished in ' + ((Date.now() - t0) / 1000).toFixed(1) + 's - ' + tasks.length + ' workers, synthesized');
+    return { handled: true, answer: answer };
+}
+window._sahuRunAgentSwarm = _sahuRunAgentSwarm;
+
 function _sahuCustomSkillsPrompt() {
     const list = (state.customSkills || []).filter(s => s.enabled !== false && (state.enabledSkills || []).includes(s.id));
     if (!list.length) return '';
@@ -13692,7 +13850,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v7.0 Initializing...');
+    console.log('🚀 SahuAI Agent v7.1 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -13735,8 +13893,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v7.0 Ready');
-    showToast('SahuAI Agent v7.0 Loaded');
+    console.log('✅ SahuAI Agent v7.1 Ready');
+    showToast('SahuAI Agent v7.1 Loaded');
 }
 
 // ============================================
@@ -13853,7 +14011,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v7.0 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v7.1 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of
@@ -13949,7 +14107,7 @@ function selectStyle(style) {
     });
     const label = document.getElementById('toolsNavStyleLabel');
     if (label) {
-        const _pNames = { none: '', programmer: 'Programmer', teacher: 'Teacher', analyst: 'Research Analyst', writer: 'Creative Writer', travel: 'Travel Guide' };
+        const _pNames = { none: '', programmer: 'Programmer', teacher: 'Teacher', analyst: 'Research Analyst', writer: 'Creative Writer', travel: 'Travel Guide', mp_examiner: 'MP Board Examiner' };
         const _pn = _pNames[state.persona || 'none'] || '';
         label.textContent = (style.charAt(0).toUpperCase() + style.slice(1)) + (_pn ? ' · ' + _pn : '');
     }
@@ -13960,7 +14118,7 @@ function selectStyle(style) {
 
 /**
  * v7.0: Select persona (Choose style > Persona section)
- * @param {string} p - 'none', 'programmer', 'teacher', 'analyst', 'writer', 'travel'
+ * @param {string} p - 'none', 'programmer', 'teacher', 'analyst', 'writer', 'travel', 'mp_examiner'
  */
 function selectPersona(p) {
     if (!state) state = {};
@@ -13969,7 +14127,7 @@ function selectPersona(p) {
         const check = item.querySelector('.style-option-check');
         if (check) check.innerHTML = item.dataset.persona === p ? '<i class="fas fa-check"></i>' : '';
     });
-    const pNames = { none: '', programmer: 'Programmer', teacher: 'Teacher', analyst: 'Research Analyst', writer: 'Creative Writer', travel: 'Travel Guide' };
+    const pNames = { none: '', programmer: 'Programmer', teacher: 'Teacher', analyst: 'Research Analyst', writer: 'Creative Writer', travel: 'Travel Guide', mp_examiner: 'MP Board Examiner' };
     const pn = pNames[p] || '';
     const label = document.getElementById('toolsNavStyleLabel');
     if (label) {

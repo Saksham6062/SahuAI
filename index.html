@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v6.6 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, consensus-powered AI, live app previews">
+    <meta name="description" content="SahuAI Agent v7.0 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v6.6 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v7.0 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v6.6</span>
+                        <span>SahuAI Agent v7.0</span>
                     </div>
                 </div>
                 
@@ -4127,6 +4127,8 @@
                         <option value="standard">⚡ Standard</option>
                         <option value="task">🛠️ Task</option>
                         <option value="research">🧠 Research</option>
+                        <option value="travel">✈️ Travel Plan</option>
+                        <option value="study">🎓 Study</option>
                         <option value="search">🔍 SahuAI Search</option>
                     </select>
                     
@@ -4258,7 +4260,7 @@
                         </div>
                         <!-- Feature Buttons Section -->
                         <div class="tools-action-section">
-                            <button onclick="quickPrompt('Research deeply about'); toggleToolsMenu();" class="tools-action-item">
+                            <button onclick="setTaskMode('research'); toggleToolsMenu();" class="tools-action-item">
                                 <i class="fas fa-microscope text-teal-500"></i>
                                 <span>Deep Research</span>
                             </button>
@@ -4268,32 +4270,24 @@
                                 <span>Artifacts</span>
                             </button>
                             <!-- v5.2: Learn + Quizzes combined into "Study" -->
-                            <button onclick="quickPrompt('Help me learn about'); toggleToolsMenu();" class="tools-action-item">
+                            <button onclick="setTaskMode('study'); toggleToolsMenu();" class="tools-action-item">
                                 <i class="fas fa-graduation-cap text-amber-500"></i>
                                 <span>Study</span>
                             </button>
-                            <button onclick="quickPrompt('Plan a trip to'); toggleToolsMenu();" class="tools-action-item">
+                            <button onclick="setTaskMode('travel'); toggleToolsMenu();" class="tools-action-item">
                                 <i class="fas fa-plane text-sky-500"></i>
                                 <span>Travel Planner</span>
                             </button>
                         </div>
                         <!-- Nav Section -->
                         <div class="tools-nav-section">
-                            <button class="tools-nav-item" onclick="toggleToolsMenu();">
-                                <i class="fas fa-folder-plus text-amber-600"></i>
-                                <span>Add to project</span>
-                                <span class="tools-nav-right">None <i class="fas fa-chevron-right" style="font-size:0.5rem"></i></span>
-                            </button>
+                            <!-- v7.0: "Add to project" REMOVED per user request -->
                             <button class="tools-nav-item" onclick="toggleToolsMenu(); toggleStylePopover();">
                                 <i class="fas fa-pen-fancy text-pink-500"></i>
                                 <span>Choose style</span>
                                 <span class="tools-nav-right" id="toolsNavStyleLabel">Normal <i class="fas fa-chevron-right" style="font-size:0.5rem"></i></span>
                             </button>
-                            <button class="tools-nav-item" onclick="toggleToolsMenu(); toggleConnectorsPopover();">
-                                <i class="fas fa-plug text-blue-500"></i>
-                                <span>Connectors</span>
-                                <span class="tools-nav-right"><i class="fas fa-chevron-right" style="font-size:0.5rem"></i></span>
-                            </button>
+                            <!-- v7.0: Connectors entry REMOVED per user request -->
                         </div>
                     </div>
                     
@@ -4352,70 +4346,52 @@
                             </div>
                             <div class="style-option-check"></div>
                         </div>
+                        <div class="style-popover-title" style="padding:0.6rem 0.75rem 0.25rem; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; opacity:0.6;">Persona</div>
+                        <div class="style-option-item" data-persona="none" onclick="selectPersona('none')">
+                            <div class="style-option-info">
+                                <div class="style-option-name">No Persona</div>
+                                <div class="style-option-desc">Plain SahuAI behaviour</div>
+                            </div>
+                            <div class="style-option-check"></div>
+                        </div>
+                        <div class="style-option-item" data-persona="programmer" onclick="selectPersona('programmer')">
+                            <div class="style-option-info">
+                                <div class="style-option-name">Programmer</div>
+                                <div class="style-option-desc">Senior engineer: precise, code-first answers</div>
+                            </div>
+                            <div class="style-option-check"></div>
+                        </div>
+                        <div class="style-option-item" data-persona="teacher" onclick="selectPersona('teacher')">
+                            <div class="style-option-info">
+                                <div class="style-option-name">Teacher</div>
+                                <div class="style-option-desc">Patient step-by-step explanations with examples</div>
+                            </div>
+                            <div class="style-option-check"></div>
+                        </div>
+                        <div class="style-option-item" data-persona="analyst" onclick="selectPersona('analyst')">
+                            <div class="style-option-info">
+                                <div class="style-option-name">Research Analyst</div>
+                                <div class="style-option-desc">Critical, evidence-driven, structured analysis</div>
+                            </div>
+                            <div class="style-option-check"></div>
+                        </div>
+                        <div class="style-option-item" data-persona="writer" onclick="selectPersona('writer')">
+                            <div class="style-option-info">
+                                <div class="style-option-name">Creative Writer</div>
+                                <div class="style-option-desc">Vivid, engaging, well-crafted prose</div>
+                            </div>
+                            <div class="style-option-check"></div>
+                        </div>
+                        <div class="style-option-item" data-persona="travel" onclick="selectPersona('travel')">
+                            <div class="style-option-info">
+                                <div class="style-option-name">Travel Guide</div>
+                                <div class="style-option-desc">Practical insider travel advice</div>
+                            </div>
+                            <div class="style-option-check"></div>
+                        </div>
                     </div>
                     
-                    <!-- Connectors Popover -->
-                    <div id="connectorsPopover" class="connectors-popover">
-                        <div class="connectors-header">
-                            <span class="style-popover-title">Connectors</span>
-                            <button onclick="toggleConnectorsPopover()" class="tools-header-close" title="Close">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="connectors-search">
-                            <input type="text" id="connectorSearch" placeholder="Search connectors..." oninput="filterConnectors(this.value)">
-                        </div>
-                        <div id="connectorsList" class="connectors-list">
-                            <div class="connector-item" data-name="gmail">
-                                <div class="connector-icon" style="background:rgba(234, 67, 53, 0.15); color:#ea4335;">M</div>
-                                <div class="connector-info">
-                                    <div class="connector-name">Gmail</div>
-                                    <div class="connector-desc">Access your Gmail inbox</div>
-                                </div>
-                                <button class="connector-add" onclick="addConnector('gmail')" title="Add"><i class="fas fa-plus"></i></button>
-                            </div>
-                            <div class="connector-item" data-name="google calendar">
-                                <div class="connector-icon" style="background:rgba(66, 133, 244, 0.15); color:#4285f4;">31</div>
-                                <div class="connector-info">
-                                    <div class="connector-name">Google Calendar</div>
-                                    <div class="connector-desc">View and manage calendar events</div>
-                                </div>
-                                <button class="connector-add" onclick="addConnector('google calendar')" title="Add"><i class="fas fa-plus"></i></button>
-                            </div>
-                            <div class="connector-item" data-name="google docs">
-                                <div class="connector-icon" style="background:rgba(66, 133, 244, 0.15); color:#4285f4;"><i class="fas fa-file-alt" style="font-size:0.625rem"></i></div>
-                                <div class="connector-info">
-                                    <div class="connector-name">Google Docs</div>
-                                    <div class="connector-desc">Access your Google Docs</div>
-                                </div>
-                                <button class="connector-add" onclick="addConnector('google docs')" title="Add"><i class="fas fa-plus"></i></button>
-                            </div>
-                            <div class="connector-item" data-name="google drive">
-                                <div class="connector-icon" style="background:rgba(52, 168, 83, 0.15); color:#34a853;"><i class="fas fa-caret-up" style="font-size:0.75rem"></i></div>
-                                <div class="connector-info">
-                                    <div class="connector-name">Google Drive</div>
-                                    <div class="connector-desc">Access files on Google Drive</div>
-                                </div>
-                                <button class="connector-add" onclick="addConnector('google drive')" title="Add"><i class="fas fa-plus"></i></button>
-                            </div>
-                            <div class="connector-item" data-name="outlook">
-                                <div class="connector-icon" style="background:rgba(0, 120, 212, 0.15); color:#0078d4;">O</div>
-                                <div class="connector-info">
-                                    <div class="connector-name">Outlook</div>
-                                    <div class="connector-desc">Connect Outlook email</div>
-                                </div>
-                                <button class="connector-add" onclick="addConnector('outlook')" title="Add"><i class="fas fa-plus"></i></button>
-                            </div>
-                            <div class="connector-item" data-name="sharepoint">
-                                <div class="connector-icon" style="background:rgba(0, 120, 212, 0.15); color:#0078d4;"><i class="fas fa-s" style="font-size:0.625rem"></i></div>
-                                <div class="connector-info">
-                                    <div class="connector-name">SharePoint</div>
-                                    <div class="connector-desc">Connect SharePoint sites</div>
-                                </div>
-                                <button class="connector-add" onclick="addConnector('sharepoint')" title="Add"><i class="fas fa-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- v7.0: Connectors popover REMOVED per user request -->
                     
                     <!-- Active Mode Pills (above input box) -->
                     <div id="activeModePills" class="active-mode-pills" style="display: none;"></div>
@@ -4783,13 +4759,6 @@
             </div>
         </label>
     
-        <label class="search-engine-item">
-            <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('duckduckgo_instant', this.checked)">
-            <div class="search-engine-info">
-                <div class="search-engine-name">DuckDuckGo Instant</div>
-                <div class="search-engine-type">(API)</div>
-            </div>
-        </label>
     
         <label class="search-engine-item">
             <input type="checkbox" class="search-engine-checkbox" checked="" onchange="toggleSearchEngine('yahoo', this.checked)">
@@ -5699,7 +5668,7 @@ const state = {
     
     // DeepThink State
     deepThinkEnabled: true,
-    thinkingBudget: 'medium', // off, low, medium, high, xhigh, max
+    thinkingBudget: 'high', // off, low, medium, high, xhigh, max (v6.9: default HIGH)
     
     // Pipeline State
     autoFallback: true,
@@ -5762,10 +5731,11 @@ const state = {
     },
     
     // v5.5: Agent skills - abilities the loop can use, toggled in Settings > Skills
-    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview'],
+    enabledSkills: ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview', 'mcp_date', 'mcp_calc'],
     
-    // Response Style
-    responseStyle: 'normal'
+    // Response Style + Persona (v7.0: persona lives inside Choose style)
+    responseStyle: 'normal',
+    persona: 'none'
 };
 
 // ============================================
@@ -5837,6 +5807,7 @@ const PROVIDERS = {
             'DeepSeek V4 Flash': 'deepseek-ai/deepseek-v4-flash-0731',
             'Muse Glimmer 30B': 'meta/muse-glimmer-30b',
             'Gemma 4 31B': 'google/gemma-4-31b-it',
+            'GLM 5.3': 'z-ai/glm-5.3',
             'GLM 5.3 Flash': 'z-ai/glm-5.3-flash',
             'Nemotron 3.5 Lightning 30B': 'nvidia/nemotron-3.5-lightning-30b-a3b',
             'Nemotron 3 Super 120B': 'nvidia/nemotron-3-super-120b-a12b',
@@ -6269,7 +6240,6 @@ const SEARCH_ENGINES_CONFIG = {
     bing: { name: 'Bing', type: 'searx', bang: '!bing' },
     duckduckgo: { name: 'DuckDuckGo', type: 'searx', bang: '!ddg' },
     duckduckgo_lite: { name: 'DuckDuckGo Lite', type: 'searx' },
-    duckduckgo_instant: { name: 'DuckDuckGo Instant', type: 'api' },
     yahoo: { name: 'Yahoo', type: 'searx', bang: '!yahoo' },
     yandex: { name: 'Yandex', type: 'searx', bang: '!yandex' },
     brave: { name: 'Brave', type: 'searx', bang: '!brave' },
@@ -6298,7 +6268,7 @@ const SEARCH_ENGINES_CONFIG = {
 // under the same categories.
 const SEARCH_ENGINE_CATEGORIES = {
     social: ['reddit', 'facebook', 'instagram', 'twitter', 'youtube'],
-    privacy: ['duckduckgo_lite', 'duckduckgo_instant', 'duckduckgo', 'brave', 'startpage'],
+    privacy: ['duckduckgo_lite', 'duckduckgo', 'brave', 'startpage'],
     standard: ['google', 'bing', 'yahoo', 'baidu', 'yandex'],
     productivity: ['wikipedia', 'grokipedia', 'ernie', 'github', 'linkedin'],
     other: ['openlibrary', 'crossref', 'wikidata', 'arxiv', 'dictionary']
@@ -6406,7 +6376,9 @@ function saveState() {
             singleModelId: state.singleModelId,
             modelResponseCounts: state.modelResponseCounts,
             theme: state.theme,
-            pinnedMessages: state.pinnedMessages
+            pinnedMessages: state.pinnedMessages,
+            responseStyle: state.responseStyle,
+            persona: state.persona
         }));
         persistChatHistory();
         localStorage.setItem('sahu_theme', state.theme);
@@ -6452,12 +6424,12 @@ function loadState() {
             Object.keys(state.features || {}).forEach(k => state.features[k] = false);
             // Migrate old thinking budget values to the new scale
             const VALID_BUDGETS = ['off', 'low', 'medium', 'high', 'xhigh', 'max'];
-            if (!VALID_BUDGETS.includes(state.thinkingBudget)) state.thinkingBudget = 'medium';
+            if (!VALID_BUDGETS.includes(state.thinkingBudget)) state.thinkingBudget = 'high';
         }
         // v5.6: skills must ALWAYS default to all-on. Older saved states lack
         // the key entirely, which silently disabled every agentic skill.
         if (!Array.isArray(state.enabledSkills) || state.enabledSkills.length === 0) {
-            state.enabledSkills = ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview'];
+            state.enabledSkills = ['web_search', 'web_scrape', 'web_fetch', 'web_browse', 'run_code', 'make_files', 'live_preview', 'mcp_date', 'mcp_calc'];
         }
         // v6.4: one-time migration - the two new skills join any saved list
         if (!state._v64Skills) {
@@ -6488,6 +6460,16 @@ function loadState() {
                 ['bai', 'bynara', 'opencode'].forEach(k => { if (PROVIDERS[k] && !state.activeProviders.includes(k)) state.activeProviders.push(k); });
             }
             state._v66Skills = true;
+        }
+
+        // v6.7: one-time migration - the two MCP tools (Current Date +
+        // Calculator) join any saved list so existing users get them on.
+        if (!state._v67Skills) {
+            const _v67set = new Set(state.enabledSkills || []);
+            _v67set.add('mcp_date');
+            _v67set.add('mcp_calc');
+            state.enabledSkills = (typeof SAHU_SKILLS !== 'undefined' ? SAHU_SKILLS.map(s => s.id) : []).filter(id => _v67set.has(id));
+            state._v67Skills = true;
         }
         
         const history = localStorage.getItem('sahu_chat_history');
@@ -6610,7 +6592,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v6.6</span>
+                        <span>v7.0</span>
                     </div>
                 </div>
             </div>
@@ -6697,17 +6679,17 @@ function updateMode(mode) {
         }
         state.deepThinkEnabled = true;
     } else {
-        state.thinkingBudget = 'medium'; // Standard default
+        state.thinkingBudget = 'high'; // Standard default (v6.9: HIGH)
     }
     
     const budgetSelect = document.getElementById('thinkingBudget');
     if (budgetSelect) budgetSelect.value = state.thinkingBudget;
     
     // Handle mode-specific UI - task type button is no longer in chatbar
-    if (mode === 'task' || mode === 'artifacts' || mode === 'appdev') {
+    if (mode === 'task' || mode === 'artifacts' || mode === 'appdev' || mode === 'research' || mode === 'travel' || mode === 'study') {
         // Update activeModeTag for pills above chatbar
         state.activeModeTag = mode;
-        const modeLabels = { task: 'Task', artifacts: 'Artifacts', appdev: 'App Dev' };
+        const modeLabels = { task: 'Task', artifacts: 'Artifacts', appdev: 'App Dev', research: 'Deep Research', travel: 'Travel Plan', study: 'Study' };
         showToast((modeLabels[mode] || mode) + ' Mode Active');
     } else {
         state.activeModeTag = null;
@@ -6733,7 +6715,7 @@ function updateMode(mode) {
         if (discovery) discovery.style.display = 'none';
     }
     
-    if (mode !== 'task' && mode !== 'search' && mode !== 'artifacts' && mode !== 'appdev') {
+    if (mode !== 'task' && mode !== 'search' && mode !== 'artifacts' && mode !== 'appdev' && mode !== 'research' && mode !== 'travel' && mode !== 'study') {
         showToast('Mode: ' + mode.charAt(0).toUpperCase() + mode.slice(1));
     }
     
@@ -6790,7 +6772,7 @@ function renderInputModeTags() {
     container.innerHTML = '';
     
     if (state.activeModeTag) {
-        const modeLabels = { task: 'Task', artifacts: 'Artifacts', appdev: 'App Dev' };
+        const modeLabels = { task: 'Task', artifacts: 'Artifacts', appdev: 'App Dev', research: 'Deep Research', travel: 'Travel Plan', study: 'Study' };
         const label = modeLabels[state.activeModeTag] || state.activeModeTag;
         const tag = document.createElement('span');
         tag.className = 'input-mode-tag';
@@ -6809,7 +6791,7 @@ function renderActiveModePills() {
     container.innerHTML = '';
     
     // Only show Task/Artifacts/App Dev pills - NOT DeepThink or WebSearch
-    const modeLabels = { task: 'Task', artifacts: 'Artifacts', appdev: 'App Dev' };
+    const modeLabels = { task: 'Task', artifacts: 'Artifacts', appdev: 'App Dev', research: 'Deep Research', travel: 'Travel Plan', study: 'Study' };
     if (state.activeModeTag && modeLabels[state.activeModeTag]) {
         const pill = document.createElement('span');
         pill.className = 'task-type-pill active';
@@ -6907,7 +6889,7 @@ function openSettings() {
         if (settingMaxTokens) settingMaxTokens.value = state.maxTokens;
         
         const thinkingBudget = document.getElementById('thinkingBudget');
-        if (thinkingBudget) thinkingBudget.value = state.thinkingBudget || 'medium';
+        if (thinkingBudget) thinkingBudget.value = state.thinkingBudget || 'high';
         
         const aggregationStyle = document.getElementById('aggregationStyle');
         if (aggregationStyle) aggregationStyle.value = state.aggregationStyle || 'synthesis';
@@ -8787,44 +8769,22 @@ async function searchWeb(query, enginesOverride) {
             }
         }
 
-        // Last resort: DuckDuckGo Instant Answer API (direct, CORS enabled)
-        // v5.9: 20s budget - DDG can be slow to answer while throttling.
-        if (results.length === 0) {
-            const ia = await fetchJsonViaChain(
-                'https://api.duckduckgo.com/?q=' + encodeURIComponent(rawQuery || '') + '&format=json&no_html=1&skip_disambig=1&t=sahuai', 20000
-            );
-            if (ia) {
-                if (ia.AbstractText && ia.AbstractURL) {
-                    results.push({
-                        title: ia.Heading || 'Result',
-                        link: ia.AbstractURL,
-                        snippet: ia.AbstractText.substring(0, 300),
-                        source: ''
-                    });
-                }
-                const topics = (ia.RelatedTopics || []).flatMap(t => t.Topics ? t.Topics : [t]);
-                topics.forEach(t => {
-                    if (results.length >= maxResults) return;
-                    if (t && t.FirstURL && t.Text) {
-                        results.push({
-                            title: t.Text.split(' - ')[0].substring(0, 200),
-                            link: t.FirstURL,
-                            snippet: t.Text.substring(0, 300),
-                            source: ''
-                        });
-                    }
-                });
-            }
-        }
-
-        // v5.9 leg 3 of the DDG triple: SearXNG public instances via the
-        // proxy chain - extra general-web coverage when Lite HTML and the
-        // Instant API both return nothing.
+        // v6.9: REORDERED - SearXNG public instances now run BEFORE the DDG
+        // Instant Answer API. SearXNG returns a REAL result page for the exact
+        // query, while the Instant API often returns generic RelatedTopics
+        // that are NOT related to what was searched (user report: "latest
+        // news not related to the search"). Instant stays the last resort.
         if (results.length === 0) {
             (await fetchSearxngRaw(rawQuery || '', maxResults)).forEach(r => {
                 if (results.length < maxResults) results.push(r);
             });
         }
+
+        // v7.0: DuckDuckGo Instant Answer API REMOVED from this chain (user
+        // report "DDG instant is not working" - live-verified: the API now
+        // returns an EMPTY payload). The chain ends with the SearXNG legs
+        // above, which return real results for the exact query.
+
         return results;
     };
 
@@ -8840,38 +8800,9 @@ async function searchWeb(query, enginesOverride) {
         return raw.slice(0, maxResults).map(r => ({ ...r, source: sourceLabel }));
     };
 
-    // v5.3: standalone DuckDuckGo Instant Answers engine.
-    // api.duckduckgo.com supports CORS directly (no proxy needed) and needs no key.
-    // Returns the instant abstract plus related-topic links as results.
-    const queryDuckDuckGoInstant = async (q, maxResults, sourceLabel) => {
-        const ia = await fetchJsonViaChain(
-            'https://api.duckduckgo.com/?q=' + encodeURIComponent(q) + '&format=json&no_html=1&skip_disambig=1&t=sahuai', 20000
-        );
-        const out = [];
-        if (ia) {
-            if (ia.AbstractText && ia.AbstractURL) {
-                out.push({
-                    title: ia.Heading || 'Result',
-                    link: ia.AbstractURL,
-                    snippet: ia.AbstractText.substring(0, 300),
-                    source: sourceLabel
-                });
-            }
-            const topics = (ia.RelatedTopics || []).flatMap(t => t.Topics ? t.Topics : [t]);
-            topics.forEach(t => {
-                if (out.length >= maxResults) return;
-                if (t && t.FirstURL && t.Text) {
-                    out.push({
-                        title: t.Text.split(' - ')[0].substring(0, 200),
-                        link: t.FirstURL,
-                        snippet: t.Text.substring(0, 300),
-                        source: sourceLabel
-                    });
-                }
-            });
-        }
-        return out;
-    };
+    // v7.0: queryDuckDuckGoInstant REMOVED - api.duckduckgo.com returns an
+    // EMPTY payload (live-verified 2026-09-17), so the whole standalone
+    // engine was dropped per user report "DDG instant is not working".
 
     // v5.9b: SearXNG public-instance leg of the DDG triple engine. Instances
     // disable JSON everywhere, so results come from HTML (corsproxy.io /
@@ -8930,7 +8861,6 @@ async function searchWeb(query, enginesOverride) {
     // defaults: named-but-disabled/unknown keys run zero legs.
     const _aliasMap = {
         'ddg': 'duckduckgo', 'duckduckgolite': 'duckduckgo_lite', 'ddglite': 'duckduckgo_lite',
-        'instant': 'duckduckgo_instant', 'ddginstant': 'duckduckgo_instant',
         'wiki': 'wikipedia', 'wikipedia_en': 'wikipedia',
         'x': 'twitter', 'books': 'openlibrary',
         'papers': 'crossref', 'dict': 'dictionary',
@@ -9012,20 +8942,114 @@ async function searchWeb(query, enginesOverride) {
                 return [];
             });
         } else if (key === 'reddit') {
+            // v7.0: Reddit NO-PROXY REPAIR (user report: still 0 results and
+            // "the proxies force it not to work"). Root cause confirmed live:
+            // Reddit 403-bot-walls datacenter IPs - which is exactly what
+            // every CORS proxy is - so ALL proxy legs inherit the block. New
+            // chain in the user's directive order:
+            //   0. NO-PROXY legs straight from the user's own browser/IP:
+            //      JSONP script-tags (www + old + api) + one plain CORS fetch.
+            //      Reddit deprecated JSONP and sends no ACAO header, but these
+            //      legs carry the user's residential IP and cost nothing.
+            //   1. SearXNG site:reddit.com (user-approved fallback - SearXNG
+            //      instances serve their OWN crawled index, so Reddit's wall
+            //      never applies; searx.be live-verified 200 OK).
+            //   2. Legacy proxy legs kept ONLY as a last backstop (below).
+            // Whole engine hard-capped at 35s so a dead Reddit never stalls.
             promises.push(async () => {
-                const data = await fetchJsonViaChain(
-                    'https://www.reddit.com/search.json?q=' + encodedQuery + '&limit=' + limit + '&sort=relevance'
-                );
-                if (data && data.data && data.data.children) {
-                    return data.data.children.map(c => ({
-                        title: c.data.title,
-                        link: 'https://www.reddit.com' + c.data.permalink,
-                        snippet: (c.data.selftext || '').substring(0, 150) || ('r/' + c.data.subreddit),
-                        source: 'Reddit',
-                        date: new Date(c.data.created_utc * 1000).toISOString().split('T')[0]
-                    }));
+                const _redditDeadline = new Promise(res => setTimeout(() => res([]), 35000));
+                const _redditWork = async () => {
+                const out = [];
+                const _pushData = (d) => {
+                    if (d && d.data && Array.isArray(d.data.children)) {
+                        d.data.children.forEach(c => {
+                            if (c && c.data && c.data.permalink && out.length < limit) {
+                                out.push({
+                                    title: c.data.title || 'reddit post',
+                                    link: 'https://www.reddit.com' + c.data.permalink,
+                                    snippet: ((c.data.selftext || '').substring(0, 150)) || ('r/' + (c.data.subreddit || 'reddit')),
+                                    source: 'Reddit',
+                                    date: c.data.created_utc ? new Date(c.data.created_utc * 1000).toISOString().split('T')[0] : null
+                                });
+                            }
+                        });
+                    }
+                };
+                const _withDeadline = (p, ms) => Promise.race([p, new Promise(res => setTimeout(() => res(null), ms))]);
+                // GROUP 0 (NO PROXY): JSONP script-tag + direct CORS fetch,
+                // all in parallel under a 14s group deadline.
+                const _redditJsonp = (url, ms) => new Promise((resolve) => {
+                    let done = false;
+                    const cb = 'sahuRj' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+                    const s = document.createElement('script');
+                    const cleanup = () => { try { delete window[cb]; } catch (e) { try { window[cb] = undefined; } catch (e2) {} } try { s.remove(); } catch (e3) {} };
+                    const finish = (data) => { if (!done) { done = true; cleanup(); resolve(data); } };
+                    window[cb] = (data) => finish(data);
+                    s.onerror = () => finish(null);
+                    setTimeout(() => finish(null), ms);
+                    s.src = url + (url.includes('?') ? '&' : '?') + 'jsonp=' + cb;
+                    try { document.head.appendChild(s); } catch (e) { finish(null); }
+                });
+                await _withDeadline(Promise.all([
+                    _redditJsonp('https://www.reddit.com/search.json?q=' + encodedQuery + '&limit=' + limit + '&sort=relevance&raw_json=1', 12000).then(_pushData).catch(() => null),
+                    _redditJsonp('https://old.reddit.com/search.json?q=' + encodedQuery + '&limit=' + limit + '&sort=relevance&raw_json=1', 12000).then(_pushData).catch(() => null),
+                    _redditJsonp('https://api.reddit.com/search?q=' + encodedQuery + '&limit=' + limit + '&sort=relevance&raw_json=1', 12000).then(_pushData).catch(() => null),
+                    fetch('https://www.reddit.com/search.json?q=' + encodedQuery + '&limit=' + limit + '&sort=relevance&raw_json=1').then(r => r.ok ? r.json() : null).then(_pushData).catch(() => null)
+                ]), 14000);
+                // GROUP 1 (user-approved fallback): SearXNG scoped to reddit.com
+                if (out.length === 0) {
+                    await _withDeadline(fetchSearxngRaw(query + ' site:reddit.com', limit).then(rs => {
+                        rs.forEach(r => {
+                            if (out.length < limit && /reddit\.com/i.test(r.link || '')) out.push({ title: r.title, link: r.link, snippet: r.snippet || '', source: 'Reddit' });
+                        });
+                    }), 18000);
                 }
-                return [];
+                if (out.length === 0) {
+                    // GROUP 3 (backstop only, 12s deadline): legacy proxy legs
+                    // (RSS + old.reddit HTML). Proxies inherit Reddit's
+                    // datacenter-IP bot-wall, so these run only if groups 0-1
+                    // found nothing on this network.
+                    await _withDeadline(Promise.all([
+                        fetchTextViaChain('https://www.reddit.com/search.rss?q=' + encodedQuery + '&sort=relevance', 8000).then(xml => {
+                            if (xml && xml.trimStart().startsWith('<')) {
+                                try {
+                                    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+                                    doc.querySelectorAll('entry').forEach(en => {
+                                        if (out.length >= limit) return;
+                                        const _le = en.querySelector('link');
+                                        const href = _le ? (_le.getAttribute('href') || _le.textContent || '').trim() : '';
+                                        const title = ((en.querySelector('title') || {}).textContent || '').trim();
+                                        if (/reddit\.com\/r\//i.test(href) && title) {
+                                            const subM = href.match(/reddit\.com\/r\/([^\/]+)/i);
+                                            out.push({ title: title, link: href, snippet: subM ? ('r/' + subM[1]) : '', source: 'Reddit' });
+                                        }
+                                    });
+                                } catch (e) {}
+                            }
+                        }).catch(() => null),
+                        fetchTextViaChain('https://old.reddit.com/search?q=' + encodedQuery, 9000).then(html => {
+                            if (!html) return;
+                            let parsed = [];
+                            if (html.trimStart().startsWith('<')) {
+                                try {
+                                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                                    doc.querySelectorAll('a.search-title[href*="reddit.com"], div.search-result-meta a[href*="reddit.com"]').forEach(a => {
+                                        if (parsed.length < limit) parsed.push({ title: (a.textContent || '').trim(), link: a.href, snippet: '', source: '' });
+                                    });
+                                } catch (e) {}
+                                if (parsed.length === 0) parsed = parseGenericMarkdownLinks(html, limit);
+                            } else {
+                                parsed = parseGenericMarkdownLinks(html, limit);
+                            }
+                            parsed.forEach(r => {
+                                if (out.length < limit && /reddit\.com/i.test(r.link || '')) out.push({ ...r, source: 'Reddit' });
+                            });
+                        }).catch(() => null)
+                    ]), 12000);
+                }
+                // (v7.0: SearXNG moved UP to GROUP 1 per user directive order)                return out;
+                };
+                return await Promise.race([_redditWork(), _redditDeadline]);
             });
         } else if (key === 'duckduckgo') {
             // Dedicated DuckDuckGo engine (FIX 4) - free, no bang, no site filter
@@ -9033,9 +9057,6 @@ async function searchWeb(query, enginesOverride) {
         } else if (key === 'duckduckgo_lite') {
             // v5.3: dedicated DuckDuckGo Lite engine (html-only DDG endpoint)
             promises.push(() => queryDuckDuckGoLite(query, limit, 'DDG Lite'));
-        } else if (key === 'duckduckgo_instant') {
-            // v5.3: dedicated DuckDuckGo Instant Answers engine (CORS API, keyless)
-            promises.push(() => queryDuckDuckGoInstant(query, limit, 'DDG Instant'));
         } else if (key === 'github_api') {
             // v5.6: GitHub search API - direct CORS, keyless
             promises.push(async () => {
@@ -9248,6 +9269,15 @@ async function searchWeb(query, enginesOverride) {
                     // guarantees results without extra reader calls
                     results = await queryDuckDuckGoLite(query, limit, config.name);
                 }
+                // v6.9: REAL SearXNG fallback (keyless public instances) - when
+                // DDG is bot-walled the site:/bang scope still gets real SERP
+                // results instead of 0 (user report: "discovers only Wikipedia").
+                if (results.length === 0) {
+                    const _sxQ = (config.site ? query + ' site:' + config.site : (config.bang ? config.bang + ' ' + query : query));
+                    (await fetchSearxngRaw(_sxQ, limit)).forEach(r => {
+                        if (results.length < limit) results.push({ ...r, source: config.name });
+                    });
+                }
                 if (results.length === 0 && config.bang) {
                     // Last resort: try the bang directly
                     results = await fetchViaDirect(config.bang + ' ' + query).then(rs => rs.map(r => ({ ...r, source: config.name })));
@@ -9396,8 +9426,25 @@ async function renderDiscovery() {
     `;
     
     try {
-        const resultsJson = await searchWeb('latest technology news world');
-        const results = JSON.parse(resultsJson);
+        // v6.9: diversity fix (user report: discovery showed only Wikipedia,
+        // and items unrelated to any search) - fan out over THREE targeted
+        // news queries on different keyless engines, merge and dedupe. The
+        // general leg runs the user's full enabled set (which now falls back
+        // to SearXNG when DDG is bot-walled).
+        const _dLegs = await Promise.all([
+            searchWeb('latest technology news today', ['duckduckgo_lite']).catch(() => '[]'),
+            searchWeb('top tech stories today', ['hackernews']).catch(() => '[]'),
+            searchWeb('latest technology news world')
+        ]);
+        const _dSeen = new Set();
+        const results = [];
+        _dLegs.forEach(batch => {
+            try {
+                JSON.parse(batch).forEach(r => {
+                    if (r && r.link && !_dSeen.has(r.link) && results.length < 24) { _dSeen.add(r.link); results.push(r); }
+                });
+            } catch (e) {}
+        });
         
         if (results && results.length > 0) {
             container.innerHTML = results.slice(0, 8).map(item => `
@@ -9823,7 +9870,21 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     
     // Build system prompt
     let sysPrompt = `User Info: ${state.customInstructions.user}\nResponse Style: ${state.customInstructions.resp}`;
-    sysPrompt += `\nIDENTITY INSTRUCTION: You are ${modelHumanName}. If asked about your identity, state your original name (${modelHumanName}) and your original creator company. Then, ALWAYS add 'Hosted by Saksham Intelligence'. Do not claim to be created by Saksham Intelligence, only hosted by them.`;
+    // v6.8: REAL current date & time injected into EVERY model call (all
+    // providers, all modes). User report: models like MiniMax did not know
+    // today's date and searched "2024 latest news" although the real date is
+    // September 2026. Computed live at call time - no model can miss it.
+    try {
+        const _sahuNow = new Date();
+        const _sahuTz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'local';
+        const _sahuDateStr = _sahuNow.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const _sahuTimeStr = _sahuNow.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        sysPrompt += `\nCURRENT DATE & TIME (REAL - computed the moment this request was sent; ALWAYS trust this over your training data): ${_sahuDateStr}, ${_sahuTimeStr} (${_sahuTz}). UTC: ${_sahuNow.toUTCString()}. The current year is ${_sahuNow.getFullYear()}. Your knowledge cutoff is in the past: when searching for news, releases, prices or events, target the CURRENT year (${_sahuNow.getFullYear()}) unless the user explicitly asks for a different period.`;
+    } catch (e) {}
+    // v6.8: the old per-model IDENTITY INSTRUCTION ("You are MODEL_NAME ...
+    // original creator company ... Hosted by Saksham Intelligence") was
+    // REMOVED per user request - models are no longer given any forced
+    // identity or creator script and answer identity questions naturally.
     
     // Response style injection
     const styleInstructions = {
@@ -9836,15 +9897,42 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     if (state.responseStyle && state.responseStyle !== 'normal' && styleInstructions[state.responseStyle]) {
         sysPrompt += styleInstructions[state.responseStyle];
     }
+    // v7.0: PERSONA injection (Choose style > Persona). Additive to the style:
+    // the persona changes WHO is answering, the style changes HOW.
+    const _personaInstructions = {
+        none: '',
+        programmer: '\nPERSONA: SENIOR PROGRAMMER. You are a pragmatic senior software engineer. Give precise, technically correct answers; show minimal runnable code first, then explain key decisions; mention edge cases, complexity and security only when they matter; prefer modern best practices.',
+        teacher: "\nPERSONA: TEACHER. You are a patient, skilled teacher. Break topics into small steps, use analogies and concrete examples, check understanding with a short question at the end, and adapt depth to the user's level.",
+        analyst: '\nPERSONA: RESEARCH ANALYST. You are a rigorous research analyst. Structure answers with clear headings, weigh evidence, quantify where possible, present counterarguments and uncertainties explicitly, and separate facts from interpretation.',
+        writer: '\nPERSONA: CREATIVE WRITER. You are a talented writer. Craft vivid, engaging prose with strong openings, varied sentence rhythm and purposeful word choice; keep the tone appropriate to the request while staying natural.',
+        travel: '\nPERSONA: TRAVEL GUIDE. You are an experienced local travel guide. Give practical insider advice: concrete places, realistic timings and costs, seasonal caveats, and honest recommendations over tourist traps.'
+    };
+    if (state.persona && state.persona !== 'none' && _personaInstructions[state.persona]) {
+        sysPrompt += _personaInstructions[state.persona];
+    }
     
     // Language instruction
     const selectedLang = LANGUAGES.find(l => l.code === state.language)?.name || 'English';
     sysPrompt += `\nLANGUAGE INSTRUCTION: You must respond in ${selectedLang} language.`;
     
     // FIX 1: Thinking budget - instruct model to skip reasoning when OFF
-    const _tb = state.thinkingBudget || 'medium';
+    // v6.9: REASONING EFFORT ladder (user directive: low / medium / high
+    // (default) / xhigh / max - like the SahuAI agent's own effort levels,
+    // always WITH thinking unless Off). Mirrors OpenAI reasoning_effort,
+    // Anthropic thinking budget_tokens, Z.ai thinking.type and Kimi
+    // thinking models. xhigh/max also raise the token ceiling below.
+    const _tb = state.thinkingBudget || 'high';
     if (_tb === 'off') {
         sysPrompt += "\nTHINKING: OFF. Do NOT output any thinking, reasoning, or chain-of-thought text (no <think> blocks, no reasoning_content). Respond with the final answer only.";
+    } else {
+        const _effortLines = {
+            low: 'REASONING EFFORT: LOW - think briefly, answer directly with minimal deliberation.',
+            medium: 'REASONING EFFORT: MEDIUM - balanced reasoning before answering.',
+            high: 'REASONING EFFORT: HIGH - reason carefully and thoroughly before answering (default).',
+            xhigh: 'REASONING EFFORT: EXTRA-HIGH - reason very deeply: enumerate approaches, verify every step, double-check facts before answering.',
+            max: 'REASONING EFFORT: MAX - maximum reasoning budget: explore multiple solution paths, self-verify, stress-test every conclusion, never rush the answer.'
+        };
+        sysPrompt += '\n' + (_effortLines[_tb] || _effortLines.high) + ' Thinking remains ON.';
     }
         
     // Dynamic max tokens
@@ -9853,13 +9941,21 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
         dynamicMaxTokens = 60000;  // Higher for task/appdev/artifacts mode - needs to output full apps
         let modeLabel = state.mode === 'appdev' ? 'APP DEV' : (state.mode === 'artifacts' ? 'ARTIFACTS' : 'TASK/CODE');
         sysPrompt += `\nMODE: HIGH CAPACITY (${modeLabel}). Generating extended code output.`;
-    } else if (state.mode === 'research' || state.mode === 'search') {
+    } else if (state.mode === 'research' || state.mode === 'search' || state.mode === 'travel' || state.mode === 'study') {
         dynamicMaxTokens = 30000;
         sysPrompt += "\nMODE: HIGH CAPACITY. Generating extended output.";
     }
     
     if (modelConfig.max_tokens && !modelConfig.isSTT) {
         dynamicMaxTokens = modelConfig.max_tokens;
+    }
+    
+    // v6.9: effort-driven thinking room - deeper effort gets a higher output
+    // ceiling so reasoning models can literally think longer in output tokens
+    // (OpenAI/Anthropic/Kimi-style effort, provider-agnostic implementation).
+    const _effortFloor = { low: 4000, medium: 9000, high: 16000, xhigh: 32000, max: 64000 };
+    if (_tb !== 'off' && _effortFloor[_tb]) {
+        dynamicMaxTokens = Math.max(dynamicMaxTokens, _effortFloor[_tb]);
     }
     
     // Mode-specific prompts
@@ -9873,6 +9969,10 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
         }
     } else if (state.mode === 'research') {
         sysPrompt += "\nMODE: DEEP RESEARCH. Protocol: Analyze provided search results deeply. Synthesize multiple sources. Be exhaustive and detailed.";
+    } else if (state.mode === 'travel') {
+        sysPrompt += "\nMODE: TRAVEL PLANNER (v7.0). You are an expert travel planner working from the LIVE web search context provided. OUTPUT in this exact order (Markdown, real tables):\n1. ## Overview - 2-3 sentences: who this trip suits; STATE YOUR ASSUMPTIONS (pace=balanced, budget=mid-range, 2 travelers) if the user did not specify them.\n2. ## Best Time to Visit - seasons, weather, crowds, prices (cite [n]).\n3. ## Day-by-Day Itinerary - table | Day | Area | Morning | Afternoon | Evening | - cluster sights by area to cut transit; 1 lunch + 1 dinner suggestion per day; mark must-book items with a warning icon.\n4. ## Budget Breakdown - table | Category | Est. cost/person/day | Notes | - lodging, food, transport, attractions + 10% buffer; costs as ranges in local currency.\n5. ## Food - 5-8 dishes/restaurants with areas and price level.\n6. ## Transport - airport to city, passes, apps, walkability.\n7. ## Booking Tips - what to book ahead, typical price ranges from sources, search links (Google Flights/Booking.com, no affiliate links).\n8. ## Practical Tips - visa, plugs, safety, etiquette, weather packing.\nRULES: cite every price/seasonal claim from the search context as [n]; if data is missing write 'verify locally' instead of inventing; 2 anchor attractions + 1 hidden gem per day; end with: 'Want me to adjust pace, budget, or swap a day?'";
+    } else if (state.mode === 'study') {
+        sysPrompt += "\nMODE: STUDY TUTOR (v7.0, Socratic - modeled on ChatGPT Study Mode / Gemini Guided Learning / Claude Learning). The user is STUDYING. Obey these rules above all else:\n1. DIAGNOSE FIRST: before teaching, ask 1-2 short questions about their goal and current level. If unanswered, assume 10th-grade level and say so.\n2. TEACH IN SMALL STEPS: one idea per turn, build on what they already know, and end EVERY turn with exactly ONE check-for-understanding question (never multiple).\n3. HINTS, NOT ANSWERS: for homework-style questions respond with a guiding question or hint. Escalate: nudge -> strategy -> similar worked example -> full solution ONLY after one genuine attempt OR an explicit second request for the answer.\n4. CHECK & REINFORCE: after hard parts ask them to restate it in their own words; correct charitably, immediately, briefly.\n5. ACTIVE RECALL: after each concept offer a 1-question quiz; grade it and keep track of what is covered.\n6. TONE: warm, plain-spoken, brief (under 150 words unless a worked example). One question per turn.\n7. WRAP-UP: on request, produce a bullet summary of what was covered, what is next, and 3 graded practice problems.\nNever do the user's work for them; never moralize - just guide.";
     } else if (state.mode === 'search') {
         sysPrompt += "\nMODE: SAHUAI SEARCH (Perplexity Style). Answer concisely but comprehensively based on the provided search results. You MUST cite sources using [1], [2] notation inline with the text where the information is used. Do NOT create a separate reference list at the end, just use inline citations.";
     } else {
@@ -9938,15 +10038,20 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     
     // FIX 1: Map thinking budget to provider-specific API parameters so
     // 'Off' genuinely disables reasoning where the provider supports it
-    const _budget = state.thinkingBudget || 'medium';
+    const _budget = state.thinkingBudget || 'high';
     const _effort = { low: 'low', medium: 'medium', high: 'high', xhigh: 'high', max: 'high' };
     if (providerKey === 'nvidia' || providerKey === 'sambanova' || providerKey === 'huggingface') {
-        if (/^qwen\//i.test(modelId) || /qwen3/i.test(modelId)) {
+        if (/^qwen\//i.test(modelId) || /qwen3/i.test(modelId) || /z-ai\/glm/i.test(modelId)) {
             requestBody.chat_template_kwargs = { enable_thinking: _budget !== 'off' };
         }
         if (/gpt-oss/i.test(modelId)) {
             requestBody.reasoning_effort = _budget === 'off' ? 'low' : (_effort[_budget] || 'medium');
         }
+    }
+    // v6.9: Z.ai GLM native thinking switch (Z.ai docs: thinking.type
+    // "enabled"/"disabled") - effort levels ride on the prompt + token floor.
+    if (providerKey === 'zai') {
+        requestBody.thinking = { type: _budget === 'off' ? 'disabled' : 'enabled' };
     }
     if (providerKey === 'openrouter') {
         if (_budget === 'off') {
@@ -10536,7 +10641,7 @@ Output format:
         window.lastAnswer = res.content;
         
         // Save to chat history (FIX 2: include thinking + sources)
-        const assistMsgObj = { role: 'assistant', content: res.content, thinking: res.thinking || '', sources: (state.lastSources || []).slice(0, 12), timestamp: Date.now() };
+        const assistMsgObj = { role: 'assistant', content: res.content, thinking: res.thinking || '', sources: (state.lastSources || []).slice(0, 10000), timestamp: Date.now() };
         state.messages.push(assistMsgObj);
         
         const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
@@ -10716,6 +10821,102 @@ async function runDeepResearch(originalContent, container, chatId) {
         }
     }
     
+    // v7.0: WEB GROUNDING PHASE - implements the researched DeepResearch
+    // architecture (Perplexity/Gemini/Kimi pattern): PLAN -> iterative
+    // search-read-reason rounds -> cited dossier. The ORIGINAL question stays
+    // pinned in every prompt (anti-drift), round count scales with the effort
+    // ladder (low=1 ... max=4), sources are deduped by normalized URL and get
+    // stable [n] citation numbers. Runs BEFORE the expert stages so every
+    // stage and the final analyzer can cite live web evidence.
+    let webDossier = "";
+    let webSources = [];
+    {
+        const _wrId = `web-rounds-${Date.now()}`;
+        container.innerHTML += `
+            <div class="research-stage active" id="${_wrId}">
+                <div class="research-header" onclick="toggleResearchStage('${_wrId}')">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-globe animate-spin text-[var(--accent)]" id="wspin-${_wrId}"></i>
+                        Web Grounding (search - read - extract)
+                    </span>
+                    <span class="text-[10px] bg-[var(--bg-tertiary)] px-2 py-1 rounded" id="wstat-${_wrId}">Planning...</span>
+                </div>
+                <div class="research-content" id="wcontent-${_wrId}" style="display:block;">
+                    <div class="text-[11px] font-mono text-[var(--text-secondary)] whitespace-pre-wrap max-h-40 overflow-y-auto" id="wlog-${_wrId}"></div>
+                </div>
+            </div>`;
+        container.scrollTop = container.scrollHeight;
+        const _wlog = (line) => { const el = document.getElementById(`wlog-${_wrId}`); if (el) { el.textContent += line + "\n"; el.scrollTop = el.scrollHeight; } };
+        const _wstat = (t) => { const el = document.getElementById(`wstat-${_wrId}`); if (el) el.textContent = t; };
+        const _wspin = (cls) => { const el = document.getElementById(`wspin-${_wrId}`); if (el) el.className = cls; };
+        const _rounds = ({ low: 1, medium: 2, high: 3, xhigh: 4, max: 4 })[state.thinkingBudget] || 3;
+        const _seenUrls = new Set();
+        const _normUrl = (u) => { try { const x = new URL(u); x.hash = ''; Array.from(x.searchParams.keys()).forEach(k => { if (/^utm_|^ref$/i.test(k)) x.searchParams.delete(k); }); return (x.hostname + x.pathname).replace(/\/+$/, '').toLowerCase(); } catch (e) { return String(u || '').toLowerCase(); } };
+        const _citeIdx = (u) => { const k = _normUrl(u); const i = webSources.findIndex(s => _normUrl(s.link) === k); return i >= 0 ? i + 1 : null; };
+        const _addSources = (results) => { let added = 0; (results || []).forEach(r => { const k = _normUrl(r.link); if (!r.link || !r.title || _seenUrls.has(k) || webSources.length >= 60) return; _seenUrls.add(k); webSources.push(r); added++; }); return added; };
+        const _groundModel = getDefaultModel();
+        // STEP 1: PLAN - subqueries as JSON; original question pinned
+        let _queries = [];
+        try {
+            const planRes = await callModelWithFallback(_groundModel.provider, _groundModel.modelId,
+                [{ role: 'user', content: `ORIGINAL QUESTION (pinned - every query must serve answering THIS): ${originalContent}\n\nTASK: Act as a deep-research planner. Break the question into 4-6 focused web-search subqueries that together cover it (key facts, numbers, recent developments, comparisons, criticisms). Plain search-engine queries only. Output ONLY a JSON array of strings, nothing else.` }]);
+            const m = (planRes.content || '').match(/\[[\s\S]*\]/);
+            const arr = m ? JSON.parse(m[0]) : null;
+            if (Array.isArray(arr)) _queries = arr.filter(q => typeof q === 'string' && q.trim()).slice(0, 6);
+        } catch (e) {}
+        if (_queries.length === 0) _queries = [String(originalContent).substring(0, 300)];
+        // STEP 2: ROUNDS - search -> read -> extract -> gaps
+        for (let ri = 0; ri < _rounds; ri++) {
+            if (state.currentChatId !== chatId) return;
+            _wstat(`Round ${ri + 1}/${_rounds} - searching...`);
+            _wlog(`[Round ${ri + 1}] queries: ${_queries.join(' | ')}`);
+            const roundRes = await Promise.allSettled(_queries.map(q => searchWeb(q)));
+            let raw = [];
+            roundRes.forEach(sr => { try { const v = typeof sr.value === 'string' ? JSON.parse(sr.value) : sr.value; if (Array.isArray(v)) raw = raw.concat(v); } catch (e) {} });
+            const added = _addSources(raw);
+            _wlog(`[Round ${ri + 1}] +${added} new sources (${webSources.length} total)`);
+            const _toRead = webSources.filter(s => !s._read).slice(0, 5);
+            let readOk = 0;
+            await Promise.all(_toRead.map(async (s) => {
+                if (state.currentChatId !== chatId) return;
+                s._read = true;
+                try {
+                    const page = await scrapePageContent(s.link, 'read');
+                    if (page && page.ok && page.text && page.text.length > 200) { s._pageText = page.text.substring(0, 24000); readOk++; }
+                } catch (e) {}
+            }));
+            _wlog(`[Round ${ri + 1}] read ${readOk}/${_toRead.length} full pages`);
+            if (ri < _rounds - 1) {
+                _wstat(`Round ${ri + 1}/${_rounds} - extracting notes & gaps...`);
+                const corpus = raw.slice(0, 24).map(r => { const n = _citeIdx(r.link); return `[${n || '?'}] ${(r.title || '').substring(0, 120)} - ${(r.snippet || '').substring(0, 300)}`; }).join('\n');
+                const pages = webSources.filter(s => s._pageText).slice(-5).map(s => { const n = _citeIdx(s.link); return `[${n || '?'}] ${s.title}\n${(s._pageText || '').substring(0, 6000)}`; }).join('\n\n');
+                let nextQ = [];
+                try {
+                    const digestRes = await callModelWithFallback(_groundModel.provider, _groundModel.modelId,
+                        [{ role: 'user', content: `ORIGINAL QUESTION (pinned): ${originalContent}\nROUNDS DONE: ${ri + 1}/${_rounds}\n\nSEARCH CORPUS:\n${corpus}\n\nPAGE EXTRACTS:\n${pages || '(none)'}\n\nTASK: 1) Extract the key facts, numbers and direct quotes that answer the ORIGINAL QUESTION - one bullet each, prefixed with its citation like [3]. 2) Then on a new line output NEXT: followed by a JSON array of 3-5 search queries covering what is still MISSING (new angles, numbers, counterpoints).` }]);
+                    const c = digestRes.content || '';
+                    webDossier += "\n" + c.split(/NEXT\s*:/i)[0].trim();
+                    const nm = c.match(/NEXT\s*:\s*(\[[\s\S]*\])/i);
+                    const nArr = nm ? JSON.parse(nm[1]) : null;
+                    if (Array.isArray(nArr)) nextQ = nArr.filter(q => typeof q === 'string' && q.trim()).slice(0, 5);
+                } catch (e) {}
+                _queries = nextQ.length > 0 ? nextQ : _queries.map(q => q + ' details facts');
+            }
+        }
+        // Merge grounded sources into the chat's source pool (panel + message)
+        try {
+            const prev = Array.isArray(state.lastSources) ? state.lastSources : [];
+            state.lastSources = prev.concat(webSources.filter(ws => !prev.some(p => _normUrl(p.link) === _normUrl(ws.link))));
+        } catch (e) {}
+        if (webSources.length > 0) {
+            const srcList = webSources.map((s, i) => `[${i + 1}] ${s.title} (${s.link})`).join('\n');
+            webDossier = `=== WEB RESEARCH DOSSIER (live sources; cite as [n]) ===\n${webDossier.trim() || '(no notes extracted)'}\n\nSOURCES:\n${srcList}\n=== END DOSSIER ===`;
+        }
+        _wstat(`Done - ${webSources.length} sources`);
+        _wspin('fas fa-check-circle text-green-500');
+    }
+    const webDossierSection = webDossier || "=== WEB RESEARCH DOSSIER ===\n(unavailable - rely on model knowledge)\n=== END DOSSIER ===";
+
     // Build user expert context string for use in stage prompts
     const userExpertContext = userExpertResults.length > 0 
         ? userExpertResults.map(r => `### ${r.model}\n${r.content}`).join('\n\n---\n\n')
@@ -10803,6 +11004,8 @@ async function runDeepResearch(originalContent, container, chatId) {
                     STAGE: ${stage.name}
                     ${rolePrompt ? `\nSPECIAL INSTRUCTION: ${rolePrompt}` : ''}
                     
+                    ${webDossierSection}
+                    
                     === OUTPUTS FROM USER-SELECTED EXPERTS ===
                     ${userExpertContext}
                     === END USER EXPERT OUTPUTS ===
@@ -10811,7 +11014,7 @@ async function runDeepResearch(originalContent, container, chatId) {
                     ${aggregationContext ? aggregationContext : "This is the first stage. Analyze the user expert outputs above."}
                     === END PREVIOUS CONTEXT ===
                     
-                    TASK: Analyze the outputs from the user-selected experts above combined with your own expertise as ${expertRole}. Provide your specialized analysis. Be critical and thorough. Build upon the insights from the user experts, add your own perspective, and identify gaps or contradictions.
+                    TASK: Analyze the outputs from the user-selected experts above combined with your own expertise as ${expertRole}. Provide your specialized analysis. Be critical and thorough. Build upon the insights from the user experts, add your own perspective, and identify gaps or contradictions. Use the WEB RESEARCH DOSSIER facts (with their [n] citations) as your primary evidence.
                 `;
                 
                 try {
@@ -10898,6 +11101,8 @@ async function runDeepResearch(originalContent, container, chatId) {
                     === ORIGINAL QUERY ===
                     ${originalContent}
                     
+                    ${webDossierSection}
+                    
                     === OUTPUTS FROM USER-SELECTED EXPERTS ===
                     ${userExpertContext}
                     === END USER EXPERT OUTPUTS ===
@@ -10912,7 +11117,7 @@ async function runDeepResearch(originalContent, container, chatId) {
                     3. Areas of Expert Disagreement
                     4. Gaps & Open Questions
                     5. Final Conclusion & Recommendations
-                    Be comprehensive, critical, and authoritative.
+                    Be comprehensive, critical, and authoritative. Every factual claim drawn from the WEB RESEARCH DOSSIER MUST carry its [n] citation, and you MUST end with a "## Sources" section listing every cited source as [n] title - URL.
                 `;
             } else {
                 aggPrompt = `
@@ -10966,7 +11171,7 @@ async function runDeepResearch(originalContent, container, chatId) {
             if (stage.id === 'stage5') {
                 window.lastAnswer = aggRes.content;
                 
-                const assistMsgObj = { role: 'assistant', content: aggRes.content, thinking: aggRes.thinking || '', sources: (state.lastSources || []).slice(0, 12), timestamp: Date.now() };
+                const assistMsgObj = { role: 'assistant', content: aggRes.content, thinking: aggRes.thinking || '', sources: (state.lastSources || []).slice(0, 10000), timestamp: Date.now() };
                 state.messages.push(assistMsgObj);
                 
                 const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
@@ -11207,7 +11412,8 @@ async function sendMessage() {
         // tool go through the model-first agentic loop (runSearchMode):
         // the model decides whether to search at all, what to search,
         // re-searches and re-thinks as many times as it wants.
-        const shouldSearch = state.mode === 'research';
+        // v7.0: Travel Plan mode also grounds itself with the live pre-search
+        const shouldSearch = state.mode === 'research' || state.mode === 'travel';
         
         if (shouldSearch && container) {
             container.innerHTML += `
@@ -11282,6 +11488,14 @@ async function sendMessage() {
         // Route to appropriate handler based on mode
         if (state.mode === 'research') {
             await runDeepResearch(fullPrompt, container, thisChatId);
+        } else if (state.mode === 'travel') {
+            // v7.0 TRAVEL PLAN MODE: grounded by the pre-search above; the
+            // structured day-by-day itinerary comes from the mode system prompt.
+            showToast('Travel Planner: grounded with live search', 'info');
+            await runStandardAggregation(fullPrompt, container, thisChatId);
+        } else if (state.mode === 'study') {
+            // v7.0 STUDY MODE: Socratic tutor - the mode system prompt drives it
+            await runStandardAggregation(fullPrompt, container, thisChatId);
         } else if (state.mode === 'search') {
             // SahuAI Search mode: agentic loop that displays resources ONLY
             await runSearchMode(fullPrompt, container, thisChatId, 'resources');
@@ -11319,6 +11533,25 @@ async function sendMessage() {
         if (sendBtn) sendBtn.disabled = false;
         updateTokenCounter();
     }
+}
+
+// v6.8: FULL CONVERSATION MEMORY - every prior message of THIS chat is now
+// sent to the model. Previously EVERY call was single-turn (only the current
+// message was sent), which is why models could not "memorise previous
+// responses, results, user request" even with 1M-10M context windows.
+// The last entry of state.messages is the just-pushed user message and
+// fullPrompt already carries it, so it is excluded to avoid duplication.
+// Safety trims: last 400 messages, 60,000 chars per message - far beyond any
+// realistic chat, so memory is effectively unlimited for the user.
+function _sahuHistoryForModel() {
+    try {
+        const msgs = Array.isArray(state.messages) ? state.messages : [];
+        const prior = msgs.slice(0, Math.max(0, msgs.length - 1)).slice(-400);
+        return prior.map(m => ({
+            role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
+            content: String(m.content || '').slice(0, 60000)
+        })).filter(m => m.content && m.content.trim());
+    } catch (e) { return []; }
 }
 
 /**
@@ -11377,8 +11610,9 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
                         el.textContent += chunk;
                     }
                 };
+                // v6.8: history prepended - the model remembers the whole chat
                 let res = await callModelWithFallback(model.provider, model.modelId,
-                    [{ role: 'user', content: fullPrompt }], 0, onTokenUpdate);
+                    _sahuHistoryForModel().concat([{ role: 'user', content: fullPrompt }]), 0, onTokenUpdate);
                 if (state.currentChatId !== chatId) return;
                 modelResponses.push(res);
             } catch (e) {
@@ -11425,7 +11659,7 @@ async function runStandardAggregation(fullPrompt, container, chatId) {
                 ` : ''}
                 <div class="prose max-w-none text-sm">${formatMarkdown(r.content, (state.lastSources && state.lastSources.length) ? state.lastSources : null)}</div>`;
         }
-        const assistMsgObj = { role: 'assistant', content: r.content, thinking: r.thinking || '', sources: (state.lastSources || []).slice(0, 12), model: r.modelKey, timestamp: Date.now() };
+        const assistMsgObj = { role: 'assistant', content: r.content, thinking: r.thinking || '', sources: (state.lastSources || []).slice(0, 10000), model: r.modelKey, timestamp: Date.now() };
         state.messages.push(assistMsgObj);
         const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
         if (currentChat) currentChat.messages.push(assistMsgObj);
@@ -11503,14 +11737,15 @@ async function runSingleModelMode(fullPrompt, container, chatId) {
             if (st) st.textContent = thinking ? "Thinking..." : "Generating...";
         };
         
+        // v6.8: history prepended - the model remembers the whole chat
         const res = await callModelWithFallback(model.provider, model.modelId,
-            [{ role: 'user', content: fullPrompt }], 0, onToken);
+            _sahuHistoryForModel().concat([{ role: 'user', content: fullPrompt }]), 0, onToken);
         
         if (state.currentChatId !== chatId) return;
         
         // Save response
         window.lastAnswer = res.content;
-        const assistMsgObj = { role: 'assistant', content: res.content, thinking: res.thinking || '', sources: (state.lastSources || []).slice(0, 12), timestamp: Date.now() };
+        const assistMsgObj = { role: 'assistant', content: res.content, thinking: res.thinking || '', sources: (state.lastSources || []).slice(0, 10000), timestamp: Date.now() };
         state.messages.push(assistMsgObj);
         
         const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
@@ -11605,6 +11840,8 @@ const SAHU_SKILLS = [
     { id: 'make_files', name: 'File Creation', icon: 'fa-file-export', color: 'rose', desc: 'The model can create downloadable files: pdf, pptx, xlsx, docx, md, txt, csv and json - with fonts, tables and emojis.' },
     { id: 'live_preview', name: 'Live Preview', icon: 'fa-bolt', color: 'emerald', desc: 'HTML and React apps the model writes open in a real live preview window - sandboxed, with console output, phone/desktop width, refresh and open-in-tab.' },
     { id: 'skill_creator', name: 'Skill Creator', icon: 'fa-wand-magic-sparkles', color: 'violet', desc: 'Ask the model to create a new skill (MAKESKILL block) - it is saved with its own on/off toggle in Settings > Skills and taught to every model.' },
+    { id: 'mcp_date', name: 'MCP: Current Date & Time', icon: 'fa-calendar-day', color: 'sky', desc: 'MCP tool - gives the model the REAL current date & time on demand (local + UTC, weekday, timezone, Unix stamp). Time-sensitive answers are always correct - no more guessed dates.' },
+    { id: 'mcp_calc', name: 'MCP: Calculator', icon: 'fa-calculator', color: 'orange', desc: 'MCP tool - an exact math engine the model can call: arithmetic, powers, roots, trig, logs, factorials, constants (pi, e). It computes instead of guessing.' },
     { id: 'web_browse', name: 'Web Browsing', icon: 'fa-compass',  color: 'cyan',   desc: 'Browses a page like a person: skims the content and picks up links to follow next.' }
 ];
 
@@ -11617,6 +11854,8 @@ function buildSearchLoopPrompt() {
     if (has('run_code')) lines.push('RUN CODE - you have a REAL sandboxed code interpreter. Output a fenced code block with language runpython (Python 3: print() to show output, top-level await works, numpy/pandas/matplotlib auto-load on import, pure-Python packages via import micropip; await micropip.install(\"pkg\"); the last matplotlib figure is auto-captured and shown to the user) or runjs (JavaScript: console.log() to show output, import npm packages from https://esm.sh/<package> e.g. import _ from \"https://esm.sh/lodash\", top-level await works). The code runs in a sandbox, the FULL output comes back to you, and you can run more code in your next turns to iterate, verify or fix errors.');
     if (has('make_files')) lines.push('CREATE FILES - deliver downloadable files with a FILE block (emit them in your final ANSWER - blocks there are turned into download cards for the user):\nFILE[ext]: filename.ext\n<content>\n/FILE\nFormats + content rules: txt/md = raw text/markdown. csv = raw CSV. json = raw JSON. xlsx = rows with cells separated by | (first row = headers; start a new sheet with a ## SheetName line). docx/pdf = markdown-ish: # H1, ## H2, - bullets, 1. numbered, > quote, **bold**, tables as | a | b | rows, optional first line FONT: Georgia (pdf built-in fonts only: helvetica, times, courier; emojis are NOT supported in pdf and get stripped). pptx = slides separated by --- lines; first line of a slide = title, then - bullets or | a | b | tables, optional first line FONT: Arial. If a file fails, fix the content and emit the FILE block again.');
     if (has('live_preview')) lines.push('LIVE PREVIEW - when the user asks for an app, website, page, UI, game or anything visual/interactive, write it as ONE complete single-file app in a fenced code block with language html (plain HTML/CSS/JS, CDN links allowed) or react (React 18 + JSX, CDN libraries and Tailwind are available; ALWAYS end with ReactDOM.createRoot(document.getElementById("root")).render(<App />)), and put the line PREVIEW: <short title> on the line immediately BEFORE the fence. The user gets the app opened in a live preview window automatically (they can also click Preview on any html/react block). Everything must live in that single file - no local files or imports.');
+    if (has('mcp_date')) lines.push('MCP DATE TOOL - get the REAL current date/time: output a line DATE: (bare, for the user\'s local time) or DATE: <IANA timezone> (e.g. DATE: UTC, DATE: Asia/Kolkata, DATE: America/New_York). You receive the local date-time, UTC date-time, weekday and a Unix timestamp. Use it EVERY time an answer depends on today\'s date, the weekday, clocks, ages, deadlines or "days until/between" questions (then compute differences with CALC). NEVER guess or hardcode the current date.');
+    if (has('mcp_calc')) lines.push('MCP CALCULATOR - exact math: output a line CALC: <expression> (one expression per line; several CALC lines run in parallel). Supports + - * / % (modulo) ^ (power), ! (factorial), parentheses, sqrt cbrt abs round floor ceil sign, min max pow root(x,n) atan2, sin cos tan asin acos atan sinh cosh tanh (radians), log ln log2 log10 exp, constants pi e tau phi, scientific notation (1.2e9) and implicit multiplication (2pi, 3(4+1)). Use it for ANY arithmetic beyond trivial single-digit sums and ALWAYS when precision matters.');
     if (has('skill_creator')) lines.push('CREATE A SKILL - when the user asks you to create/define/save a new skill (a reusable behavior, persona or workflow), output a block:\nMAKESKILL: <skill name>\nDESC: <one line describing what it does>\n<the skill instructions - exact directives you should follow whenever this skill applies>\n/MAKESKILL\nIt is saved instantly and appears in Settings > Skills with its own on/off toggle.');
     lines.push('STYLE: In answers and files you may freely use emojis, markdown tables (| A | B |) to compare or contrast things, **bold**, headings (#, ##), and <font face=\"Georgia\" color=\"#c026d3\" size=\"4\">font spans</font> for different fonts and colors. Do NOT wrap markdown tables or FILE blocks inside code fences - output them as plain text.');
     if (has('web_browse')) lines.push('BROWSE: <url> - browse a page: quick content summary plus the links it contains for further browsing.');
@@ -11660,6 +11899,192 @@ ANSWER:
 One decision block per turn. After your skill lines you will receive the results and another turn.${_sahuCustomSkillsPrompt()}`;
 }
 
+// =====================================================================
+// v6.7: MCP TOOLS - keyless, instant, run 100% locally in the page.
+//   DATE: <optional IANA tz> -> sahuMcpDate(tz)  : real current date/time
+//   CALC: <expression>       -> sahuSafeCalc(s)  : exact math (NO eval)
+// The agent loop extracts the markers and feeds the results back like
+// every other skill output.
+// =====================================================================
+
+function _sahuFmtNum(x) {
+    if (typeof x !== 'number' || isNaN(x)) return String(x);
+    if (Number.isInteger(x) && Math.abs(x) < 1e15) return String(x);
+    if (x !== 0 && (Math.abs(x) >= 1e15 || Math.abs(x) < 1e-7)) {
+        return x.toExponential(8).replace(/(\.\d*?)0+e/, '$1e').replace(/\.e/, 'e');
+    }
+    return String(parseFloat(x.toPrecision(12)));
+}
+
+function sahuMcpDate(tzArg) {
+    const now = new Date();
+    const tz = String(tzArg || '').trim();
+    let local = '', tzName;
+    try {
+        if (tz) {
+            const f0 = new Intl.DateTimeFormat('en-US', { timeZone: tz });
+            tzName = f0.resolvedOptions().timeZone || tz;
+        } else {
+            tzName = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local time';
+        }
+        const opts = tz ? { timeZone: tz } : {};
+        const f = new Intl.DateTimeFormat('en-GB', Object.assign({}, opts, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+        const pr = {};
+        f.formatToParts(now).forEach(p2 => { pr[p2.type] = p2.value; });
+        if (pr.hour === '24') pr.hour = '00';
+        local = pr.weekday + ', ' + pr.day + ' ' + pr.month + ' ' + pr.year + ' at ' + pr.hour + ':' + pr.minute + ':' + pr.second;
+    } catch (e) {
+        return { ok: false, line: 'invalid timezone', feedback: '[DATE] "' + tz + '" is not a valid IANA timezone. Examples: UTC, Asia/Kolkata, America/New_York, Europe/London. Use a bare DATE: line (no argument) for the user\'s local time.' };
+    }
+    const utc = now.toISOString().replace('T', ' ').replace(/\..*$/, '').trim() + ' UTC';
+    const unix = Math.floor(now.getTime() / 1000);
+    const line = local + ' (' + tzName + ')';
+    const feedback = '[DATE] The REAL current date & time:\nLocal (' + tzName + '): ' + local + '\nUTC: ' + utc + '\nUnix timestamp: ' + unix + '\nThis is authoritative - never claim you cannot know the current date or time.';
+    return { ok: true, line: line, feedback: feedback };
+}
+
+// Safe math expression evaluator: tokenizer + recursive-descent parser.
+// NO eval, NO new Function() - the model can never smuggle code through it.
+function sahuSafeCalc(input) {
+    const _err = (m) => ({ ok: false, error: m });
+    try {
+        let s = String(input || '').trim();
+        if (!s) return _err('empty expression');
+        s = s.replace(/[×✕]/g, '*').replace(/÷/g, '/').replace(/[−–]/g, '-').replace(/[$€£₹]/g, '').replace(/\*\*/g, '^');
+        const _eq = s.match(/^(.+?)\s*=\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*$/);
+        if (_eq) s = _eq[1].trim(); // model appended "= result" - keep the left side
+        s = s.replace(/\s+/g, '');
+        if (!s) return _err('empty expression');
+        const FUNCS = {
+            sqrt: Math.sqrt, cbrt: Math.cbrt, abs: Math.abs, round: Math.round, floor: Math.floor,
+            ceil: Math.ceil, sign: Math.sign, sin: Math.sin, cos: Math.cos, tan: Math.tan,
+            asin: Math.asin, acos: Math.acos, atan: Math.atan, sinh: Math.sinh, cosh: Math.cosh,
+            tanh: Math.tanh, log10: Math.log10, log2: Math.log2, log: Math.log, ln: Math.log,
+            exp: Math.exp, min: Math.min, max: Math.max, pow: Math.pow, atan2: Math.atan2,
+            root: (x, n) => (x < 0 && n % 2 === 1 ? -Math.pow(-x, 1 / n) : Math.pow(x, 1 / n))
+        };
+        const CONSTS = { pi: Math.PI, tau: Math.PI * 2, e: Math.E, phi: (1 + Math.sqrt(5)) / 2 };
+        const toks = [];
+        const re = /(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?|[a-zA-Z_][a-zA-Z_0-9]*|[+\-*/%^()!,]/g;
+        let pos = 0, m;
+        while ((m = re.exec(s)) !== null) {
+            if (m.index !== pos) return _err('invalid character "' + s[pos] + '"');
+            pos = re.lastIndex;
+            if (m[1] !== undefined) toks.push({ t: 'num', v: parseFloat(m[0]) });
+            else if (/^[a-zA-Z_][a-zA-Z_0-9]*$/.test(m[0])) toks.push({ t: 'id', v: m[0].toLowerCase() });
+            else if (m[0] === '(') toks.push({ t: 'lp' });
+            else if (m[0] === ')') toks.push({ t: 'rp' });
+            else if (m[0] === ',') toks.push({ t: 'comma' });
+            else toks.push({ t: 'op', v: m[0] });
+        }
+        if (pos !== s.length) return _err('invalid character "' + s[pos] + '"');
+        if (!toks.length) return _err('no numbers found');
+        let p = 0;
+        const peek = () => toks[p];
+        function parseAdd() {
+            let v = parseMul();
+            while (peek() && peek().t === 'op' && (peek().v === '+' || peek().v === '-')) {
+                const op = toks[p++].v;
+                const r = parseMul();
+                v = op === '+' ? v + r : v - r;
+            }
+            return v;
+        }
+        function parseMul() {
+            let v = parseUnary();
+            for (;;) {
+                const t = peek();
+                if (t && t.t === 'op' && (t.v === '*' || t.v === '/' || t.v === '%')) {
+                    p++;
+                    const r = parseUnary();
+                    if (t.v === '*') v = v * r;
+                    else if (t.v === '/') v = v / r;
+                    else {
+                        if (r === 0) throw new Error('modulo by zero');
+                        v = v % r;
+                    }
+                } else if (t && (t.t === 'num' || t.t === 'id' || t.t === 'lp')) {
+                    const r = parseUnary(); // implicit multiplication: 2pi, 3(4+1)
+                    v = v * r;
+                } else break;
+            }
+            return v;
+        }
+        function parseUnary() {
+            const t = peek();
+            if (t && t.t === 'op' && (t.v === '-' || t.v === '+')) {
+                p++;
+                const v = parseUnary();
+                return t.v === '-' ? -v : v;
+            }
+            return parsePow();
+        }
+        function parsePow() {
+            const base = parsePostfix();
+            const t = peek();
+            if (t && t.t === 'op' && t.v === '^') {
+                p++;
+                return Math.pow(base, parseUnary()); // right-assoc, allows 2^-3
+            }
+            return base;
+        }
+        function parsePostfix() {
+            let v = parsePrimary();
+            for (;;) {
+                const t = peek();
+                if (t && t.t === 'op' && t.v === '!') {
+                    p++;
+                    if (v < 0 || !Number.isInteger(v) || v > 170) throw new Error('factorial needs an integer between 0 and 170 (got ' + v + ')');
+                    let f = 1;
+                    for (let i = 2; i <= v; i++) f *= i;
+                    v = f;
+                } else break;
+            }
+            return v;
+        }
+        function parsePrimary() {
+            const t = toks[p++];
+            if (!t) throw new Error('unexpected end of expression');
+            if (t.t === 'num') return t.v;
+            if (t.t === 'lp') {
+                const v = parseAdd();
+                const c = toks[p++];
+                if (!c || c.t !== 'rp') throw new Error('missing closing parenthesis');
+                return v;
+            }
+            if (t.t === 'id') {
+                if (Object.prototype.hasOwnProperty.call(CONSTS, t.v)) return CONSTS[t.v];
+                if (Object.prototype.hasOwnProperty.call(FUNCS, t.v)) {
+                    const lp = toks[p++];
+                    if (!lp || lp.t !== 'lp') throw new Error(t.v + ' needs parentheses, e.g. ' + t.v + '(4)');
+                    const args = [];
+                    if (peek() && peek().t === 'rp') toks[p++];
+                    else {
+                        for (;;) {
+                            args.push(parseAdd());
+                            const sep = toks[p++];
+                            if (!sep) throw new Error('missing ) after ' + t.v + '(');
+                            if (sep.t === 'rp') break;
+                            if (sep.t !== 'comma') throw new Error('unexpected "' + (sep.v || '') + '" in ' + t.v + '()');
+                            if (args.length >= 8) throw new Error('too many arguments in ' + t.v + '()');
+                        }
+                    }
+                    return FUNCS[t.v].apply(null, args);
+                }
+                throw new Error('unknown name "' + t.v + '" (constants: pi, e, tau, phi)');
+            }
+            throw new Error('unexpected "' + (t.v === undefined ? (t.t === 'lp' ? '(' : t.t === 'rp' ? ')' : t.t === 'comma' ? ',' : '?') : t.v) + '"');
+        }
+        const val = parseAdd();
+        if (p < toks.length) throw new Error('unexpected "' + (toks[p].v === undefined ? toks[p].t : toks[p].v) + '" after the expression');
+        if (typeof val !== 'number' || isNaN(val)) return _err('not a real number (check powers/roots of negatives)');
+        if (!isFinite(val)) return _err('result is too large');
+        return { ok: true, value: val, text: _sahuFmtNum(val) };
+    } catch (e) {
+        return _err(e.message || 'could not evaluate the expression');
+    }
+}
+
 // ---- v5.6: WEB SCRAPING / FETCHING / BROWSING helpers (direct-only) ----
 
 function _fetchPageText(url, timeoutMs, headers) {
@@ -11696,19 +12121,27 @@ function _extractPageHtml(html, baseUrl) {
 
 // mode: 'read' = full text | 'fetch' = raw content | 'browse' = summary + links
 async function scrapePageContent(url, mode) {
-    const cap = mode === 'read' ? 4000 : (mode === 'fetch' ? 3500 : 1500);
-    // Wikipedia article pages: use the CORS-enabled REST API (the article
-    // HTML itself is CORS-locked, so a direct fetch would always fail).
-    try {
-        const wm = url.match(/^https?:\/\/([a-z-]+)\.wikipedia\.org\/wiki\/([^#?]+)/i);
-        if (wm) {
+    // v6.9: the old 4K/3.5K/1.5K caps are REMOVED (user directive: the model
+    // reads as much of the page as it actually needs). 50,000,000 chars is a
+    // pure memory-safety ceiling - effectively unlimited.
+    const cap = 50000000;
+    // v6.9: Wikipedia pages now return the FULL article text - the old 4K
+    // cap is gone and the old REST-summary shortcut returned only ~400 chars
+    // (far too little when the model needs the whole page). The generic
+    // proxy chain below fetches the article HTML; the CORS-open REST summary
+    // is kept ONLY as a last-resort fallback at the end of this function.
+    const _wikiFallback = async () => {
+        try {
+            const wm = url.match(/^https?:\/\/([a-z-]+)\.wikipedia\.org\/wiki\/([^#?]+)/i);
+            if (!wm) return null;
             const jtxt = await _fetchPageText('https://' + wm[1] + '.wikipedia.org/api/rest_v1/page/summary/' + wm[2], 10000);
             if (jtxt) {
                 const j = JSON.parse(jtxt);
-                if (j && j.extract) return { ok: true, title: j.title || url, text: (('Wikipedia - ' + j.title + ': ') + (j.extract || '')).substring(0, cap), links: [] };
+                if (j && j.extract) return { ok: true, title: j.title || url, text: ('Wikipedia - ' + j.title + ': ') + (j.extract || ''), links: [] };
             }
-        }
-    } catch (e) {}
+        } catch (e) {}
+        return null;
+    };
     // v6: scrape/fetch/browse chain = the FULL v5.5 keyless proxy set
     // (corsproxy.io + r.jina.ai reader + allorigins + codetabs). No API
     // keys, no sign-ups; every leg fails fast into the next so CORS-locked
@@ -11737,6 +12170,9 @@ async function scrapePageContent(url, mode) {
             return { ok: true, title: url, text: body.substring(0, cap), links: [] };
         }
     }
+    // v6.9: full-text failed - fall back to the Wikipedia REST summary
+    const _wf = await _wikiFallback();
+    if (_wf) return _wf;
     return { ok: false, title: url, text: '', links: [] };
 }
 
@@ -12446,6 +12882,8 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
     const visitedUrls = new Set();
     const searchedQueries = new Set();
     const v64RunCodes = new Set();   // v6.4: dedupe identical code runs
+    const dateRuns = new Map();      // v6.7: MCP Date dedupe (tz -> result line)
+    const calcCache = new Map();     // v6.7: MCP Calc dedupe (expr -> result)
     const v64SessionFiles = [];      // v6.4: files created mid-loop
     let v64LastPlot = '';            // v6.4: last matplotlib plot (base64)
     let finalAnswer = '';
@@ -12453,7 +12891,10 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
     let turn = 0;
 
     try {
-        let convo = [{ role: 'user', content: fullPrompt + buildSearchLoopPrompt() }];
+        // v6.8: FULL conversation memory - the agent now sees every previous
+        // message of this chat. Previously it saw ONLY the current request,
+        // which is why models "forgot" earlier responses/results/request.
+        let convo = _sahuHistoryForModel().concat([{ role: 'user', content: fullPrompt + buildSearchLoopPrompt() }]);
         const MAX_TURNS = 14;      // agent turns (rethinks) - the loop may
         const MAX_TOOL_RUNS = 60;  // v6.1: raised headroom now that per-turn caps are gone
         const skillsOn = (id) => (state.enabledSkills || []).includes(id);
@@ -12515,12 +12956,17 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 ? [...text.matchAll(/FETCH:\s*(https?:\/\/\S+)/gi)].map(m => m[1].replace(/[)`\]]+$/, '')) : [];
             const browses = skillsOn('web_browse')
                 ? [...text.matchAll(/BROWSE:\s*(https?:\/\/\S+)/gi)].map(m => m[1].replace(/[)`\]]+$/, '')) : [];
+            // v6.7: MCP tools - Current Date + Calculator (keyless, instant)
+            const dates = skillsOn('mcp_date')
+                ? [...text.matchAll(/(^|\n)[\s\-*_>#`]*DATE\s*(?:\[[^\]]*\])?\s*:\s*([^\n]*)/gi)].map(m => (m[2] || '').replace(/^[*\s`]+|[*\s`]+$/g, '').trim()) : [];
+            const calcs = skillsOn('mcp_calc')
+                ? [...text.matchAll(/(^|\n)[\s\-*_>#`]*(?:CALC|MCP_CALC)\s*:\s*([^\n]+)/gi)].map(m => m[2].replace(/^[*\s`]+|[*\s`]+$/g, '').trim()).filter(Boolean) : [];
 
             // v6.4: code interpreter blocks + FILE blocks
             const v64Code = skillsOn('run_code') ? extractRunnableCode(text) : [];
             const v64Files = skillsOn('make_files') ? extractFileBlocks(text) : [];
             const ansMatch = text.match(/ANSWER:\s*([\s\S]+)$/i);
-            const hasTools = queries.length + reads.length + fetches.length + browses.length + v64Code.length + v64Files.length > 0;
+            const hasTools = queries.length + reads.length + fetches.length + browses.length + v64Code.length + v64Files.length + dates.length + calcs.length > 0;
 
             if (!hasTools) {
                 // The agent is done (or never needed to search at all).
@@ -12566,7 +13012,8 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 found.forEach(r => { const k = (r && r.source) || 'web'; byEngine[k] = (byEngine[k] || 0) + 1; });
                 const engSummary = Object.keys(byEngine).map(k => k + ' ' + byEngine[k]).join(', ');
                 addTrace(`<span class="ml-4">${found.length} result${found.length === 1 ? '' : 's'}${engSummary ? ' - ' + escapeHtml(engSummary) : ''}</span>`);
-                const list = found.slice(0, 10).map((s, i) => `${i + 1}. [${s.source || 'web'}] ${s.title} (${s.link})${s.snippet ? '\n   ' + s.snippet : ''}`).join('\n');
+                // v6.8: the model now sees up to 20 results per query (was 10) so it can actually use the sources it gathered.
+                const list = found.slice(0, 20).map((s, i) => `${i + 1}. [${s.source || 'web'}] ${s.title} (${s.link})${s.snippet ? '\n   ' + s.snippet : ''}`).join('\n');
                 return `[SEARCH${engTag}] "${q.query}" -> ${found.length} results${engSummary ? ' (' + engSummary + ')' : ''}\n${list || 'No results (the key may be disabled or returned nothing). NEXT ROUND: try a DIFFERENT enabled key (single engine or category) on its OWN separate SEARCH[key] line, reword the query, or READ/FETCH a known good URL.'}`;
             }));
             parts.push(...outs);
@@ -12657,6 +13104,38 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                     return '[FILE] ' + (fb.name || fb.ext) + ' -> FAILED: ' + meta.error + '. Fix the content and emit the FILE block again.';
                 });
             }
+            // v6.7: MCP tools run instantly (no network) - results are fed
+            // back to the model like every other skill output.
+            for (const d of dates) {
+                if (toolRuns >= MAX_TOOL_RUNS) break;
+                const dKey = (d || 'local').toLowerCase();
+                if (dateRuns.has(dKey)) { parts.push('[DATE] You already received this - use the earlier result: ' + dateRuns.get(dKey)); continue; }
+                toolRuns++;
+                const dr = sahuMcpDate(d);
+                if (dr.ok) {
+                    dateRuns.set(dKey, dr.line);
+                    addTrace('<i class="fas fa-calendar-day text-sky-500 mr-1"></i><span class="font-medium">MCP Date:</span> ' + escapeHtml(dr.line));
+                } else {
+                    addTrace('<i class="fas fa-calendar-day text-red-500 mr-1"></i><span class="font-medium">MCP Date:</span> <span class="text-red-500">invalid timezone</span>');
+                }
+                parts.push(dr.feedback);
+            }
+            for (const c of calcs) {
+                if (toolRuns >= MAX_TOOL_RUNS) break;
+                toolRuns++;
+                const cKey = c.replace(/\s+/g, ' ').toLowerCase();
+                if (calcCache.has(cKey)) { parts.push('[CALC] ' + c + ' -> already computed above: ' + calcCache.get(cKey)); continue; }
+                const cr = sahuSafeCalc(c);
+                if (cr.ok) {
+                    calcCache.set(cKey, cr.text);
+                    addTrace('<i class="fas fa-calculator text-orange-500 mr-1"></i><span class="font-medium">MCP Calc:</span> ' + escapeHtml(c) + ' = <b>' + escapeHtml(cr.text) + '</b>');
+                    parts.push('[CALC] ' + c + ' = ' + cr.text + ' (exact result, computed locally by the MCP calculator)');
+                } else {
+                    addTrace('<i class="fas fa-calculator text-red-500 mr-1"></i><span class="font-medium">MCP Calc:</span> <span class="text-red-500">error: ' + escapeHtml(cr.error) + '</span>');
+                    parts.push('[CALC] ' + c + ' -> ERROR: ' + cr.error + '. Supported: + - * / % ^ ! parentheses, sqrt cbrt abs round floor ceil sign, min max pow root(x,n) atan2, sin cos tan asin acos atan sinh cosh tanh (radians), log ln log2 log10 exp, constants pi e tau phi, 1.2e9. Rewrite the expression or move on.');
+                }
+            }
+
             toolRuns += pageTasks.length;
             const pageOuts = await Promise.all(pageTasks.map(t => t().catch(e => {
                 if (e && (e.name === 'AbortError' || /abort|stopped/i.test(e.message || ''))) throw e;
@@ -12676,7 +13155,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
 
             convo.push({
                 role: 'user',
-                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries and/or OTHER engines - fan out WIDER if results were empty or weak, READ, FETCH or BROWSE several pages in parallel) - you may redo this as many times as you need.`
+                content: `SKILL RESULTS:\n${parts.join('\n\n')}\n\nORIGINAL USER REQUEST (pinned reminder - stay exactly on this request, do NOT drift to other topics, models, companies or products the user never asked about): ${fullPrompt}\n\nRETHINK: Study the results. If they fully answer the request, output your final answer starting with ANSWER:. If something is missing, unclear or outdated, use a skill again (SEARCH with better queries and/or OTHER engines - fan out WIDER if results were empty or weak, READ, FETCH or BROWSE several pages in parallel, or the MCP DATE/CALC tools) - you may redo this as many times as you need.`
             });
         }
 
@@ -12712,7 +13191,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             // used. No sources panel, no grid, no duplicated response.
             // v6.3: RESTORED the collapsible Sources panel in SahuAI (chat)
             // mode - the SAME panel as history, replacing the plain list.
-            const _chatSrcs = collected.slice(0, 150);
+            const _chatSrcs = collected; // v6.7: NO cap - show every source the agent gathered
             const _chatEngs = [...new Set(_chatSrcs.map(s => s.source || 'web'))];
             const _chatItems = _chatSrcs.map((s) =>
                 `<li class="text-xs mb-1"><a href="${s.link}" target="_blank" class="text-blue-500 hover:underline">${escapeHtml(s.title || s.link || 'source')}</a>${s.source ? ` <span class="text-[10px] text-[var(--text-secondary)]">(${escapeHtml(s.source)})</span>` : ''}</li>`).join('');
@@ -12735,7 +13214,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             const _enginesUsed = [...new Set(collected.map(s => s.source || 'web'))];
             displayHtml = `<div class="text-xs text-[var(--text-secondary)] mb-2">Agent searched ${searchedQueries.size} quer${searchedQueries.size === 1 ? 'y' : 'ies'} · ${collected.length} source${collected.length === 1 ? '' : 's'} · engines: ${escapeHtml(_enginesUsed.join(', '))}</div>` +
                 _sahuSourcesPanelHtml(collected, true);
-            savedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
+            savedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + String(s.snippet).slice(0, 300) : ''}`).join('\n');
         } else if (searchedQueries.size > 0) {
             // v5.8: the agent DID search but nothing usable was retrieved.
             // Search mode must never dump full model content - show the
@@ -12763,7 +13242,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
         // the trace (every search, scrape, fetch, browse + think step) so
         // history keeps them all. Alias-safe push (no double-append).
         const _traceElSave = document.getElementById(`trace-${divId}`);
-        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: collected.slice(0, 150), files: _v64AllFiles, agentTrace: _traceElSave ? _traceElSave.innerHTML : '', timestamp: Date.now() };
+        const assistMsgObj = { role: 'assistant', content: savedContent, thinking: '', sources: _sahuSrcsForStore(collected), files: _v64AllFiles, agentTrace: _traceElSave ? _traceElSave.innerHTML : '', timestamp: Date.now() };
         state.messages.push(assistMsgObj);
         const currentChat = state.chatHistory.find(c => c.id === state.currentChatId);
         if (currentChat && currentChat.messages !== state.messages) currentChat.messages.push(assistMsgObj);
@@ -12794,10 +13273,10 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
                 </li>`).join('');
             const _rEngs = [...new Set(collected.map(s => s.source || 'web'))];
             if (contentEl) contentEl.innerHTML = `<div class="text-xs text-[var(--text-secondary)] mb-2">${aborted ? 'Stopped' : 'The agent hit a provider error before writing an answer'} - showing the ${collected.length} source${collected.length === 1 ? '' : 's'} it gathered:</div>` + _sahuSourcesPanelHtml(collected, true);
-            const rescuedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + s.snippet : ''}`).join('\n');
+            const rescuedContent = collected.map((s, i) => `${i + 1}. [${s.title || s.link}](${s.link})${s.snippet ? ' - ' + String(s.snippet).slice(0, 300) : ''}`).join('\n');
             window.lastAnswer = rescuedContent;
             const _rescueTraceEl = document.getElementById(`trace-${divId}`);
-            const rescueMsg = { role: 'assistant', content: rescuedContent, thinking: '', sources: collected.slice(0, 150), agentTrace: _rescueTraceEl ? _rescueTraceEl.innerHTML : '', timestamp: Date.now() };
+            const rescueMsg = { role: 'assistant', content: rescuedContent, thinking: '', sources: _sahuSrcsForStore(collected), agentTrace: _rescueTraceEl ? _rescueTraceEl.innerHTML : '', timestamp: Date.now() };
             state.messages.push(rescueMsg);
             const rescueChat = state.chatHistory.find(c => c.id === state.currentChatId);
             if (rescueChat && rescueChat.messages !== state.messages) rescueChat.messages.push(rescueMsg);
@@ -12963,19 +13442,35 @@ async function addFetchedModels(providerKey, resultElId) {
 window.fetchProviderModelsUI = fetchProviderModelsUI;
 window.addFetchedModels = addFetchedModels;
 
+// ---- v6.7: persist EVERY source (no count cap). Only the snippet text is
+// lightly trimmed to protect the localStorage quota - every source the
+// agent gathered is kept and shown in the panel.
+function _sahuSrcsForStore(list) {
+    return (Array.isArray(list) ? list : []).map(s => ({
+        title: String(s.title || '').slice(0, 200),
+        link: String(s.link || '').slice(0, 600),
+        source: s.source || 'web',
+        snippet: String(s.snippet || '').slice(0, 220)
+    }));
+}
+
 // ---- v6.6: v5.5-style SOURCES PANEL (favicon card grid) ----
 function _safeHost(u) {
     try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
 }
 
 function _sahuSourcesPanelHtml(srcs, open, label) {
-    const list = (Array.isArray(srcs) ? srcs : []).slice(0, 150);
+    // v6.8: explicit user-set panel cap of 10000 (user directive: "set limit
+    // 10000 only for source panels to show results"). Every gathered source
+    // up to 10000 is displayed - the previous 943-searched/500-shown gap was
+    // link deduplication across queries, not a hidden cap.
+    const list = (Array.isArray(srcs) ? srcs : []).slice(0, 10000);
     if (!list.length) return '';
     const _engs = [...new Set(list.map(s => s.source || 'web'))];
     const cards = list.map((s, i) => {
         const host = _safeHost(s.link || '');
         return '<a href="' + escapeHtml(s.link || '') + '" target="_blank" rel="noopener" class="sahu-src-card">' +
-            '<img src="https://www.google.com/s2/favicons?domain=' + escapeHtml(host) + '" class="sahu-src-fav" onerror="this.style.display=\'none\'">' +
+            '<img src="https://www.google.com/s2/favicons?domain=' + escapeHtml(host) + '" class="sahu-src-fav" loading="lazy" onerror="this.style.display=\'none\'">' +
             '<span class="sahu-src-num">' + (i + 1) + '</span>' +
             '<span class="sahu-src-title">' + escapeHtml(s.title || s.link || 'source') + '</span>' +
             '<span class="sahu-src-host">' + escapeHtml(host) + (s.source ? ' · ' + escapeHtml(s.source) : '') + '</span>' +
@@ -13197,7 +13692,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v6.6 Initializing...');
+    console.log('🚀 SahuAI Agent v7.0 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -13240,8 +13735,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v6.6 Ready');
-    showToast('SahuAI Agent v6.6 Loaded');
+    console.log('✅ SahuAI Agent v7.0 Ready');
+    showToast('SahuAI Agent v7.0 Loaded');
 }
 
 // ============================================
@@ -13358,7 +13853,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v6.6 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v7.0 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of
@@ -13453,9 +13948,36 @@ function selectStyle(style) {
         }
     });
     const label = document.getElementById('toolsNavStyleLabel');
-    if (label) label.textContent = style.charAt(0).toUpperCase() + style.slice(1);
+    if (label) {
+        const _pNames = { none: '', programmer: 'Programmer', teacher: 'Teacher', analyst: 'Research Analyst', writer: 'Creative Writer', travel: 'Travel Guide' };
+        const _pn = _pNames[state.persona || 'none'] || '';
+        label.textContent = (style.charAt(0).toUpperCase() + style.slice(1)) + (_pn ? ' · ' + _pn : '');
+    }
     toggleStylePopover();
     showToast('Style: ' + style.charAt(0).toUpperCase() + style.slice(1));
+    saveState();
+}
+
+/**
+ * v7.0: Select persona (Choose style > Persona section)
+ * @param {string} p - 'none', 'programmer', 'teacher', 'analyst', 'writer', 'travel'
+ */
+function selectPersona(p) {
+    if (!state) state = {};
+    state.persona = p;
+    document.querySelectorAll('.style-option-item[data-persona]').forEach(item => {
+        const check = item.querySelector('.style-option-check');
+        if (check) check.innerHTML = item.dataset.persona === p ? '<i class="fas fa-check"></i>' : '';
+    });
+    const pNames = { none: '', programmer: 'Programmer', teacher: 'Teacher', analyst: 'Research Analyst', writer: 'Creative Writer', travel: 'Travel Guide' };
+    const pn = pNames[p] || '';
+    const label = document.getElementById('toolsNavStyleLabel');
+    if (label) {
+        const cur = (label.textContent || 'Normal').split(' · ')[0] || 'Normal';
+        label.textContent = pn ? (cur + ' · ' + pn) : cur;
+    }
+    showToast('Persona: ' + (pn || 'None'));
+    toggleStylePopover();
     saveState();
 }
 
@@ -13494,10 +14016,18 @@ function filterConnectors(query) {
 // Initialize default state values
 if (typeof state !== 'undefined') {
     if (!state.responseStyle) state.responseStyle = 'normal';
+    if (!state.persona) state.persona = 'none';
     if (!state.incognitoMode) state.incognitoMode = false;
-    // BUG FIX: migrate old budget values and default to 'medium'
+    // BUG FIX: migrate old budget values; v6.9 default effort is HIGH
     const VALID_BUDGETS = ['off', 'low', 'medium', 'high', 'xhigh', 'max'];
-    if (!state.thinkingBudget || !VALID_BUDGETS.includes(state.thinkingBudget)) state.thinkingBudget = 'medium';
+    if (!state.thinkingBudget || !VALID_BUDGETS.includes(state.thinkingBudget)) state.thinkingBudget = 'high';
+    // v6.9: one-time migration - the old default was 'medium'; the new app
+    // default reasoning effort is HIGH (user directive: low/medium/high/
+    // xhigh/max ladder, high default, always with thinking).
+    if (!localStorage.getItem('sahu_v69_effort_migrated')) {
+        if (state.thinkingBudget === 'medium') state.thinkingBudget = 'high';
+        localStorage.setItem('sahu_v69_effort_migrated', '1');
+    }
     // Single Model Mode UI was removed - never let a stale saved value activate it
     state.singleModelMode = false;
 }
@@ -13514,7 +14044,10 @@ document.addEventListener('click', function(e) {
         toolsMenu.classList.remove('show');
     }
     if (stylePopover && stylePopover.classList.contains('show') && 
-        !stylePopover.contains(e.target)) {
+        !stylePopover.contains(e.target) && !toolsMenu?.contains(e.target) && !toolsBtn?.contains(e.target)) {
+        // v7.0 FIX: ignore the OPENING click - it bubbles from the Choose
+        // style button inside the tools menu, and without this guard the
+        // popover was closed the instant it opened (pre-existing bug).
         stylePopover.classList.remove('show');
     }
     if (connectorsPopover && connectorsPopover.classList.contains('show') && 
@@ -13538,6 +14071,7 @@ window.selectStyle = selectStyle;
 window.toggleConnectorsPopover = toggleConnectorsPopover;
 window.addConnector = addConnector;
 window.filterConnectors = filterConnectors;
+window.selectPersona = selectPersona;
 
 window.openPreview = openPreview;
 window.openArtifact = openArtifact;

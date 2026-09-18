@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v7.2 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
+    <meta name="description" content="SahuAI Agent v7.3 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v7.2 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v7.3 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v7.2</span>
+                        <span>SahuAI Agent v7.3</span>
                     </div>
                 </div>
                 
@@ -4716,6 +4716,15 @@
                     <div class="search-engines-header">
                         <p class="search-engines-hint">Enable independent search sources.</p>
                         <button onclick="toggleAllSearchEngines()" class="search-engines-select-all">Select All</button>
+                    </div>
+                    <!-- v7.3: TinyFish FREE Search + Fetch API key -->
+                    <div class="api-key-item" style="margin:0 0 12px 0;">
+                        <div class="api-key-header">
+                            <span class="provider-icon">🐟</span>
+                            <span class="api-key-provider">TinyFish Search + Fetch (free - no credit card)</span>
+                        </div>
+                        <input type="password" id="tinyfishKeyInput" placeholder="Paste your free key from agent.tinyfish.ai/api-keys" class="api-key-input" onchange="saveTinyfishKey(this.value)">
+                        <p class="search-engines-hint" style="margin-top:6px;">With a key: "TinyFish" runs as a search engine AND powers READ/FETCH/BROWSE page reads directly (the key stays in this browser and is sent only to TinyFish). Without a key: TinyFish falls back to SearXNG.</p>
                     </div>
                     <div id="searchEngineList" class="search-engines-list">
         <label class="search-engine-item">
@@ -5697,6 +5706,7 @@ const state = {
     },
     
     // Search State
+    tinyfishKey: '',
     activeSearchEngines: [],
     customSearchEngines: [],
     customSkills: [],
@@ -6241,6 +6251,11 @@ const AGGREGATOR_PROMPTS = {
  * Search engine configurations
  */
 const SEARCH_ENGINES_CONFIG = {
+    // v7.3: TinyFish - FREE structured AI web search (tinyfish.ai, free key
+    // from agent.tinyfish.ai/api-keys). Both endpoints are CORS-open
+    // (ACAO: * with X-API-Key allowed) so the key never touches a proxy.
+    // No key / API failure -> SearXNG fallback (user directive).
+    tinyfish: { name: 'TinyFish (free AI search)', type: 'api', endpoint: 'https://api.search.tinyfish.ai' },
     wikipedia: { name: 'Wikipedia', type: 'api', endpoint: 'https://en.wikipedia.org/w/api.php' },
     reddit: { name: 'Reddit', type: 'api', endpoint: 'https://www.reddit.com/search.json' },
     google: { name: 'Google', type: 'searx', bang: '!g' },
@@ -6276,7 +6291,7 @@ const SEARCH_ENGINES_CONFIG = {
 const SEARCH_ENGINE_CATEGORIES = {
     social: ['reddit', 'facebook', 'instagram', 'twitter', 'youtube'],
     privacy: ['duckduckgo_lite', 'duckduckgo', 'brave', 'startpage'],
-    standard: ['google', 'bing', 'yahoo', 'baidu', 'yandex'],
+    standard: ['tinyfish', 'google', 'bing', 'yahoo', 'baidu', 'yandex'],
     productivity: ['wikipedia', 'grokipedia', 'ernie', 'github', 'linkedin'],
     other: ['openlibrary', 'crossref', 'wikidata', 'arxiv', 'dictionary']
 };
@@ -6372,6 +6387,7 @@ function saveState() {
             voiceConfig: state.voiceConfig,
             activeSearchEngines: state.activeSearchEngines,
             customSearchEngines: state.customSearchEngines,
+            tinyfishKey: state.tinyfishKey,
             customSkills: state.customSkills,
             dynamicModels: state.dynamicModels,
             researchConfig: state.researchConfig,
@@ -6486,6 +6502,16 @@ function loadState() {
             _v72set.add('agent_swarm');
             state.enabledSkills = (typeof SAHU_SKILLS !== 'undefined' ? SAHU_SKILLS.map(s => s.id) : []).filter(id => _v72set.has(id));
             state._v72Skills = true;
+        }
+
+        // v7.3: one-time migration - TinyFish joins any MATERIALIZED engine
+        // list so existing users get it switched on (fresh installs have an
+        // empty list = every engine enabled already).
+        if (!state._v73Engines) {
+            if (Array.isArray(state.activeSearchEngines) && state.activeSearchEngines.length > 0 && !state.activeSearchEngines.includes('__none__') && !state.activeSearchEngines.includes('tinyfish')) {
+                state.activeSearchEngines.push('tinyfish');
+            }
+            state._v73Engines = true;
         }
         
         const history = localStorage.getItem('sahu_chat_history');
@@ -6608,7 +6634,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v7.2</span>
+                        <span>v7.3</span>
                     </div>
                 </div>
             </div>
@@ -7566,6 +7592,8 @@ function renderLanguageSelector() {
 function renderSearchEngines() {
     const list = document.getElementById('searchEngineList');
     if (!list) return;
+    // v7.3: reflect the stored TinyFish key in the settings input.
+    try { const _tfi = document.getElementById('tinyfishKeyInput'); if (_tfi) _tfi.value = (localStorage.getItem('sahu_tinyfish_key') || ''); } catch (e) {}
     
     const allEngines = { ...SEARCH_ENGINES_CONFIG };
     state.customSearchEngines.forEach(eng => {
@@ -7640,6 +7668,17 @@ function toggleAllSearchEngines() {
     try { if (typeof saveState === 'function') saveState(); } catch (e) {}
     try { localStorage.setItem('sahu_search_engines', JSON.stringify(state.activeSearchEngines)); } catch (e) {}
     renderSearchEngines();
+}
+
+// v7.3: save the TinyFish free API key (Search + Fetch are free on every
+// TinyFish plan). Stored ONLY in this browser's localStorage and sent
+// directly to api.search.tinyfish.ai / api.fetch.tinyfish.ai (both
+// CORS-open) - never through any proxy.
+function saveTinyfishKey(v) {
+    const _k = (v || '').trim();
+    try { localStorage.setItem('sahu_tinyfish_key', _k); } catch (e) {}
+    try { state.tinyfishKey = _k; if (typeof saveState === 'function') saveState(); } catch (e) {}
+    showToast(_k ? 'TinyFish key saved - free Search + Fetch ON' : 'TinyFish key cleared - SearXNG fallback active', 'success');
 }
 
 /**
@@ -8921,7 +8960,47 @@ async function searchWeb(query, enginesOverride) {
         const config = SEARCH_ENGINES_CONFIG[key] || (state.customSearchEngines || []).find(e => e.id === key);
         if (!config) return;
 
-        if (key === 'wikipedia') {
+        if (key === 'tinyfish') {
+            // v7.3: TinyFish Search API - FREE structured AI web search from
+            // tinyfish.ai (docs.tinyfish.ai; Search AND Fetch are free on
+            // every plan). CORS-open (Access-Control-Allow-Origin: * and
+            // X-API-Key is an allowed header), so the key goes STRAIGHT from
+            // this browser to api.search.tinyfish.ai - NEVER through a
+            // third-party proxy. User directive: TinyFish FIRST (direct, no
+            // SearXNG); with no key saved or on API failure/empty results,
+            // fall back to SearXNG, then the shared DDG-lite cache.
+            promises.push(async () => {
+                const _tfKey = ((typeof localStorage !== 'undefined' && localStorage.getItem('sahu_tinyfish_key')) || '').trim();
+                if (_tfKey) {
+                    try {
+                        const _tfRes = await fetch('https://api.search.tinyfish.ai?query=' + encodedQuery + '&language=en', {
+                            headers: { 'X-API-Key': _tfKey }
+                        });
+                        if (_tfRes.ok) {
+                            const _tfData = await _tfRes.json();
+                            if (_tfData && Array.isArray(_tfData.results) && _tfData.results.length > 0) {
+                                return _tfData.results.map(r => ({
+                                    title: r.title || r.site_name || 'Result',
+                                    link: r.url || '',
+                                    snippet: (r.snippet || '').substring(0, 300),
+                                    source: 'TinyFish',
+                                    date: r.date || null
+                                })).filter(r => r.link && r.link.startsWith('http'));
+                            }
+                        }
+                    } catch (e) {}
+                }
+                // Fallback (no key, or API failed / returned nothing):
+                // SearXNG first per the user directive, DDG-lite backstop.
+                let results = await fetchSearxngRaw(query, limit);
+                let _tfVia = 'TinyFish (SearXNG fallback)';
+                if (results.length === 0) {
+                    results = await queryDuckDuckGoLite(query, limit, 'TinyFish');
+                    _tfVia = 'TinyFish (DDG fallback)';
+                }
+                return results.map(r => ({ ...r, source: _tfVia })).slice(0, limit);
+            });
+        } else if (key === 'wikipedia') {
             // Wikipedia API: CORS-enabled via origin=*, keep direct.
             // FIX 5: full-text list=search handles multi-word queries
             // (opensearch is prefix-based and returns empty for them)
@@ -12176,6 +12255,35 @@ async function scrapePageContent(url, mode) {
         } catch (e) {}
         return null;
     };
+    // v7.3: TinyFish FETCH leg - with a free key saved (Settings > Search
+    // Engines), TinyFish's FREE fetch API (api.fetch.tinyfish.ai, CORS-open,
+    // renders JS-heavy pages, returns clean markdown) is tried BEFORE the
+    // keyless proxy chain, so READ/FETCH/BROWSE all get cleaner page text.
+    // No key or any failure -> the proxy chain below runs exactly as before
+    // (user directive: TinyFish first, SearXNG/proxies only as fallback).
+    const _tfPageKey = ((typeof localStorage !== 'undefined' && localStorage.getItem('sahu_tinyfish_key')) || '').trim();
+    if (_tfPageKey) {
+        try {
+            const _tfRes = await fetch('https://api.fetch.tinyfish.ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': _tfPageKey },
+                body: JSON.stringify({ urls: [url], format: 'markdown', ttl: 0, per_url_timeout_ms: 30000, links: mode === 'browse' })
+            });
+            if (_tfRes.ok) {
+                const _tfData = await _tfRes.json();
+                const _tfHit = _tfData && Array.isArray(_tfData.results) && _tfData.results[0];
+                const _tfText = _tfHit ? (_tfHit.text || '') : '';
+                if (_tfText && _tfText.trim().length > 40) {
+                    return {
+                        ok: true,
+                        title: _tfHit.title || url,
+                        text: _tfText.substring(0, cap),
+                        links: Array.isArray(_tfHit.links) ? _tfHit.links.slice(0, 60) : []
+                    };
+                }
+            }
+        } catch (e) {}
+    }
     // v6: scrape/fetch/browse chain = the FULL v5.5 keyless proxy set
     // (corsproxy.io + r.jina.ai reader + allorigins + codetabs). No API
     // keys, no sign-ups; every leg fails fast into the next so CORS-locked
@@ -13899,7 +14007,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v7.2 Initializing...');
+    console.log('🚀 SahuAI Agent v7.3 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -13942,8 +14050,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v7.2 Ready');
-    showToast('SahuAI Agent v7.2 Loaded');
+    console.log('✅ SahuAI Agent v7.3 Ready');
+    showToast('SahuAI Agent v7.3 Loaded');
 }
 
 // ============================================
@@ -13987,6 +14095,7 @@ window.saveSettings = saveSettings;
 window.toggleProvider = toggleProvider;
 window.toggleSearchEngine = toggleSearchEngine;
 window.toggleAllSearchEngines = toggleAllSearchEngines;
+window.saveTinyfishKey = saveTinyfishKey;
 window.addCustomSearchEngine = addCustomSearchEngine;
 window.addCustomProvider = addCustomProvider;
 window.openModelSelector = openModelSelector;
@@ -14060,7 +14169,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v7.2 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v7.3 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

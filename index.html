@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v7.4 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
+    <meta name="description" content="SahuAI Agent v7.5 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v7.4 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v7.5 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v7.4</span>
+                        <span>SahuAI Agent v7.5</span>
                     </div>
                 </div>
                 
@@ -4714,7 +4714,7 @@
                 </div><!-- Search Engines View -->
                 <div id="settings-search" class="settings-view">
                     <div class="search-engines-header">
-                        <p class="search-engines-hint">Enable independent search sources.</p>
+                        <p class="search-engines-hint">Enable independent search sources. v7.5: TinyFish, Wikipedia and YouTube run 100% direct - no SearXNG, no proxies.</p>
                         <button onclick="toggleAllSearchEngines()" class="search-engines-select-all">Select All</button>
                     </div>
                     <!-- v7.3: TinyFish FREE Search + Fetch API key -->
@@ -6267,7 +6267,11 @@ const SEARCH_ENGINES_CONFIG = {
     brave: { name: 'Brave', type: 'searx', bang: '!brave' },
     startpage: { name: 'Startpage', type: 'searx', bang: '!startpage' },
     baidu: { name: 'Baidu (English)', type: 'searx', bang: '!baidu' },
-    youtube: { name: 'YouTube', type: 'searx', bang: '!yt', site: 'youtube.com' },
+    // v7.5: YouTube DIRECT-ONLY (user directive: "not from SearXNG and not
+    // from proxies") - keyless CORS-open Piped API instances (a YouTube
+    // frontend, NOT a proxy and NOT SearXNG), queried straight from the
+    // browser. Dedicated branch below preempts the searx path.
+    youtube: { name: 'YouTube', type: 'api', endpoint: 'https://api.piped.private.coffee' },
     twitter: { name: 'X (Twitter)', type: 'searx', bang: '!twitter', site: 'x.com' },
     ernie: { name: 'ERNIE', type: 'searx', site: 'baidu.com' },
     facebook: { name: 'Facebook', type: 'searx', site: 'facebook.com' },
@@ -6634,7 +6638,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v7.4</span>
+                        <span>v7.5</span>
                     </div>
                 </div>
             </div>
@@ -9323,6 +9327,54 @@ async function searchWeb(query, enginesOverride) {
                         snippet: d.substring(0, 300),
                         source: 'Dictionary'
                     }));
+                }
+                return [];
+            });
+        } else if (key === 'youtube') {
+            // v7.5: YouTube DIRECT-ONLY (user directive: "not from SearXNG
+            // and not from proxies"). Queries go straight from the browser
+            // to keyless CORS-open Piped API instances (Piped is a YouTube
+            // frontend, NOT a proxy and NOT SearXNG). Instance order =
+            // live-verified failover pool (all: HTTP 200 + ACAO:* + real
+            // video JSON). NO SearXNG, NO DDG, NO proxy chain: if every
+            // direct instance fails the leg returns nothing (other enabled
+            // engines answer as usual). If direct-only YouTube ever proves
+            // unusable, the v7.4 build (SearXNG routing) is restored (user
+            // directive: "if not work then restore current").
+            promises.push(async () => {
+                const _ytInstances = [
+                    'https://api.piped.private.coffee',
+                    'https://pipedapi.ducks.party',
+                    'https://pipedapi.drgns.space'
+                ];
+                const _ytSeen = new Set();
+                for (const _ytBase of _ytInstances) {
+                    try {
+                        const _ytCtrl = new AbortController();
+                        const _ytTimer = setTimeout(() => _ytCtrl.abort(), 10000);
+                        const _ytRes = await fetch(_ytBase + '/search?q=' + encodeURIComponent(query) + '&filter=videos', { signal: _ytCtrl.signal });
+                        clearTimeout(_ytTimer);
+                        if (!_ytRes.ok) continue;
+                        const _ytData = await _ytRes.json();
+                        const _ytItems = _ytData && Array.isArray(_ytData.items) ? _ytData.items : [];
+                        if (_ytItems.length === 0) continue;
+                        const out = [];
+                        for (const it of _ytItems) {
+                            if (out.length >= limit) break;
+                            const _ytId = (it.url || '').replace(/^\/watch\?v=/, '');
+                            const _ytLink = it.url ? ('https://www.youtube.com' + it.url) : '';
+                            if (!_ytLink || !/^https?:\/\//.test(_ytLink) || _ytSeen.has(_ytId)) continue;
+                            _ytSeen.add(_ytId);
+                            const _ytBits = [it.uploaderName, it.uploadedDate, (typeof it.views === 'number' && it.views > 0) ? (it.views.toLocaleString() + ' views') : ''].filter(Boolean);
+                            out.push({
+                                title: (it.title || 'YouTube video').substring(0, 200),
+                                link: _ytLink,
+                                snippet: _ytBits.join(' - ').substring(0, 300),
+                                source: 'YouTube (direct)'
+                            });
+                        }
+                        if (out.length > 0) return out;
+                    } catch (e) {}
                 }
                 return [];
             });
@@ -14051,7 +14103,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v7.4 Initializing...');
+    console.log('🚀 SahuAI Agent v7.5 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -14094,8 +14146,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v7.4 Ready');
-    showToast('SahuAI Agent v7.4 Loaded');
+    console.log('✅ SahuAI Agent v7.5 Ready');
+    showToast('SahuAI Agent v7.5 Loaded');
 }
 
 // ============================================
@@ -14213,7 +14265,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v7.4 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v7.5 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

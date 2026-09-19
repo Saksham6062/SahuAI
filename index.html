@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v7.3 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
+    <meta name="description" content="SahuAI Agent v7.4 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v7.3 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v7.4 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v7.3</span>
+                        <span>SahuAI Agent v7.4</span>
                     </div>
                 </div>
                 
@@ -4724,7 +4724,7 @@
                             <span class="api-key-provider">TinyFish Search + Fetch (free - no credit card)</span>
                         </div>
                         <input type="password" id="tinyfishKeyInput" placeholder="Paste your free key from agent.tinyfish.ai/api-keys" class="api-key-input" onchange="saveTinyfishKey(this.value)">
-                        <p class="search-engines-hint" style="margin-top:6px;">With a key: "TinyFish" runs as a search engine AND powers READ/FETCH/BROWSE page reads directly (the key stays in this browser and is sent only to TinyFish). Without a key: TinyFish falls back to SearXNG.</p>
+                        <p class="search-engines-hint" style="margin-top:6px;">With a key: "TinyFish" runs as a 100% direct search engine AND powers READ/FETCH/BROWSE page reads (the key stays in this browser and is sent only to TinyFish - never through a proxy). v7.4: TinyFish and Wikipedia are fully proxy-free; without a key the TinyFish engine stays silent while all other engines work normally.</p>
                     </div>
                     <div id="searchEngineList" class="search-engines-list">
         <label class="search-engine-item">
@@ -6634,7 +6634,7 @@ function displayIdentityResponse() {
                     <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
                     <div class="message-meta">
                         <span>SahuAI Agent</span>
-                        <span>v7.3</span>
+                        <span>v7.4</span>
                     </div>
                 </div>
             </div>
@@ -8961,44 +8961,37 @@ async function searchWeb(query, enginesOverride) {
         if (!config) return;
 
         if (key === 'tinyfish') {
-            // v7.3: TinyFish Search API - FREE structured AI web search from
-            // tinyfish.ai (docs.tinyfish.ai; Search AND Fetch are free on
-            // every plan). CORS-open (Access-Control-Allow-Origin: * and
-            // X-API-Key is an allowed header), so the key goes STRAIGHT from
-            // this browser to api.search.tinyfish.ai - NEVER through a
-            // third-party proxy. User directive: TinyFish FIRST (direct, no
-            // SearXNG); with no key saved or on API failure/empty results,
-            // fall back to SearXNG, then the shared DDG-lite cache.
+            // v7.4: TinyFish stays SEPARATE FROM PROXIES (user directive) -
+            // this engine talks ONLY to api.search.tinyfish.ai, straight
+            // from the browser (CORS-open: Access-Control-Allow-Origin: *
+            // with X-API-Key allowed). NO SearXNG, NO proxy chain, NO
+            // DDG backstop: without a free key (agent.tinyfish.ai/api-keys)
+            // or on any API failure/empty result the leg returns nothing
+            // and the other enabled engines answer as usual. If direct-only
+            // TinyFish ever proves unusable, v7.3's SearXNG-fallback build
+            // is restored (user directive: "if not work then restore
+            // current").
             promises.push(async () => {
                 const _tfKey = ((typeof localStorage !== 'undefined' && localStorage.getItem('sahu_tinyfish_key')) || '').trim();
-                if (_tfKey) {
-                    try {
-                        const _tfRes = await fetch('https://api.search.tinyfish.ai?query=' + encodedQuery + '&language=en', {
-                            headers: { 'X-API-Key': _tfKey }
-                        });
-                        if (_tfRes.ok) {
-                            const _tfData = await _tfRes.json();
-                            if (_tfData && Array.isArray(_tfData.results) && _tfData.results.length > 0) {
-                                return _tfData.results.map(r => ({
-                                    title: r.title || r.site_name || 'Result',
-                                    link: r.url || '',
-                                    snippet: (r.snippet || '').substring(0, 300),
-                                    source: 'TinyFish',
-                                    date: r.date || null
-                                })).filter(r => r.link && r.link.startsWith('http'));
-                            }
+                if (!_tfKey) return [];
+                try {
+                    const _tfRes = await fetch('https://api.search.tinyfish.ai?query=' + encodedQuery + '&language=en', {
+                        headers: { 'X-API-Key': _tfKey }
+                    });
+                    if (_tfRes.ok) {
+                        const _tfData = await _tfRes.json();
+                        if (_tfData && Array.isArray(_tfData.results) && _tfData.results.length > 0) {
+                            return _tfData.results.map(r => ({
+                                title: r.title || r.site_name || 'Result',
+                                link: r.url || '',
+                                snippet: (r.snippet || '').substring(0, 300),
+                                source: 'TinyFish',
+                                date: r.date || null
+                            })).filter(r => r.link && r.link.startsWith('http'));
                         }
-                    } catch (e) {}
-                }
-                // Fallback (no key, or API failed / returned nothing):
-                // SearXNG first per the user directive, DDG-lite backstop.
-                let results = await fetchSearxngRaw(query, limit);
-                let _tfVia = 'TinyFish (SearXNG fallback)';
-                if (results.length === 0) {
-                    results = await queryDuckDuckGoLite(query, limit, 'TinyFish');
-                    _tfVia = 'TinyFish (DDG fallback)';
-                }
-                return results.map(r => ({ ...r, source: _tfVia })).slice(0, limit);
+                    }
+                } catch (e) {}
+                return [];
             });
         } else if (key === 'wikipedia') {
             // Wikipedia API: CORS-enabled via origin=*, keep direct.
@@ -12255,6 +12248,57 @@ async function scrapePageContent(url, mode) {
         } catch (e) {}
         return null;
     };
+    // v7.4: WIKIPEDIA DIRECT-ONLY page reads (user directive: keep Wikipedia
+    // separate from proxies). Any wikipedia.org URL is read DIRECTLY from
+    // Wikipedia's CORS-open APIs - the full plaintext extract first, then
+    // the REST summary, plus direct article links in BROWSE mode. No
+    // TinyFish call and no proxy leg ever runs for a Wikipedia page. If
+    // BOTH direct APIs fail (essentially never), the existing chain below
+    // still runs (user directive: "if not work then restore current").
+    if (/^https?:\/\/[a-z-]+\.wikipedia\.org\/wiki\//i.test(url)) {
+        const _wm74 = url.match(/^https?:\/\/([a-z-]+)\.wikipedia\.org\/wiki\/([^#?]+)/i);
+        if (_wm74) {
+            const _wLang = _wm74[1];
+            const _wTitle = decodeURIComponent(_wm74[2]).replace(/_/g, ' ');
+            const _wApi = 'https://' + _wLang + '.wikipedia.org/w/api.php';
+            try {
+                const _wRes = await fetch(_wApi + '?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles=' + encodeURIComponent(_wTitle));
+                if (_wRes.ok) {
+                    const _wData = await _wRes.json();
+                    const _wPages = _wData && _wData.query && _wData.query.pages;
+                    const _wKey = _wPages ? Object.keys(_wPages)[0] : null;
+                    const _wExt = _wKey && _wPages[_wKey] && _wPages[_wKey].extract;
+                    if (_wExt && _wExt.trim().length > 40) {
+                        let _wLinks = [];
+                        if (mode === 'browse') {
+                            try {
+                                const _wRes2 = await fetch(_wApi + '?action=query&prop=links&plnamespace=0&pllimit=60&redirects=1&format=json&origin=*&titles=' + encodeURIComponent(_wTitle));
+                                if (_wRes2.ok) {
+                                    const _wData2 = await _wRes2.json();
+                                    const _wPages2 = _wData2 && _wData2.query && _wData2.query.pages;
+                                    const _wKey2 = _wPages2 ? Object.keys(_wPages2)[0] : null;
+                                    const _wArr = _wKey2 && _wPages2[_wKey2] && _wPages2[_wKey2].links;
+                                    if (Array.isArray(_wArr)) _wLinks = _wArr.slice(0, 60).map(l => ({ url: 'https://' + _wLang + '.wikipedia.org/wiki/' + encodeURIComponent(String(l.title || '').replace(/ /g, '_')), text: String(l.title || '').substring(0, 80) })).filter(l => l.text);
+                                }
+                            } catch (e) {}
+                        }
+                        return { ok: true, title: (_wKey && _wPages[_wKey].title) || _wTitle, text: _wExt.substring(0, cap), links: _wLinks };
+                    }
+                }
+            } catch (e) {}
+            try {
+                const _wSum = await _fetchPageText('https://' + _wLang + '.wikipedia.org/api/rest_v1/page/summary/' + _wm74[2], 10000);
+                if (_wSum) {
+                    const _wJ = JSON.parse(_wSum);
+                    if (_wJ && _wJ.extract && _wJ.extract.trim().length > 40) {
+                        return { ok: true, title: _wJ.title || _wTitle, text: ('Wikipedia - ' + _wJ.title + ': ' + _wJ.extract).substring(0, cap), links: [] };
+                    }
+                }
+            } catch (e) {}
+            // Both direct Wikipedia APIs failed -> the pre-v7.4 chain below
+            // still runs (restore-current safety per user directive).
+        }
+    }
     // v7.3: TinyFish FETCH leg - with a free key saved (Settings > Search
     // Engines), TinyFish's FREE fetch API (api.fetch.tinyfish.ai, CORS-open,
     // renders JS-heavy pages, returns clean markdown) is tried BEFORE the
@@ -14007,7 +14051,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v7.3 Initializing...');
+    console.log('🚀 SahuAI Agent v7.4 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -14050,8 +14094,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v7.3 Ready');
-    showToast('SahuAI Agent v7.3 Loaded');
+    console.log('✅ SahuAI Agent v7.4 Ready');
+    showToast('SahuAI Agent v7.4 Loaded');
 }
 
 // ============================================
@@ -14169,7 +14213,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v7.3 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v7.4 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

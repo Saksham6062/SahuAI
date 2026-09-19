@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v7.5 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
+    <meta name="description" content="SahuAI Agent v7.6 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v7.5 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v7.6 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v7.5</span>
+                        <span>SahuAI Agent v7.6</span>
                     </div>
                 </div>
                 
@@ -4714,7 +4714,7 @@
                 </div><!-- Search Engines View -->
                 <div id="settings-search" class="settings-view">
                     <div class="search-engines-header">
-                        <p class="search-engines-hint">Enable independent search sources. v7.5: TinyFish, Wikipedia and YouTube run 100% direct - no SearXNG, no proxies.</p>
+                        <p class="search-engines-hint">Enable independent search sources. v7.6: TinyFish, Wikipedia and YouTube run 100% direct - no SearXNG, no proxies. DDG Lite, Instagram and Facebook: SearXNG removed.</p>
                         <button onclick="toggleAllSearchEngines()" class="search-engines-select-all">Select All</button>
                     </div>
                     <!-- v7.3: TinyFish FREE Search + Fetch API key -->
@@ -5600,10 +5600,6 @@
         // Prompt Refiner
         function updatePromptRefinerPreview() {}
         
-        // Identity Response
-        function checkIdentityQuery(query) {}
-        function displayIdentityResponse() {}
-        
         // Safety Models
         function checkSafety(content) {}
         
@@ -6312,24 +6308,9 @@ const RESEARCH_STAGES = [
     { id: 'stage5', name: 'Stage 5: Final Aggregator', experts: ['Final Aggregator'] }
 ];
 
-/**
- * Identity response patterns (triggers predefined response)
- */
-const IDENTITY_PATTERNS = [
-    /\b(who\s*(are|r)\s*(you|u)|what\s*(model|ai)\s*(are|r)\s*(you|u)|tell\s*me\s*about\s*(yourself|you)|what\s*is\s*sahuai|sahu\s*ai|who\s*(built|made|created)\s*(you|sahuai)|your\s*identity)\b/i,
-    /\b(your\s*name|what\s*are\s*you|which\s*model|introduce\s*yourself)\b/i
-];
-
-/**
- * Exact identity response text
- */
-const IDENTITY_RESPONSE = `I'm SahuAI Agent, an AI assistant built by Saksham intelligence to help you explore ideas, answer questions, and tackle tasks with clear, reliable info.
-
-At my core, I draw from a vast knowledge base up to January 2025, powered by advanced Open Source models like MiniMax m2.1 & GLM 5 & Kimi K2.5 Qwen 3.5, to deliver expert-level responses. Think of me as your go-to research buddy—fast, accurate, and always citing sources when it matters. I shine in explaining complex topics simply (like quantum physics via everyday analogies), brainstorming creative projects, summarizing articles, writing or rewriting content, and casual chats.
-
-Unlike generic chatbots, I prioritize truthfulness: I reason step-by-step, avoid fluff, and flag uncertainties. No hallucinations here—I stick to facts or say when I don't know. My style? Friendly, concise, and structured for easy reading, with lists, examples, and visuals when they help.
-
-Fun fact: I'm designed for curiosity-driven users, whether you're in Bhopal puzzling over local history or globally brainstorming a startup. Got a specific question or task? Fire away!`;
+// v7.6: canned IDENTITY_RESPONSE / IDENTITY_PATTERNS REMOVED (user request).
+// Questions like "what model are you" now reach the real model like every
+// other message instead of a hardcoded self-description.
 
 // ============================================
 // SECTION 3: GLOBAL VARIABLES & INITIALIZATION
@@ -6613,49 +6594,8 @@ function formatBytes(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-/**
- * Check if query matches identity patterns
- * @param {string} query - User query
- * @returns {boolean} - True if identity query
- */
-function checkIdentityQuery(query) {
-    return IDENTITY_PATTERNS.some(pattern => pattern.test(query));
-}
-
-/**
- * Display identity response
- */
-function displayIdentityResponse() {
-    const container = document.getElementById('messagesContainer');
-    const welcome = document.getElementById('welcomeScreen');
-    
-    if (welcome) welcome.classList.add('hidden');
-    if (container) {
-        container.classList.remove('hidden');
-        container.innerHTML += `
-            <div class="message-container message-assistant">
-                <div class="message-bubble">
-                    <div class="message-content">${IDENTITY_RESPONSE.replace(/\n/g, '<br>')}</div>
-                    <div class="message-meta">
-                        <span>SahuAI Agent</span>
-                        <span>v7.5</span>
-                    </div>
-                </div>
-            </div>
-        `;
-        container.scrollTop = container.scrollHeight;
-    }
-    
-    // Save to chat history
-    if (state.currentChatId) {
-        state.messages.push({
-            role: 'assistant',
-            content: IDENTITY_RESPONSE,
-            timestamp: Date.now()
-        });
-        updateChatHistory();
-    }
-}
+// v7.6: checkIdentityQuery / displayIdentityResponse REMOVED with the canned
+// identity answer - no message is intercepted locally anymore.
 
 // ============================================
 // SECTION 5: UI FUNCTIONS
@@ -8828,21 +8768,16 @@ async function searchWeb(query, enginesOverride) {
             }
         }
 
-        // v6.9: REORDERED - SearXNG public instances now run BEFORE the DDG
-        // Instant Answer API. SearXNG returns a REAL result page for the exact
-        // query, while the Instant API often returns generic RelatedTopics
-        // that are NOT related to what was searched (user report: "latest
-        // news not related to the search"). Instant stays the last resort.
-        if (results.length === 0) {
-            (await fetchSearxngRaw(rawQuery || '', maxResults)).forEach(r => {
-                if (results.length < maxResults) results.push(r);
-            });
-        }
-
-        // v7.0: DuckDuckGo Instant Answer API REMOVED from this chain (user
-        // report "DDG instant is not working" - live-verified: the API now
-        // returns an EMPTY payload). The chain ends with the SearXNG legs
-        // above, which return real results for the exact query.
+        // v7.6: SEARXNG FALLBACK REMOVED from the DDG Lite path (user
+        // directive: "DDG lite is behind searXNG - make it directly"). The
+        // 3-step test was applied live:
+        //   1. no SearXNG + no proxies   -> impossible in a browser
+        //      (lite.duckduckgo.com sends no CORS headers - curl-proven)
+        //   2. no SearXNG + proxy chain  -> WORKS  <- shipped
+        //   3. no proxies + SearXNG only -> also impossible in a browser
+        //      (SearXNG instances send no CORS headers either)
+        // DDG Lite now returns ONLY real DuckDuckGo results via its
+        // direct-first + proxy chain, never SearXNG results.
 
         return results;
     };
@@ -9412,7 +9347,11 @@ async function searchWeb(query, enginesOverride) {
                 // v6.9: REAL SearXNG fallback (keyless public instances) - when
                 // DDG is bot-walled the site:/bang scope still gets real SERP
                 // results instead of 0 (user report: "discovers only Wikipedia").
-                if (results.length === 0) {
+                // v7.6: Instagram & Facebook SKIP this fallback (user directive:
+                // same 3-step test as DDG Lite -> direct-only is CORS-blocked,
+                // so they ship at step 2: DDG Lite via the proxy chain, SearXNG
+                // removed). All other searx-type engines keep the fallback.
+                if (results.length === 0 && key !== 'instagram' && key !== 'facebook') {
                     const _sxQ = (config.site ? query + ' site:' + config.site : (config.bang ? config.bang + ' ' + query : query));
                     (await fetchSearxngRaw(_sxQ, limit)).forEach(r => {
                         if (results.length < limit) results.push({ ...r, source: config.name });
@@ -9942,6 +9881,31 @@ function formatMarkdown(text, sources = null) {
 // SECTION 19: CORE API CALL FUNCTION
 // ============================================
 
+// v7.6: SINGLE-FLIGHT GATE for the free Pollinations endpoint. The service
+// allows only ONE queued request per IP ("Queue full for IP ... (max: 1)"),
+// so parallel model calls (aggregation, agent swarm, digests, research
+// rounds, auto-fallback) used to fail instantly with 429 and spam
+// "model error (429 ...) - retrying" in the trace. Every Pollinations call
+// now waits in line here: one request in flight app-wide, exponential
+// backoff on 429, Stop-button aware, with a safety valve so a stalled
+// request can never deadlock the queue.
+let _pollinationsGate = Promise.resolve();
+async function _acquirePollinationsGate(signal) {
+    const _prev = _pollinationsGate;
+    let _release = () => {};
+    let _done = false;
+    const _slot = new Promise(res => { _release = () => { if (!_done) { _done = true; res(); } }; });
+    _pollinationsGate = _slot;   // claim the tail synchronously - no race
+    const _safety = setTimeout(_release, 120000);  // never hold > 2 minutes
+    const _rel = () => { clearTimeout(_safety); _release(); };
+    await _prev;                 // wait for the previous holder to finish
+    if (signal && signal.aborted) {
+        _rel();                  // keep the chain unbroken on Stop
+        throw new DOMException('Aborted', 'AbortError');
+    }
+    return _rel;                 // caller MUST call this in finally
+}
+
 /**
  * Call model with fallback support
  * @param {string} providerKey - Provider key
@@ -10264,15 +10228,43 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     };
     
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(requestBody),
-            signal: controller.signal
-        });
+        // v7.6: POLLINATIONS QUEUE GUARD - the free endpoint allows only ONE
+        // queued request per IP ("Queue full for IP ... (max: 1)"). ALL
+        // Pollinations requests pass through the global single-flight gate
+        // above and back off exponentially on 429 instead of erroring out.
+        const _isPoll = (providerKey === 'pollinations');
+        let _releasePollGate = null;
+        let response = null;
+        try {
+            if (_isPoll) _releasePollGate = await _acquirePollinationsGate(controller.signal);
+            let _poll429 = 0;
+            while (true) {
+                response = await fetch(url, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
+                });
+                // 429 (queue full): wait INSIDE the gate slot and retry, so
+                // the next queued request does not 429 the moment we leave.
+                if (_isPoll && response.status === 429 && _poll429 < 3 && !controller.signal.aborted) {
+                    _poll429++;
+                    const _waitMs = Math.round(5000 * Math.pow(2, _poll429 - 1) + Math.random() * 2000);
+                    await new Promise(r => setTimeout(r, _waitMs));
+                    continue;
+                }
+                break;
+            }
+        } finally {
+            if (_releasePollGate) { try { _releasePollGate(); } catch (_eG) {} }
+        }
         
         if (!response.ok) {
-            throw new Error(`${response.status}: ${await response.text()}`);
+            const _errBody = await response.text();
+            if (_isPoll && response.status === 429) {
+                throw new Error('Pollinations free queue is full (max 1 request per IP) even after 3 backoff retries - please wait a moment and try again, or add your own API key in Settings > Active Providers > API Keys for reliable answers');
+            }
+            throw new Error(`${response.status}: ${_errBody}`);
         }
         
         // Handle streaming response
@@ -11502,16 +11494,8 @@ async function sendMessage() {
         }
         const thisChatId = state.currentChatId;
         
-        // Check for identity query
-        if (checkIdentityQuery(content)) {
-            displayIdentityResponse();
-            input.value = '';
-            input.style.height = 'auto';
-            removeFile();
-            state.isProcessing = false;
-            if (sendBtn) sendBtn.disabled = false;
-            return;
-        }
+        // v7.6: identity-query interception REMOVED (user request) - every
+        // message, including "what model are you", now goes to the real model.
         
         // Build display content
         let displayContent = content;
@@ -14103,7 +14087,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v7.5 Initializing...');
+    console.log('🚀 SahuAI Agent v7.6 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -14146,8 +14130,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v7.5 Ready');
-    showToast('SahuAI Agent v7.5 Loaded');
+    console.log('✅ SahuAI Agent v7.6 Ready');
+    showToast('SahuAI Agent v7.6 Loaded');
 }
 
 // ============================================
@@ -14265,7 +14249,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v7.5 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v7.6 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of

@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v7.6 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
+    <meta name="description" content="SahuAI Agent v7.7 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v7.6 - Official Saksham Intelligence AI Models Chat</title>
+    <title>SahuAI Agent v7.7 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v7.6</span>
+                        <span>SahuAI Agent v7.7</span>
                     </div>
                 </div>
                 
@@ -4714,7 +4714,7 @@
                 </div><!-- Search Engines View -->
                 <div id="settings-search" class="settings-view">
                     <div class="search-engines-header">
-                        <p class="search-engines-hint">Enable independent search sources. v7.6: TinyFish, Wikipedia and YouTube run 100% direct - no SearXNG, no proxies. DDG Lite, Instagram and Facebook: SearXNG removed.</p>
+                        <p class="search-engines-hint">Enable independent search sources. v7.7: the new ⭐ "Best" category groups every engine that is NOT on SearXNG - TinyFish (Search + Fetch), DDG Lite, Wikipedia, Facebook, YouTube, Instagram - all direct, no SearXNG.</p>
                         <button onclick="toggleAllSearchEngines()" class="search-engines-select-all">Select All</button>
                     </div>
                     <!-- v7.3: TinyFish FREE Search + Fetch API key -->
@@ -6289,13 +6289,22 @@ const SEARCH_ENGINES_CONFIG = {
 // engine, by its own thinking. Settings > Search Engines groups the list
 // under the same categories.
 const SEARCH_ENGINE_CATEGORIES = {
+    // v7.7: 'Best' category (user request) - every engine that does NOT run
+    // on SearXNG: TinyFish (Search + Fetch), DDG Lite, Wikipedia, Facebook,
+    // YouTube and Instagram. The model can run it with SEARCH[best]: <query>
+    // and Settings > Search Engines lists it as the FIRST group. These keys
+    // are ALSO still members of their original categories below, so
+    // SEARCH[social] / SEARCH[standard] / SEARCH[privacy] etc. keep working
+    // exactly as before (the settings list just renders them once, under
+    // Best - see the _rendered dedupe in renderSearchEngines).
+    best: ['tinyfish', 'duckduckgo_lite', 'wikipedia', 'facebook', 'youtube', 'instagram'],
     social: ['reddit', 'facebook', 'instagram', 'twitter', 'youtube'],
     privacy: ['duckduckgo_lite', 'duckduckgo', 'brave', 'startpage'],
     standard: ['tinyfish', 'google', 'bing', 'yahoo', 'baidu', 'yandex'],
     productivity: ['wikipedia', 'grokipedia', 'ernie', 'github', 'linkedin'],
     other: ['openlibrary', 'crossref', 'wikidata', 'arxiv', 'dictionary']
 };
-const SEARCH_CATEGORY_NAMES = { social: 'Social Media', privacy: 'Privacy search engines', standard: 'Standard search engines', productivity: 'Productivity', other: 'Other' };
+const SEARCH_CATEGORY_NAMES = { best: '⭐ Best (no SearXNG - direct)', social: 'Social Media', privacy: 'Privacy search engines', standard: 'Standard search engines', productivity: 'Productivity', other: 'Other' };
 
 /**
  * Research stage configurations
@@ -7555,12 +7564,16 @@ function renderSearchEngines() {
             </div>
         </label>`;
     const _hdr = (t) => `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin:10px 0 4px 2px;">${t}</div>`;
+    // v7.7: 'best' is an OVERLAY category - its engines render ONLY under
+    // the Best header (no duplicate checkbox rows in their original groups).
+    const _rendered = {};
     let _html = '';
     Object.keys(SEARCH_ENGINE_CATEGORIES).forEach(cat => {
-        const keys = SEARCH_ENGINE_CATEGORIES[cat].filter(k => allEngines[k]);
+        const keys = SEARCH_ENGINE_CATEGORIES[cat].filter(k => allEngines[k] && !_rendered[k]);
         if (!keys.length) return;
         _html += _hdr(SEARCH_CATEGORY_NAMES[cat] || cat);
-        keys.forEach(key => { _html += _row(key, allEngines[key]); });
+        if (cat === 'best') _html += '<div style="font-size:10px;color:var(--text-secondary);margin:-2px 0 4px 2px;">TinyFish = Search + Fetch. Direct engines only - no SearXNG.</div>';
+        keys.forEach(key => { _rendered[key] = 1; _html += _row(key, allEngines[key]); });
     });
     const _categorized = Object.values(SEARCH_ENGINE_CATEGORIES).flat();
     const _extra = Object.keys(allEngines).filter(k => !_categorized.includes(k));
@@ -12968,7 +12981,7 @@ async function generateFileBlob(ext, name, content) {
 function sahuFileCardHtml(fid, name, ext, size, href) {
     const kb = (size / 1024).toFixed(1);
     const icon = { pdf: 'fas fa-file-pdf text-red-500', docx: 'fas fa-file-word text-blue-500', xlsx: 'fas fa-file-excel text-green-600', pptx: 'fas fa-file-powerpoint text-orange-500', csv: 'fas fa-file-csv text-teal-500', md: 'fab fa-markdown text-sky-500', json: 'fas fa-file-code text-purple-500' }[ext] || 'fas fa-file-alt text-slate-400';
-    return '<a class="sahu-file-card" href="' + href + '" download="' + escapeHtml(name) + '"><i class="' + icon + '"></i><span class="sahu-file-name">' + escapeHtml(name) + '</span><span class="sahu-file-size">' + kb + ' KB</span><span class="sahu-file-dl"><i class="fas fa-download"></i> Download</span></a>';
+    return '<a class="sahu-file-card" href="' + href + '"' + (fid ? ' data-fid="' + escapeHtml(fid) + '"' : '') + ' download="' + escapeHtml(name) + '"><i class="' + icon + '"></i><span class="sahu-file-name">' + escapeHtml(name) + '</span><span class="sahu-file-size">' + kb + ' KB</span><span class="sahu-file-dl"><i class="fas fa-download"></i> Download</span></a>';
 }
 
 // Generate one file: { ok, name, size, card, persist, error }
@@ -13061,6 +13074,64 @@ function renderSavedFileCards(files) {
     }).join('');
     return cards ? '<div class="sahu-files-row">' + cards + '</div>' : '';
 }
+
+// v7.7: BULLETPROOF FILE DOWNLOADS (user report: model creates the file,
+// the card shows, but clicking Download does nothing). The plain
+// <a href="blob:|data:" download> card silently fails in several real
+// environments (Android WebView without a download listener, iOS Safari,
+// an expired blob: link after a page reload, blocked CDN). This delegated
+// capture handler takes over every file-card click:
+//   1. resolves the Blob from the in-memory registry (data-fid) or by
+//      fetching the href (blob: and data: both work),
+//   2. APK: hands the base64 payload to the native SahuAIFile saver,
+//   3. web: re-issues the download with a FRESH object URL + toast
+//      feedback (and a clear message if the link expired).
+(function () {
+    function _toast(msg, type) { try { showToast(msg, type || 'info'); } catch (e) {} }
+    function _saveBlob(blob, name) {
+        try { if (window.SahuAIFile && window.SahuAIFile.save) { const fr = new FileReader(); fr.onload = function () { try { window.SahuAIFile.save(name || 'sahuai-file', String(fr.result).split(',').pop()); } catch (e) {} }; fr.readAsDataURL(blob); return true; } } catch (e) {}
+        try {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name || 'sahuai-file'; a.rel = 'noopener'; a.style.display = 'none';
+            document.body.appendChild(a); a.click();
+            setTimeout(function () { try { a.remove(); } catch (e) {} }, 1000);
+            setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 60000);
+            return true;
+        } catch (e) { return false; }
+    }
+    document.addEventListener('click', function (ev) {
+        try {
+            if (ev.defaultPrevented) return;
+            const a = ev.target && ev.target.closest ? ev.target.closest('a.sahu-file-card') : null;
+            if (!a) return;
+            ev.preventDefault();
+            const name = a.getAttribute('download') || 'sahuai-file';
+            function _fail() { _toast('This download link expired (page was reloaded). Ask the model to create the file again.', 'error'); }
+            function _finish(b) {
+                if (!b || !b.size) { _fail(); return; }
+                if (_saveBlob(b, name)) _toast('Downloading ' + name, 'success');
+                else _toast('Download failed - long-press the file card instead', 'error');
+            }
+            let blob = null;
+            const fid = a.getAttribute('data-fid');
+            if (fid && window.__sahuFiles && window.__sahuFiles[fid]) blob = window.__sahuFiles[fid].blob;
+            if (blob) { _finish(blob); return; }
+            const href = a.getAttribute('href') || '';
+            if (href.indexOf('blob:') === 0 || href.indexOf('data:') === 0) {
+                fetch(href).then(function (r) { return r.blob(); }).then(_finish).catch(_fail);
+                return;
+            }
+            _fail();
+        } catch (e) {}
+    }, true);
+    // v7.7: saveAs hardening - the TXT/MD/DOCX export buttons call saveAs()
+    // from the FileSaver CDN script; if that CDN is blocked they would
+    // throw a ReferenceError and silently do nothing. Minimal fallback:
+    if (typeof window.saveAs !== 'function') {
+        window.saveAs = function (blob, name) { try { _saveBlob(blob, name); } catch (e) {} };
+    }
+})();
 
 
 // ---- v5.5: the agent loop itself ----
@@ -14087,7 +14158,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v7.6 Initializing...');
+    console.log('🚀 SahuAI Agent v7.7 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -14130,8 +14201,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v7.6 Ready');
-    showToast('SahuAI Agent v7.6 Loaded');
+    console.log('✅ SahuAI Agent v7.7 Ready');
+    showToast('SahuAI Agent v7.7 Loaded');
 }
 
 // ============================================
@@ -14249,7 +14320,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v7.6 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'SahuAI Agent v7.7 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of
@@ -14734,6 +14805,7 @@ window.updateToolsNavStyleLabel = updateToolsNavStyleLabel;
         if (!isApk()) return;
         document.addEventListener('click', function (ev) {
             try {
+                if (ev.defaultPrevented) return; // v7.7: the file-card handler already owns this click
                 const a = ev.target && ev.target.closest ? ev.target.closest('a[download]') : null;
                 if (!a) return;
                 const href = a.getAttribute('href') || '';

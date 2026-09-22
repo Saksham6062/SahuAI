@@ -1,6 +1,6 @@
 {
-    "name": "SahuAI  - Professional AI Workspace",
-    "short_name": "SahuAI ",
+    "name": "Manthan - Professional Workspace",
+    "short_name": "Manthan ",
     "description": "Professional AI workspace with 57+ models, 18+ providers, MCP tools, agent swarm and live web search.",
     "start_url": "./index.html",
     "scope": "./",

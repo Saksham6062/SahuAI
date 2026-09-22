@@ -2,9 +2,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="SahuAI Agent v7.7 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
+    <meta name="description" content="Manthan Agent v7.8 - Official Saksham Intelligence AI Models Chat - 57+ models, 18+ providers, MCP tools, unlimited agent-swarm skill, MP Board examiner, OpenRouter web search, consensus-powered AI, live app previews">
     <meta name="author" content="Saksham Intelligence">
-    <title>SahuAI Agent v7.7 - Official Saksham Intelligence AI Models Chat</title>
+    <title>Manthan Agent v7.8 - Official Saksham Intelligence AI Models Chat</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -27,7 +27,7 @@
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
-    <!-- SAHU 2.0 Libraries -->
+    <!-- Manthan 2.0 Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <script src="https://cdn.jsdelivr.net/npm/string-similarity@4.0.4/umd/string-similarity.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
@@ -4060,7 +4060,7 @@
             <div class="sidebar-header">
                 <div class="sidebar-logo">🦅</div>
                 <div>
-                    <h1 class="sidebar-title" id="header-title">SahuAI Agent</h1>
+                    <h1 class="sidebar-title" id="header-title">Manthan Agent</h1>
                     <p class="sidebar-version">Version 5.0</p>
                 </div>
             </div>
@@ -4105,7 +4105,7 @@
                     </button>
                     <div class="header-title">
                         🦅
-                        <span>SahuAI Agent v7.7</span>
+                        <span>Manthan Agent v7.8</span>
                     </div>
                 </div>
                 
@@ -4114,7 +4114,7 @@
                     <div class="mode-toggle">
                         <button id="modeChatBtn" class="mode-toggle-btn active" onclick="setModeToggle('standard')">
                             <i class="fas fa-feather-alt"></i>
-                            <span>SahuAI</span>
+                            <span>Manthan</span>
                         </button>
                         <button id="modeSearchBtn" class="mode-toggle-btn" onclick="setModeToggle('search')">
                             <i class="fas fa-search"></i>
@@ -4129,7 +4129,7 @@
                         <option value="research">🧠 Research</option>
                         <option value="travel">✈️ Travel Plan</option>
                         <option value="study">🎓 Study</option>
-                        <option value="search">🔍 SahuAI Search</option>
+                        <option value="search">🔍 Manthan Search</option>
                     </select>
                     
                     <!-- New Chat Button -->
@@ -4168,13 +4168,13 @@
                 <div class="chat-container">
                     <!-- Welcome Screen -->
                     <div id="welcomeScreen" class="welcome-screen">
-                        <!-- SahuAI Search Header (Only visible in search mode) -->
-                        <div id="sahuSearchHeader" class="sahu-search-header" style="display:none">SahuAI Search</div>
+                        <!-- Manthan Search Header (Only visible in search mode) -->
+                        <div id="sahuSearchHeader" class="sahu-search-header" style="display:none">Manthan Search</div>
                         
                         <!-- Default Welcome Content -->
                         <div id="defaultWelcomeContent" style="display: block;">
                             <div style="margin-bottom:1rem">
-                                <span style="font-size:2.5rem; font-weight:800; color:#000 !important;">🦅 SahuAI</span>
+                                <span style="font-size:2.5rem; font-weight:800; color:#000 !important;">🦅 Manthan</span>
                             </div>
                             <h2 class="welcome-title" style="font-size:1.25rem; font-weight:700; color:#000 !important; margin-bottom:0.25rem;">How can I help you today?</h2>
                         </div>
@@ -4314,7 +4314,7 @@
                         <div class="style-option-item" data-style="normal" onclick="selectStyle('normal')">
                             <div class="style-option-info">
                                 <div class="style-option-name">Normal</div>
-                                <div class="style-option-desc">Default responses from SahuAI</div>
+                                <div class="style-option-desc">Default responses from Manthan</div>
                             </div>
                             <div class="style-option-check"><i class="fas fa-check"></i></div>
                         </div>
@@ -4350,7 +4350,7 @@
                         <div class="style-option-item" data-persona="none" onclick="selectPersona('none')">
                             <div class="style-option-info">
                                 <div class="style-option-name">No Persona</div>
-                                <div class="style-option-desc">Plain SahuAI behaviour</div>
+                                <div class="style-option-desc">Plain Manthan behaviour</div>
                             </div>
                             <div class="style-option-check"></div>
                         </div>
@@ -4411,7 +4411,7 @@
                                 <!-- Mode Tags Container -->
                                 <div id="inputModeTags" class="input-mode-tags"></div>
                                 <!-- Text Input -->
-                                <textarea id="userInput" placeholder="Ask SahuAI..." class="input-textarea" rows="1" onkeydown="handleKeyDown(event)" oninput="autoResize(this); updateDynamicButton();"></textarea>
+                                <textarea id="userInput" placeholder="Ask Manthan..." class="input-textarea" rows="1" onkeydown="handleKeyDown(event)" oninput="autoResize(this); updateDynamicButton();"></textarea>
                             </div>
                             <!-- Bottom area: buttons row -->
                             <div class="input-box-buttons-area">
@@ -4422,6 +4422,7 @@
                                 
                                 <!-- Model Select Button -->
                                 <button onclick="openModelSelector()" id="modelSelectBtn" class="chatbar-btn" title="Select Model">
+                                    <i class="fas fa-robot"></i>
                                     <span id="modelSelectLabel" style="font-size:0.625rem;font-weight:500;margin-left:0.125rem;">Model</span>
                                 </button>
                                 
@@ -4589,7 +4590,7 @@
                                     </div>
                                     <div>
                                         <div class="settings-card-title">Documentation</div>
-                                        <div class="settings-card-desc">How to use SahuAI</div>
+                                        <div class="settings-card-desc">How to use Manthan</div>
                                     </div>
                                 </div>
                                 <i class="fas fa-chevron-right settings-card-chevron"></i>
@@ -4689,13 +4690,13 @@
                         <!-- User Info -->
                         <div class="customize-card">
                             <label class="customize-label">User Info</label>
-                            <textarea id="customInstructionsUser" placeholder="What should SAHU know about you?" class="customize-textarea"></textarea>
+                            <textarea id="customInstructionsUser" placeholder="What should Manthan know about you?" class="customize-textarea"></textarea>
                         </div>
                         
                         <!-- Response Style -->
                         <div class="customize-card">
                             <label class="customize-label">Response Style</label>
-                            <textarea id="customInstructionsResp" placeholder="How should SAHU respond?" class="customize-textarea"></textarea>
+                            <textarea id="customInstructionsResp" placeholder="How should Manthan respond?" class="customize-textarea"></textarea>
                         </div>
                         
                         <!-- Temperature & Max Tokens -->
@@ -4713,7 +4714,7 @@
                 </div><!-- Search Engines View -->
                 <div id="settings-search" class="settings-view">
                     <div class="search-engines-header">
-                        <p class="search-engines-hint">Enable independent search sources. v7.7: the new ⭐ "Best" category groups every engine that is NOT on SearXNG - TinyFish (Search + Fetch), DDG Lite, Wikipedia, Facebook, YouTube, Instagram - all direct, no SearXNG.</p>
+                        <p class="search-engines-hint">Enable independent search sources. v7.8: the app is now "Manthan". The ⭐ "Best" category groups every engine that is NOT on SearXNG - TinyFish (Search + Fetch), DDG Lite, Wikipedia, Facebook, YouTube, Instagram - all direct, no SearXNG.</p>
                         <button onclick="toggleAllSearchEngines()" class="search-engines-select-all">Select All</button>
                     </div>
                     <!-- v7.3: TinyFish FREE Search + Fetch API key -->
@@ -4998,7 +4999,7 @@
                     <div class="customize-section">
                         <div class="customize-card">
                             <label class="customize-label">Agent Skills</label>
-                            <p class="safety-model-hint" style="margin-bottom: 0.75rem;">These are the abilities the SahuAI agent can use while working on your request. It decides on its own when to use them, thinks between steps, and can use them again and again until the answer is complete.</p>
+                            <p class="safety-model-hint" style="margin-bottom: 0.75rem;">These are the abilities the Manthan agent can use while working on your request. It decides on its own when to use them, thinks between steps, and can use them again and again until the answer is complete.</p>
                             <div id="skillsList"></div>
                         </div>
                     </div>
@@ -5380,15 +5381,15 @@
             <div class="modal-body">
                 <!-- Documentation Content (Version 5.0) -->
                 <div class="prose max-w-none">
-                    <h1 class="gradient-text">🤖 SahuAI Agent – Official Saksham Intelligence AI Models Chat</h1>
+                    <h1 class="gradient-text">🤖 Manthan Agent – Official Saksham Intelligence AI Models Chat</h1>
                     <h3><em>Version 5.0 | Powered by Saksham Intelligence</em></h3>
                     
                     <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--border);">
                     
                     <h2>📋 Executive Summary</h2>
-                    <p><strong>SahuAI Agent</strong> is a revolutionary, all-in-one AI orchestration platform that aggregates <strong>57+ cutting-edge AI models</strong> from <strong>15+ global providers</strong> into a single, intuitive interface. Built and led by <strong>Saksham Sahu</strong> under <strong>Saksham Intelligence</strong>, SahuAI Agent delivers <strong>truly unlimited access</strong> to premium AI capabilities without requiring users to manage multiple API keys, subscriptions, or complex configurations.</p>
+                    <p><strong>Manthan Agent</strong> is a revolutionary, all-in-one AI orchestration platform that aggregates <strong>57+ cutting-edge AI models</strong> from <strong>15+ global providers</strong> into a single, intuitive interface. Built and led by <strong>Saksham Sahu</strong> under <strong>Saksham Intelligence</strong>, Manthan Agent delivers <strong>truly unlimited access</strong> to premium AI capabilities without requiring users to manage multiple API keys, subscriptions, or complex configurations.</p>
                     
-                    <p>Unlike traditional single-model chatbots, SahuAI Agent functions as an <strong>intelligent consensus engine</strong>—routing your queries through parallel expert models, synthesizing their outputs through advanced reasoning pipelines, and delivering responses that are more accurate, balanced, and contextually aware than any single provider could achieve alone.</p>
+                    <p>Unlike traditional single-model chatbots, Manthan Agent functions as an <strong>intelligent consensus engine</strong>—routing your queries through parallel expert models, synthesizing their outputs through advanced reasoning pipelines, and delivering responses that are more accurate, balanced, and contextually aware than any single provider could achieve alone.</p>
                     
                     <!-- Additional documentation content continues... -->
                     <!-- Full Version 5.0 docs as provided in your specification -->
@@ -5602,13 +5603,13 @@
         // Safety Models
         function checkSafety(content) {}
         
-        console.log('✅ SahuAI Agent v5.0 HTML/CSS Loaded - JavaScript implementation expected in index.js');
+        console.log('✅ Manthan Agent v5.0 HTML/CSS Loaded - JavaScript implementation expected in index.js');
     </script>
     
     <!-- Link to JavaScript File -->
     <script>/**
  * ============================================
- * SAHUAI AGENT v5.0 - MAIN JAVASCRIPT FILE
+ * MANTHAN AGENT v5.0 - MAIN JAVASCRIPT FILE
  * ============================================
  * 
  * Official Saksham Intelligence AI Models Chat
@@ -6700,7 +6701,7 @@ function updateMode(mode) {
                 renderDiscovery();
             }
         }
-        showToast('SahuAI Search Mode: Conversational & Cited');
+        showToast('Manthan Search Mode: Conversational & Cited');
     } else {
         document.body.classList.remove('mode-search-ui');
         const searchHeader = document.getElementById('sahuSearchHeader');
@@ -6940,7 +6941,7 @@ function confirmClearHistory() {
     const confirmModal = document.getElementById('clearHistoryConfirm');
     if (confirmModal) confirmModal.remove();
     
-    // Clear all localStorage keys related to SahuAI
+    // Clear all localStorage keys related to Manthan
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -8632,7 +8633,7 @@ async function searchWeb(query, enginesOverride) {
      * proxies that need NO API key, NO sign-up and have no hard IP lock
      * (user directive: "use all the proxies which are in v5.5"):
      *   1. direct browser call
-     *   2. corsproxy.io - user-endorsed, from the original SahuAI code
+     *   2. corsproxy.io - user-endorsed, from the original Manthan code
      *      ("works fine without IP tracking"); 401s instantly on networks
      *      that demand an API key, so the chain just falls through
      *   3. r.jina.ai reader - clean reader markdown, keyless (the v5.5
@@ -9735,7 +9736,7 @@ function openPreview() {
         w.document.write(`
             <html>
                 <head>
-                    <title>SahuAI Preview</title>
+                    <title>Manthan Preview</title>
                     <style>
                         body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
                     </style>
@@ -9970,7 +9971,7 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     
     if (providerKey === 'openrouter') {
         headers['HTTP-Referer'] = window.location.href;
-        headers['X-Title'] = 'SAHU 2.0';
+        headers['X-Title'] = 'Manthan';
     }
     
     // Clone messages
@@ -10036,7 +10037,7 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     
     // FIX 1: Thinking budget - instruct model to skip reasoning when OFF
     // v6.9: REASONING EFFORT ladder (user directive: low / medium / high
-    // (default) / xhigh / max - like the SahuAI agent's own effort levels,
+    // (default) / xhigh / max - like the Manthan agent's own effort levels,
     // always WITH thinking unless Off). Mirrors OpenAI reasoning_effort,
     // Anthropic thinking budget_tokens, Z.ai thinking.type and Kimi
     // thinking models. xhigh/max also raise the token ceiling below.
@@ -10093,7 +10094,7 @@ async function callModelWithFallback(providerKey, modelId, messages, retryCount 
     } else if (state.mode === 'study') {
         sysPrompt += "\nMODE: STUDY TUTOR (v7.0, Socratic - modeled on ChatGPT Study Mode / Gemini Guided Learning / Claude Learning). The user is STUDYING. Obey these rules above all else:\n1. DIAGNOSE FIRST: before teaching, ask 1-2 short questions about their goal and current level. If unanswered, assume 10th-grade level and say so.\n2. TEACH IN SMALL STEPS: one idea per turn, build on what they already know, and end EVERY turn with exactly ONE check-for-understanding question (never multiple).\n3. HINTS, NOT ANSWERS: for homework-style questions respond with a guiding question or hint. Escalate: nudge -> strategy -> similar worked example -> full solution ONLY after one genuine attempt OR an explicit second request for the answer.\n4. CHECK & REINFORCE: after hard parts ask them to restate it in their own words; correct charitably, immediately, briefly.\n5. ACTIVE RECALL: after each concept offer a 1-question quiz; grade it and keep track of what is covered.\n6. TONE: warm, plain-spoken, brief (under 150 words unless a worked example). One question per turn.\n7. WRAP-UP: on request, produce a bullet summary of what was covered, what is next, and 3 graded practice problems.\nNever do the user's work for them; never moralize - just guide.";
     } else if (state.mode === 'search') {
-        sysPrompt += "\nMODE: SAHUAI SEARCH (Perplexity Style). Answer concisely but comprehensively based on the provided search results. You MUST cite sources using [1], [2] notation inline with the text where the information is used. Do NOT create a separate reference list at the end, just use inline citations.";
+        sysPrompt += "\nMODE: MANTHAN SEARCH (Perplexity Style). Answer concisely but comprehensively based on the provided search results. You MUST cite sources using [1], [2] notation inline with the text where the information is used. Do NOT create a separate reference list at the end, just use inline citations.";
     } else {
         sysPrompt += "\nMODE: STANDARD. Use available search results to answer accurately. Cite sources if used.";
         // v7.1: AGENT SWARM - the model may spawn 2-10 parallel workers (never 1)
@@ -11649,7 +11650,7 @@ async function sendMessage() {
             // v7.0 STUDY MODE: Socratic tutor - the mode system prompt drives it
             await runStandardAggregation(fullPrompt, container, thisChatId);
         } else if (state.mode === 'search') {
-            // SahuAI Search mode: agentic loop that displays resources ONLY
+            // Manthan Search mode: agentic loop that displays resources ONLY
             await runSearchMode(fullPrompt, container, thisChatId, 'resources');
         } else if (document.getElementById('toolWebSearch')?.checked) {
             // v5.6: normal chat + Web Search tool ALSO runs the model-first
@@ -11956,7 +11957,7 @@ async function runSingleModelMode(fullPrompt, container, chatId) {
 }
 
 /**
- * Run SahuAI Search mode
+ * Run Manthan Search mode
  * @param {string} fullPrompt - Full prompt with search context
  * @param {HTMLElement} container - Container
  * @param {string} chatId - Chat ID
@@ -13520,7 +13521,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
             // v5.6: normal chat with Web Search tool - show the agent's ANSWER
             // as a normal chat reply plus a plain inline list of the links it
             // used. No sources panel, no grid, no duplicated response.
-            // v6.3: RESTORED the collapsible Sources panel in SahuAI (chat)
+            // v6.3: RESTORED the collapsible Sources panel in Manthan (chat)
             // mode - the SAME panel as history, replacing the plain list.
             const _chatSrcs = collected; // v6.7: NO cap - show every source the agent gathered
             const _chatEngs = [...new Set(_chatSrcs.map(s => s.source || 'web'))];
@@ -13532,7 +13533,7 @@ async function runSearchMode(fullPrompt, container, chatId, displayMode) {
         } else if (collected.length > 0) {
             // Search mode shows ONLY the resources the agent gathered -
             // v6.3: inside the SAME collapsible Sources panel as history
-            // (panel restored in BOTH search and SahuAI mode), open by
+            // (panel restored in BOTH search and Manthan mode), open by
             // default here since sources are the primary content.
             const items = collected.map((s) => `
                 <li class="mb-3">
@@ -13912,7 +13913,7 @@ async function _sahuRunAgentSwarm(text, ctx) {
             ctx.addTrace(_tag('started: ' + escapeHtml(t.objective.substring(0, 90)) + (t.objective.length > 90 ? '...' : '')));
             try {
                 if (state.currentChatId !== chatId || !state.isProcessing) throw new Error('stopped');
-                const msgs = [{ role: 'user', content: 'You are Worker ' + t.id + ', one of ' + tasks.length + ' parallel specialists spawned by the SahuAI orchestrator.\nOVERALL USER REQUEST (pinned): ' + ctx.fullPrompt + (parsed.plan ? '\nORCHESTRATOR PLAN: ' + parsed.plan : '') + '\n\nYOUR SUB-TASK (do ONLY this; do not overlap siblings):\n' + t.objective + (t.boundaries ? '\nSIBLING BOUNDARIES (do not duplicate): ' + t.boundaries : '') + '\nOUTPUT FORMAT: ' + t.output_format + '\n\nRULES: Today is ' + new Date().toDateString() + '. Answer from your own knowledge. If - and only if - the sub-task critically needs CURRENT web data, reply with EXACTLY one line "NEED_SEARCH: <query>" and nothing else. Never emit SEARCH/READ/ANSWER directives, code blocks or sahu_agents blocks. Be dense, factual, no preamble, no apologies. End with a line "SOURCES: <urls you actually used>" or "SOURCES: none".' }];
+                const msgs = [{ role: 'user', content: 'You are Worker ' + t.id + ', one of ' + tasks.length + ' parallel specialists spawned by the Manthan orchestrator.\nOVERALL USER REQUEST (pinned): ' + ctx.fullPrompt + (parsed.plan ? '\nORCHESTRATOR PLAN: ' + parsed.plan : '') + '\n\nYOUR SUB-TASK (do ONLY this; do not overlap siblings):\n' + t.objective + (t.boundaries ? '\nSIBLING BOUNDARIES (do not duplicate): ' + t.boundaries : '') + '\nOUTPUT FORMAT: ' + t.output_format + '\n\nRULES: Today is ' + new Date().toDateString() + '. Answer from your own knowledge. If - and only if - the sub-task critically needs CURRENT web data, reply with EXACTLY one line "NEED_SEARCH: <query>" and nothing else. Never emit SEARCH/READ/ANSWER directives, code blocks or sahu_agents blocks. Be dense, factual, no preamble, no apologies. End with a line "SOURCES: <urls you actually used>" or "SOURCES: none".' }];
                 let res = await Promise.race([
                     callModelWithFallback(ctx.model.provider, ctx.model.modelId, msgs, 0, null),
                     new Promise((_, rej) => setTimeout(() => rej(new Error('worker timeout')), 150000))
@@ -14157,7 +14158,7 @@ function setupKeyboardShortcuts() {
  * Main initialization
  */
 async function init() {
-    console.log('🚀 SahuAI Agent v7.7 Initializing...');
+    console.log('🚀 Manthan Agent v7.8 Initializing...');
     
     // Load state from localStorage
     loadState();
@@ -14200,8 +14201,8 @@ async function init() {
     // Update language
     updateLanguage(state.language);
     
-    console.log('✅ SahuAI Agent v7.7 Ready');
-    showToast('SahuAI Agent v7.7 Loaded');
+    console.log('✅ Manthan Agent v7.8 Ready');
+    showToast('Manthan Agent v7.8 Loaded');
 }
 
 // ============================================
@@ -14305,7 +14306,7 @@ function toggleIncognito() {
     const btn = document.getElementById('incognitoBtn');
     if (btn) btn.classList.toggle('active', state.incognitoMode);
     if (state.incognitoMode) {
-        document.title = '🕶️ SahuAI Agent - Incognito';
+        document.title = '🕶️ Manthan Agent - Incognito';
         showToast('Incognito Mode ON - Chats won\'t be saved', 'info');
         // BUG FIX 4: start a fresh private session so nothing from the
         // current chat gets stored while incognito is enabled
@@ -14319,7 +14320,7 @@ function toggleIncognito() {
         }
         if (_incWelcome) _incWelcome.classList.remove('hidden');
     } else {
-        document.title = 'SahuAI Agent v7.7 - Official Saksham Intelligence AI Models Chat';
+        document.title = 'Manthan Agent v7.8 - Official Saksham Intelligence AI Models Chat';
         showToast('Incognito Mode OFF', 'info');
         // BUG FIX 4: start a fresh normal session. This discards the private
         // chat id so the next message is saved as a brand-new chat instead of
@@ -14558,7 +14559,7 @@ window.updateStyleOptionsUI = updateStyleOptionsUI;
 window.updateToolsNavStyleLabel = updateToolsNavStyleLabel;
 
 // ============================================
-// END OF SAHUAI AGENT v5.0 - index.js
+// END OF MANTHAN AGENT v5.0 - index.js
 // ============================================      
     </script>
 
